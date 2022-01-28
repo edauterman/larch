@@ -1,18 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <openssl/rand.h>
+
 #include "prover.h"
-
-void WireVal::Copy(WireVal &from) {
-    memcpy(shares, from.shares, sizeof(uint8_t) * WIRES);
-}
-
-CircuitView CircuitViews::GetView(int idx) {
-    CircuitView v;
-    for (int i = 0; i < wires.size(); i++) {
-        v.wireShares.push_back(wires[i].shares[idx]);
-    }
-}
 
 void Prover::AddConst(WireVal &in, uint8_t alpha, WireVal &out) {
     out.Copy(in);
@@ -81,8 +72,12 @@ void Prover::GenViews(CircuitSpec &spec, WireVal w[], CircuitViews &views, WireV
     // Run adds and mults based on R1CS
 }
 
-void Prover::CommitViews(CircuitViews &views, CircuitComms &comms) {
+void Prover::CommitViews(CircuitViews &views, CircuitComm *comms) {
     // Commit by hashing views
+    for (int i = 0; i < 3; i++) {
+        CircuitView v = views.GetView(i);
+        v.Commit(comms[i]);
+    }
 }
 
 void Prover::Prove(CircuitSpec &spec, WireVal w[], Proof &proof) {

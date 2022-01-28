@@ -3,28 +3,13 @@
 
 #include <vector>
 #include <stdint.h>
+#include <openssl/sha.h>
+
+#include "view.h"
 
 #define WIRES 3
 
 using namespace std;
-
-class WireVal {
-    public:
-        uint8_t shares[WIRES];
-
-        void Copy(WireVal &from);
-};
-
-class CircuitView {
-    public:
-        vector<uint8_t> wireShares;
-};
-
-class CircuitViews {
-    public:
-        vector<WireVal> wires;
-        CircuitView GetView(int idx);
-};
 
 class CircuitSpec {
     public:
@@ -36,10 +21,6 @@ class CircuitSpec {
         int n;
 };
 
-class CircuitComms {
-    // 3 commitments
-};
-
 class RandomSource {
     public:
         uint8_t GetRand(int gate, int wireIdx);
@@ -47,12 +28,12 @@ class RandomSource {
 
 class RandomOracle {
     public:
-        uint8_t GetRand(CircuitComms &in);
+        uint8_t GetRand(CircuitComm *in);
 };
 
 class Proof {
     public:
-        CircuitComms comms;
+        CircuitComm comms[3];
         CircuitView views[2];
         RandomSource rands[2];
         int output;
@@ -67,7 +48,7 @@ class Prover {
         void MultShares(WireVal &in0, WireVal &in1, WireVal &out);
 
         void GenViews(CircuitSpec &spec, WireVal w[], CircuitViews &views, WireVal out[]);
-        void CommitViews(CircuitViews &views, CircuitComms &comms);
+        void CommitViews(CircuitViews &views, CircuitComm *comms);
 
         void Prove(CircuitSpec &spec, WireVal w[], Proof &proof);
     private:
