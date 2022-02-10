@@ -36,7 +36,9 @@ class Proof {
         CircuitComm comms[3];
         CircuitView views[2];
         RandomSource rands[2];
+        uint8_t *w[2];
         int output;
+        int idx;
 };
 
 class Prover {

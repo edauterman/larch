@@ -11,7 +11,7 @@ find_package(OpenSSL REQUIRED)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-add_library(Prover prover.cc view.cc common.cc)
+add_library(Prover prover.cc view.cc common.cc verifier.cc)
 
 add_executable(prover_test prover_test.cc)
 target_link_libraries(prover_test

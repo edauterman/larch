@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <stdint.h>
+#include <openssl/sha.h>
 
 #define WIRES 3
 

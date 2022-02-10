@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream> 
 
 #include <openssl/rand.h>
 #include <openssl/evp.h>
@@ -7,6 +8,8 @@
 
 #include "view.h"
 #include "common.h"
+
+using namespace std;
 
 void WireVal::Copy(WireVal &from) {
     memcpy(shares, from.shares, sizeof(uint8_t) * WIRES);
@@ -17,6 +20,7 @@ CircuitView CircuitViews::GetView(int idx) {
     for (int i = 0; i < wires.size(); i++) {
         v.wireShares.push_back(wires[i].shares[idx]);
     }
+    return v;
 }
 
 void CircuitView::Commit(CircuitComm &comm) {
@@ -25,4 +29,5 @@ void CircuitView::Commit(CircuitComm &comm) {
         buf[j] = wireShares[j];
     }
     hash_to_bytes(comm.digest, SHA256_DIGEST_LENGTH, buf, wireShares.size() * sizeof(uint8_t));
+    free(buf);
 }
