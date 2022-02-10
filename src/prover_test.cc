@@ -22,8 +22,8 @@ int main() {
         spec.B[i] = (uint8_t *)malloc(spec.n * sizeof(uint8_t));
         spec.C[i] = (uint8_t *)malloc(spec.n * sizeof(uint8_t));
         for (int j = 0; j < spec.n; j++) {
-            spec.A[i][j] = 0;
-            spec.B[i][j] = 0;
+            spec.A[i][j] = 1;
+            spec.B[i][j] = 1;
             spec.C[i][j] = 0;
         }
     }
@@ -31,9 +31,9 @@ int main() {
     WireVal *w;
     w = (WireVal *)malloc(spec.n * sizeof(WireVal));
     for (int i = 0; i < spec.n; i++) {
-        w[i].shares[0] = 0;
-        w[i].shares[1] = 0;
-        w[i].shares[2] = 0;
+        w[i].shares[0] = 1;
+        w[i].shares[1] = 1;
+        w[i].shares[2] = 1;
     }
 
     cout << "Going to prove" << endl;

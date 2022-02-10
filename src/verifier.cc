@@ -28,15 +28,15 @@ bool Verifier::CheckMultConst(uint8_t in0, uint8_t in1, uint8_t alpha, uint8_t o
 }
 
 bool Verifier::CheckAddShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    return (a0 + b0 == out);
+    return ((a0 + b0) % 2 == out);
 }
 
 bool Verifier::CheckSubShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    return (a0 - b0 == out);
+    return ((a0 - b0) % 2 == out);
 }
 
 bool Verifier::CheckMultShares(int currGate, int wireIdx, RandomSource rand0, RandomSource rand1, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    uint8_t out_check = (a0 * b0) + (a1 * b1) + (a0 * b1) + rand0.GetRand(currGate, wireIdx) - rand1.GetRand(currGate, (wireIdx + 1) % WIRES);
+    uint8_t out_check = ((a0 * b0) + (a1 * b1) + (a0 * b1) + rand0.GetRand(currGate, wireIdx) - rand1.GetRand(currGate, (wireIdx + 1) % WIRES)) % 2;
     printf("out = %d, out-check = %d\n", out, out_check);
     return out_check == out;
 }
