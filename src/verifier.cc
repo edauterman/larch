@@ -56,6 +56,11 @@ bool Verifier::Verify(CircuitSpec &spec, Proof &proof) {
     cout << "passed commit checks" << endl;
 
     // Need to check that views chosen randomly correctly?
+    RandomOracle oracle;
+    uint8_t idx_check = oracle.GetRand(proof.comms) % WIRES;
+    if (proof.idx != idx_check) {
+        return false;
+    }
 
     int idx = 0;
     uint8_t A[2][spec.m];
@@ -104,12 +109,13 @@ bool Verifier::Verify(CircuitSpec &spec, Proof &proof) {
         if (!CheckMultShares(idx, proof.idx, proof.rands[0], proof.rands[1], A[0][i], A[1][i], B[0][i], B[1][i], proof.views[0].wireShares[idx])) {
             return false;
         }
-        cout << "did mult shares" << endl;
         idx++;
         if (!CheckSubShares(proof.views[0].wireShares[idx - 1], proof.views[1].wireShares[idx - 1], C[0][i], C[1][i], proof.views[0].wireShares[idx])) {
             return false;
         }
-        cout << "did sub shares" << endl;
+        if ((proof.views[0].wireShares[idx] != proof.outShares[0][i]) || (proof.views[1].wireShares[idx] != proof.outShares[1][i])) {
+            return false;
+        }
         idx++;
     }
     // TODO check output lines up

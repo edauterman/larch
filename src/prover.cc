@@ -11,7 +11,6 @@ using namespace std;
 
 RandomSource::RandomSource() {
     RAND_bytes(seed, SHA256_DIGEST_LENGTH);
-    //memset(seed, 0, SHA256_DIGEST_LENGTH);
 }
 
 uint8_t RandomSource::GetRand(int gate, int wireIdx) {
@@ -133,9 +132,15 @@ void Prover::Prove(CircuitSpec &spec, WireVal w[], Proof &proof) {
 
     proof.w[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
     proof.w[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
+    proof.outShares[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
+    proof.outShares[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
+    proof.out = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
     for (int i = 0; i < spec.m; i++) {
         proof.w[0][i] = w[i].shares[proof.idx];
         proof.w[1][i] = w[i].shares[(proof.idx + 1) % WIRES];
+        proof.outShares[0][i] = out[i].shares[proof.idx];
+        proof.outShares[1][i] = out[i].shares[(proof.idx + 1) % WIRES];
+        proof.out[i] = (out[i].shares[0] + out[i].shares[1] + out[i].shares[2]) % 2;
     }
 
 }
