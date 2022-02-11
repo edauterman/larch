@@ -5,11 +5,17 @@
 #include <openssl/rand.h>
 
 #include "prover.h"
+#include "common.h"
 
 using namespace std;
 
 uint8_t RandomSource::GetRand(int gate, int wireIdx) {
-    return 1;
+    int buf[2];
+    buf[0] = gate;
+    buf[1] = wireIdx % 3;
+    uint8_t out;
+    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, 2 * sizeof(int));
+    return (out) % 2;
 }
 
 uint8_t RandomOracle::GetRand(CircuitComm *in) {
@@ -19,6 +25,7 @@ uint8_t RandomOracle::GetRand(CircuitComm *in) {
 void Prover::AddConst(WireVal &in, uint8_t alpha, WireVal &out) {
     out.Copy(in);
     out.shares[0] += alpha % 2;
+    currGate++;
 }
 
 void Prover::MultConst(WireVal &in, uint8_t alpha, WireVal &out) {
@@ -26,6 +33,7 @@ void Prover::MultConst(WireVal &in, uint8_t alpha, WireVal &out) {
         out.shares[i] = alpha * in.shares[i];
         out.shares[i] %= 2;
     }
+    currGate++;
 }
 
 void Prover::AddShares(WireVal &in0, WireVal &in1, WireVal &out) {
@@ -33,6 +41,7 @@ void Prover::AddShares(WireVal &in0, WireVal &in1, WireVal &out) {
         out.shares[i] = in0.shares[i] + in1.shares[i];
         out.shares[i] %= 2;
     }
+    currGate++;
 }
 
 void Prover::SubShares(WireVal &in0, WireVal &in1, WireVal &out) {
@@ -40,6 +49,7 @@ void Prover::SubShares(WireVal &in0, WireVal &in1, WireVal &out) {
         out.shares[i] = in0.shares[i] - in1.shares[i];
         out.shares[i] %= 2;
     }
+    currGate++;
 }
 
 void Prover::MultShares(WireVal &in0, WireVal &in1, WireVal &out) {
@@ -50,6 +60,7 @@ void Prover::MultShares(WireVal &in0, WireVal &in1, WireVal &out) {
                 rands[i].GetRand(currGate, i) - rands[(i + 1) % WIRES].GetRand(currGate, (i + 1) % WIRES);
         out.shares[i] %= 2;
     }
+    currGate++;
 }
 
 // w of length n
@@ -100,6 +111,7 @@ void Prover::CommitViews(CircuitViews &views, CircuitComm *comms) {
 void Prover::Prove(CircuitSpec &spec, WireVal w[], Proof &proof) {
     CircuitViews views;
     WireVal out[spec.m];
+    currGate = 0;
     GenViews(spec, w, views, out);
     cout << "Generated views" << endl;
     CommitViews(views, proof.comms);
