@@ -21,7 +21,7 @@ class Verifier {
         bool CheckMultConst(uint8_t in0, uint8_t in1, uint8_t alpha, uint8_t out);
         bool CheckAddShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
         bool CheckSubShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
-        bool CheckMultShares(int currGate, int wireIdx, RandomSource rand0, RandomSource rand1, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
+        bool CheckMultShares(int currGate, int wireIdx, RandomSource &rand0, RandomSource &rand1, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
 };
 
 #endif

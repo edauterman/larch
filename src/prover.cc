@@ -9,17 +9,25 @@
 
 using namespace std;
 
+RandomSource::RandomSource() {
+    RAND_bytes(seed, SHA256_DIGEST_LENGTH);
+    //memset(seed, 0, SHA256_DIGEST_LENGTH);
+}
+
 uint8_t RandomSource::GetRand(int gate, int wireIdx) {
-    int buf[2];
+    int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
     buf[0] = gate;
     buf[1] = wireIdx % 3;
+    memcpy((uint8_t *)(buf + 2), seed, SHA256_DIGEST_LENGTH);
     uint8_t out;
-    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, 2 * sizeof(int));
+    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, 2 * sizeof(int) + SHA256_DIGEST_LENGTH);
     return (out) % 2;
 }
 
 uint8_t RandomOracle::GetRand(CircuitComm *in) {
-    return 1;
+    uint8_t out;
+    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), in->digest, SHA256_DIGEST_LENGTH);
+    return out;
 }
 
 void Prover::AddConst(WireVal &in, uint8_t alpha, WireVal &out) {
@@ -117,7 +125,7 @@ void Prover::Prove(CircuitSpec &spec, WireVal w[], Proof &proof) {
     CommitViews(views, proof.comms);
     cout << "Committed to views" << endl;
     
-    proof.idx = oracle.GetRand(proof.comms);
+    proof.idx = oracle.GetRand(proof.comms) % WIRES;
     proof.views[0] = views.GetView(proof.idx);
     proof.views[1] = views.GetView((proof.idx + 1) % WIRES);
     proof.rands[0] = rands[proof.idx];

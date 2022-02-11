@@ -23,6 +23,9 @@ class CircuitSpec {
 
 class RandomSource {
     public:
+        uint8_t seed[SHA256_DIGEST_LENGTH];
+
+        RandomSource();
         uint8_t GetRand(int gate, int wireIdx);
 };
 
