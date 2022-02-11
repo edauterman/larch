@@ -32,7 +32,8 @@ bool Verifier::CheckAddShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, ui
 }
 
 bool Verifier::CheckSubShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    return ((a0 - b0) % 2 == out);
+    int diff = a0 > b0 ? a0 - b0 : b0 - a0;
+    return (diff % 2 == out);
 }
 
 bool Verifier::CheckMultShares(int currGate, int wireIdx, RandomSource &rand0, RandomSource &rand1, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
@@ -76,30 +77,36 @@ bool Verifier::Verify(CircuitSpec &spec, Proof &proof) {
         for (int j = 0; j < spec.n; j++) {
             cout << "i = " << i << ", j = " << j << endl;
             if (!CheckMultConst(proof.w[0][j], proof.w[1][j], spec.A[i][j], proof.views[0].wireShares[idx])) {
+                printf("bad mult const a\n");
                 return false;
             }
             idx++;
             if (!CheckAddShares(proof.views[0].wireShares[idx - 1], proof.views[1].wireShares[idx - 1], A[0][i], A[1][i], proof.views[0].wireShares[idx])) {
+                printf("bad add shares a\n");
                 return false;
             }
             A[0][i] = proof.views[0].wireShares[idx];
             A[1][i] = proof.views[1].wireShares[idx];
             idx++;
             if (!CheckMultConst(proof.w[0][j], proof.w[1][j], spec.B[i][j], proof.views[0].wireShares[idx])) {
+                printf("bad mult const b\n");
                 return false;
             }
             idx++;
             if (!CheckAddShares(proof.views[0].wireShares[idx - 1], proof.views[1].wireShares[idx - 1], B[0][i], B[1][i], proof.views[0].wireShares[idx])) {
+                printf("bad add shares b\n");
                 return false;
             }
             B[0][i] = proof.views[0].wireShares[idx];
             B[1][i] = proof.views[1].wireShares[idx];
             idx++;
             if (!CheckMultConst(proof.w[0][j], proof.w[1][j], spec.C[i][j], proof.views[0].wireShares[idx])) {
+                printf("bad mult const c\n");
                 return false;
             }
             idx++;
             if (!CheckAddShares(proof.views[0].wireShares[idx - 1], proof.views[1].wireShares[idx - 1], C[0][i], C[1][i], proof.views[0].wireShares[idx])) {
+                printf("bad add shares c\n");
                 return false;
             }
             C[0][i] = proof.views[0].wireShares[idx];
@@ -107,13 +114,16 @@ bool Verifier::Verify(CircuitSpec &spec, Proof &proof) {
             idx++;
         }
         if (!CheckMultShares(idx, proof.idx, proof.rands[0], proof.rands[1], A[0][i], A[1][i], B[0][i], B[1][i], proof.views[0].wireShares[idx])) {
+            printf("bad mult shares end\n");
             return false;
         }
         idx++;
         if (!CheckSubShares(proof.views[0].wireShares[idx - 1], proof.views[1].wireShares[idx - 1], C[0][i], C[1][i], proof.views[0].wireShares[idx])) {
+            printf("bad sub shares end\n");
             return false;
         }
         if ((proof.views[0].wireShares[idx] != proof.outShares[0][i]) || (proof.views[1].wireShares[idx] != proof.outShares[1][i])) {
+            printf("Output shares don't match\n");
             return false;
         }
         idx++;

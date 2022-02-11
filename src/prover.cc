@@ -53,8 +53,9 @@ void Prover::AddShares(WireVal &in0, WireVal &in1, WireVal &out) {
 
 void Prover::SubShares(WireVal &in0, WireVal &in1, WireVal &out) {
     for (int i = 0; i < WIRES; i++) {
-        out.shares[i] = in0.shares[i] - in1.shares[i];
-        out.shares[i] %= 2;
+        int diff = in0.shares[i] > in1.shares[i] ? in0.shares[i] - in1.shares[i] : in1.shares[i] - in0.shares[i];
+        //out.shares[i] = in0.shares[i] - in1.shares[i];
+        out.shares[i] = diff % 2;
     }
     currGate++;
 }
@@ -141,6 +142,7 @@ void Prover::Prove(CircuitSpec &spec, WireVal w[], Proof &proof) {
         proof.outShares[0][i] = out[i].shares[proof.idx];
         proof.outShares[1][i] = out[i].shares[(proof.idx + 1) % WIRES];
         proof.out[i] = (out[i].shares[0] + out[i].shares[1] + out[i].shares[2]) % 2;
+        printf("output[%d] = %d\n", i, proof.out[i]);
     }
 
 }
