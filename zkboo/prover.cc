@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <emp-tool/emp-tool.h>
+#include <vector>
 
 #include <openssl/rand.h>
 
@@ -8,18 +10,19 @@
 #include "common.h"
 
 using namespace std;
+using namespace emp;
 
 RandomSource::RandomSource() {
     RAND_bytes(seed, SHA256_DIGEST_LENGTH);
 }
 
-uint8_t RandomSource::GetRand(int gate, int wireIdx) {
+uint8_t RandomSource::GetRand(int gate) {
     int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
     buf[0] = gate;
-    buf[1] = wireIdx % 3;
-    memcpy((uint8_t *)(buf + 2), seed, SHA256_DIGEST_LENGTH);
+    //buf[1] = wireIdx % 3;
+    memcpy((uint8_t *)(buf + 1), seed, SHA256_DIGEST_LENGTH);
     uint8_t out;
-    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, 2 * sizeof(int) + SHA256_DIGEST_LENGTH);
+    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, sizeof(int) + SHA256_DIGEST_LENGTH);
     return (out) % 2;
 }
 
@@ -29,10 +32,19 @@ uint8_t RandomOracle::GetRand(CircuitComm *in) {
     return out;
 }
 
+Prover::Prover() {
+    currGate = 0;
+}
+
 void Prover::AddConst(WireVal &in, uint8_t alpha, WireVal &out) {
     out.Copy(in);
     out.shares[0] += alpha % 2;
     currGate++;
+}
+
+uint64_t Prover::AddConst(const uint64_t in, uint8_t alpha) {
+    currGate++;
+    return (in + alpha) % 2;
 }
 
 void Prover::MultConst(WireVal &in, uint8_t alpha, WireVal &out) {
@@ -43,12 +55,22 @@ void Prover::MultConst(WireVal &in, uint8_t alpha, WireVal &out) {
     currGate++;
 }
 
+uint64_t Prover::MultConst(uint64_t in, uint8_t alpha) {
+    currGate++;
+    return (in * alpha) % 2;
+}
+
 void Prover::AddShares(WireVal &in0, WireVal &in1, WireVal &out) {
     for (int i = 0; i < WIRES; i++) {
         out.shares[i] = in0.shares[i] + in1.shares[i];
         out.shares[i] %= 2;
     }
     currGate++;
+}
+
+uint64_t Prover::AddShares(uint64_t a0, uint64_t b0) {
+    currGate++;
+    return (a0 + b0) % 2;
 }
 
 void Prover::SubShares(WireVal &in0, WireVal &in1, WireVal &out) {
@@ -65,12 +87,19 @@ void Prover::MultShares(WireVal &in0, WireVal &in1, WireVal &out) {
         out.shares[i] = (in0.shares[i] * in1.shares[i]) + 
                 (in0.shares[(i + 1) % WIRES] * in1.shares[i]) + 
                 (in0.shares[i] * in1.shares[(i + 1) % WIRES]) +
-                rands[i].GetRand(currGate, i) - rands[(i + 1) % WIRES].GetRand(currGate, (i + 1) % WIRES);
+                rands[i].GetRand(currGate) - rands[(i + 1) % WIRES].GetRand(currGate);
         out.shares[i] %= 2;
     }
     currGate++;
 }
 
+uint64_t Prover::MultShares(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1) {
+    currGate++;
+    // TODO: need to make sure rands are correctly configured across runs
+    return ((a0 * b0) + (a1 * b0) + (a0 * b1) + rands[0].GetRand(currGate) - rands[1].GetRand(currGate)) % 2;
+}
+
+/*
 // w of length n
 void Prover::GenViews(CircuitSpec &spec, WireVal w[], CircuitViews &views, WireVal out[]) {
     WireVal A[spec.m];
@@ -107,43 +136,5 @@ void Prover::GenViews(CircuitSpec &spec, WireVal w[], CircuitViews &views, WireV
 
     // Run adds and mults based on R1CS
 }
-
-void Prover::CommitViews(CircuitViews &views, CircuitComm *comms) {
-    // Commit by hashing views
-    for (int i = 0; i < 3; i++) {
-        CircuitView v = views.GetView(i);
-        v.Commit(comms[i]);
-    }
-}
-
-void Prover::Prove(CircuitSpec &spec, WireVal w[], Proof &proof) {
-    CircuitViews views;
-    WireVal out[spec.m];
-    currGate = 0;
-    GenViews(spec, w, views, out);
-    cout << "Generated views" << endl;
-    CommitViews(views, proof.comms);
-    cout << "Committed to views" << endl;
-    
-    proof.idx = oracle.GetRand(proof.comms) % WIRES;
-    proof.views[0] = views.GetView(proof.idx);
-    proof.views[1] = views.GetView((proof.idx + 1) % WIRES);
-    proof.rands[0] = rands[proof.idx];
-    proof.rands[1] = rands[(proof.idx + 1) % WIRES];
-
-    proof.w[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.w[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.outShares[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.outShares[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.out = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    for (int i = 0; i < spec.m; i++) {
-        proof.w[0][i] = w[i].shares[proof.idx];
-        proof.w[1][i] = w[i].shares[(proof.idx + 1) % WIRES];
-        proof.outShares[0][i] = out[i].shares[proof.idx];
-        proof.outShares[1][i] = out[i].shares[(proof.idx + 1) % WIRES];
-        proof.out[i] = (out[i].shares[0] + out[i].shares[1] + out[i].shares[2]) % 2;
-        printf("output[%d] = %d\n", i, proof.out[i]);
-    }
-
-}
+*/
 

@@ -17,4 +17,4 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 
-add_subdirectory(src)
+add_subdirectory(zkboo)

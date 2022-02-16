@@ -4,6 +4,7 @@
 
 #include "view.h"
 #include "prover.h"
+#include "prover_sys.h"
 #include "verifier.h"
 
 using namespace std;
@@ -28,20 +29,23 @@ int main() {
         }
     }
     
-    WireVal *w;
+    /*WireVal *w;
     w = (WireVal *)malloc(spec.n * sizeof(WireVal));
     for (int i = 0; i < spec.n; i++) {
         w[i].shares[0] = 1;
         w[i].shares[1] = 1;
         w[i].shares[2] = 1;
-    }
+    }*/
 
     cout << "Going to prove" << endl;
 
-    Prover p;
     Proof pi;
-    cout << "witness before calling prove: " << w[0].shares[0] << endl;
-    p.Prove(spec, w, pi);
+    //cout << "witness before calling prove: " << w[0].shares[0] << endl;
+    // TODO use real params
+    string circuitFile;
+    uint64_t *w = NULL;
+    int wLen = 0;
+    //Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
     Verifier v;
     bool check = v.Verify(spec, pi);

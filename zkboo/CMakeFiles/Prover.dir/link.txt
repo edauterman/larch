@@ -1,0 +1,2 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar qc libProver.a  CMakeFiles/Prover.dir/prover.cc.o CMakeFiles/Prover.dir/view.cc.o CMakeFiles/Prover.dir/common.cc.o CMakeFiles/Prover.dir/verifier.cc.o
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib libProver.a
