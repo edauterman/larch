@@ -5,13 +5,12 @@
 
 using namespace emp;
 
-ZKBooCircExecProver::ZKBooCircExecProver(int wire) {
+/*ZKBooCircExecProver::ZKBooCircExecProver(int wire) {
     wireIdx = wire;
-}
+}*/
 
 // each block is a share of 3 wire values
 
-template<typename T>
 block ZKBooCircExecProver::and_gate(const block &a, const block &b) {
     and_ct++;
     uint64_t out = p.MultShares(a[0], a[1], b[0], b[1]);

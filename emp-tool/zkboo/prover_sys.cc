@@ -9,11 +9,12 @@
 #include "prover.h"
 #include "emp_prover.h"
 #include "common.h"
+#include "prover_sys.h"
 
 using namespace std;
 using namespace emp;
 
-template<typename IO>
+//template<typename IO>
 void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView> &views, uint64_t *out, int outLen) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
@@ -21,7 +22,8 @@ void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView> &vi
     for (int i = 0; i < WIRES; i++) {
         // TODO: need to pass in prover randomness???
         // TODO: witnesses not correct here
-        ZKBooCircExecProver<IO> *exec = new ZKBooCircExecProver<IO>(i);
+        //AbandonIO *aio = new AbandonIO();
+        ZKBooCircExecProver<AbandonIO> *exec = new ZKBooCircExecProver<AbandonIO>(i);
         FILE *f = fopen(circuitFile.c_str(), "r");
         BristolFormat cf(f);
         block in0 = makeBlock(0, wShares[i]);
