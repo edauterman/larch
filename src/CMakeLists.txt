@@ -11,7 +11,10 @@ find_package(OpenSSL REQUIRED)
 
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-add_library(Prover prover.cc view.cc common.cc verifier.cc)
+find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
+include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
+
+add_library(Prover prover.cc emp_prover.cc view.cc common.cc verifier.cc)
 
 add_executable(prover_test prover_test.cc)
 target_link_libraries(prover_test
