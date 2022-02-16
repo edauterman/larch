@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <emp-tool/emp-tool.h>
+#include "emp-tool/execution/circuit_execution.h"
 #include <vector>
 
 #include <openssl/rand.h>
@@ -22,17 +23,20 @@ void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView> &vi
     for (int i = 0; i < WIRES; i++) {
         // TODO: need to pass in prover randomness???
         // TODO: witnesses not correct here
-        //AbandonIO *aio = new AbandonIO();
-        ZKBooCircExecProver<AbandonIO> *exec = new ZKBooCircExecProver<AbandonIO>(i);
+        AbandonIO *aio = new AbandonIO();
         FILE *f = fopen(circuitFile.c_str(), "r");
         BristolFormat cf(f);
+        CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
+        //ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(aio, i);
+        //CircuitExecution::circ_exec = ex;
         block in0 = makeBlock(0, wShares[i]);
         block in1 = makeBlock(0, wShares[(i + 1) % WIRES]);
         block out = makeBlock(0, 0);
         cf.compute(&in0, &in1, &out);
+        printf("did compute\n");
         outShares[i] = out[0];
-        views.push_back(exec->view);
-        delete exec;
+        // TODO need to get view
+        //views.push_back(exec->view);
         fclose(f);
     }
 }

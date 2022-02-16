@@ -70,6 +70,7 @@ void Prover::AddShares(WireVal &in0, WireVal &in1, WireVal &out) {
 
 uint64_t Prover::AddShares(uint64_t a0, uint64_t b0) {
     currGate++;
+    printf("add shares\n");
     return (a0 + b0) % 2;
 }
 
@@ -95,6 +96,7 @@ void Prover::MultShares(WireVal &in0, WireVal &in1, WireVal &out) {
 
 uint64_t Prover::MultShares(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1) {
     currGate++;
+    printf("mult shares\n");
     // TODO: need to make sure rands are correctly configured across runs
     return ((a0 * b0) + (a1 * b0) + (a0 * b1) + rands[0].GetRand(currGate) - rands[1].GetRand(currGate)) % 2;
 }

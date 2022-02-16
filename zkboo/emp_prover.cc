@@ -13,18 +13,21 @@ using namespace emp;
 
 block ZKBooCircExecProver::and_gate(const block &a, const block &b) {
     and_ct++;
+    printf("and\n");
     uint64_t out = p.MultShares(a[0], a[1], b[0], b[1]);
     view.wireShares.push_back(out);
     return makeBlock(0, out); 
 }
 
 block ZKBooCircExecProver::xor_gate(const block &a, const block &b) {
+    printf("xor\n");
     uint64_t out = p.AddShares(a[0], b[0]);
     view.wireShares.push_back(out);
     return makeBlock(0, out);
 }
 
 block ZKBooCircExecProver::not_gate(const block &a) { 
+    printf("not\n");
     if (wireIdx == 0) {
         uint64_t out = p.AddConst(a[0], 1);
         view.wireShares.push_back(out);
@@ -39,5 +42,6 @@ uint64_t ZKBooCircExecProver::num_and() {
 }
 
 block ZKBooCircExecProver::public_label(bool b) {
+    printf("pub label\n");
     return makeBlock(0,0);
 }

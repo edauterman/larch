@@ -97,6 +97,7 @@ prover_test_EXTERNAL_OBJECTS =
 build/bin/prover_test: zkboo/CMakeFiles/prover_test.dir/prover_test.cc.o
 build/bin/prover_test: zkboo/CMakeFiles/prover_test.dir/build.make
 build/bin/prover_test: zkboo/libProver.a
+build/bin/prover_test: zkboo/libBase.so
 build/bin/prover_test: /usr/lib64/libssl.so
 build/bin/prover_test: /usr/lib64/libcrypto.so
 build/bin/prover_test: zkboo/CMakeFiles/prover_test.dir/link.txt

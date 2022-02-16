@@ -1,6 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/Prover.dir/common.cc.o"
   "CMakeFiles/Prover.dir/prover.cc.o"
+  "CMakeFiles/Prover.dir/prover_sys.cc.o"
   "CMakeFiles/Prover.dir/verifier.cc.o"
   "CMakeFiles/Prover.dir/view.cc.o"
   "libProver.a"

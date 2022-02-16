@@ -9,6 +9,13 @@ zkboo/CMakeFiles/Prover.dir/prover.cc.o
  /home/ec2-user/zkboo-r1cs/zkboo/prover.cc
  /home/ec2-user/zkboo-r1cs/zkboo/prover.h
  /home/ec2-user/zkboo-r1cs/zkboo/view.h
+zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o
+ /home/ec2-user/zkboo-r1cs/zkboo/common.h
+ /home/ec2-user/zkboo-r1cs/zkboo/emp_prover.h
+ /home/ec2-user/zkboo-r1cs/zkboo/prover.h
+ /home/ec2-user/zkboo-r1cs/zkboo/prover_sys.cc
+ /home/ec2-user/zkboo-r1cs/zkboo/prover_sys.h
+ /home/ec2-user/zkboo-r1cs/zkboo/view.h
 zkboo/CMakeFiles/Prover.dir/verifier.cc.o
  /home/ec2-user/zkboo-r1cs/zkboo/common.h
  /home/ec2-user/zkboo-r1cs/zkboo/prover.h

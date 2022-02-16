@@ -9,6 +9,8 @@
 
 using namespace std;
 
+const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
+
 int main() {
     cout << "Hello world" << endl;
 
@@ -42,10 +44,11 @@ int main() {
     Proof pi;
     //cout << "witness before calling prove: " << w[0].shares[0] << endl;
     // TODO use real params
-    string circuitFile;
+    string circuitFile = circuit_file_location+"/bristol_format/sha-256.txt";
+    cout << circuitFile << endl;
     uint64_t *w = NULL;
     int wLen = 0;
-    //Prove(circuitFile, w, wLen, pi);
+    Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
     Verifier v;
     bool check = v.Verify(spec, pi);

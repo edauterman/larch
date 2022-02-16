@@ -87,9 +87,22 @@ zkboo/CMakeFiles/Prover.dir/prover.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Prover.dir/prover.cc.s"
 	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ec2-user/zkboo-r1cs/zkboo/prover.cc -o CMakeFiles/Prover.dir/prover.cc.s
 
+zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o: zkboo/CMakeFiles/Prover.dir/flags.make
+zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o: zkboo/prover_sys.cc
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o"
+	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/Prover.dir/prover_sys.cc.o -c /home/ec2-user/zkboo-r1cs/zkboo/prover_sys.cc
+
+zkboo/CMakeFiles/Prover.dir/prover_sys.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/Prover.dir/prover_sys.cc.i"
+	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ec2-user/zkboo-r1cs/zkboo/prover_sys.cc > CMakeFiles/Prover.dir/prover_sys.cc.i
+
+zkboo/CMakeFiles/Prover.dir/prover_sys.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/Prover.dir/prover_sys.cc.s"
+	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ec2-user/zkboo-r1cs/zkboo/prover_sys.cc -o CMakeFiles/Prover.dir/prover_sys.cc.s
+
 zkboo/CMakeFiles/Prover.dir/view.cc.o: zkboo/CMakeFiles/Prover.dir/flags.make
 zkboo/CMakeFiles/Prover.dir/view.cc.o: zkboo/view.cc
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object zkboo/CMakeFiles/Prover.dir/view.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object zkboo/CMakeFiles/Prover.dir/view.cc.o"
 	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/Prover.dir/view.cc.o -c /home/ec2-user/zkboo-r1cs/zkboo/view.cc
 
 zkboo/CMakeFiles/Prover.dir/view.cc.i: cmake_force
@@ -102,7 +115,7 @@ zkboo/CMakeFiles/Prover.dir/view.cc.s: cmake_force
 
 zkboo/CMakeFiles/Prover.dir/common.cc.o: zkboo/CMakeFiles/Prover.dir/flags.make
 zkboo/CMakeFiles/Prover.dir/common.cc.o: zkboo/common.cc
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object zkboo/CMakeFiles/Prover.dir/common.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object zkboo/CMakeFiles/Prover.dir/common.cc.o"
 	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/Prover.dir/common.cc.o -c /home/ec2-user/zkboo-r1cs/zkboo/common.cc
 
 zkboo/CMakeFiles/Prover.dir/common.cc.i: cmake_force
@@ -115,7 +128,7 @@ zkboo/CMakeFiles/Prover.dir/common.cc.s: cmake_force
 
 zkboo/CMakeFiles/Prover.dir/verifier.cc.o: zkboo/CMakeFiles/Prover.dir/flags.make
 zkboo/CMakeFiles/Prover.dir/verifier.cc.o: zkboo/verifier.cc
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object zkboo/CMakeFiles/Prover.dir/verifier.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object zkboo/CMakeFiles/Prover.dir/verifier.cc.o"
 	cd /home/ec2-user/zkboo-r1cs/zkboo && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/Prover.dir/verifier.cc.o -c /home/ec2-user/zkboo-r1cs/zkboo/verifier.cc
 
 zkboo/CMakeFiles/Prover.dir/verifier.cc.i: cmake_force
@@ -129,6 +142,7 @@ zkboo/CMakeFiles/Prover.dir/verifier.cc.s: cmake_force
 # Object files for target Prover
 Prover_OBJECTS = \
 "CMakeFiles/Prover.dir/prover.cc.o" \
+"CMakeFiles/Prover.dir/prover_sys.cc.o" \
 "CMakeFiles/Prover.dir/view.cc.o" \
 "CMakeFiles/Prover.dir/common.cc.o" \
 "CMakeFiles/Prover.dir/verifier.cc.o"
@@ -137,12 +151,13 @@ Prover_OBJECTS = \
 Prover_EXTERNAL_OBJECTS =
 
 zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/prover.cc.o
+zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o
 zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/view.cc.o
 zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/common.cc.o
 zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/verifier.cc.o
 zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/build.make
 zkboo/libProver.a: zkboo/CMakeFiles/Prover.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libProver.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/ec2-user/zkboo-r1cs/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX static library libProver.a"
 	cd /home/ec2-user/zkboo-r1cs/zkboo && $(CMAKE_COMMAND) -P CMakeFiles/Prover.dir/cmake_clean_target.cmake
 	cd /home/ec2-user/zkboo-r1cs/zkboo && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/Prover.dir/link.txt --verbose=$(VERBOSE)
 

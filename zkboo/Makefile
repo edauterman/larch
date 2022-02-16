@@ -73,17 +73,6 @@ CMAKE_BINARY_DIR = /home/ec2-user/zkboo-r1cs
 #=============================================================================
 # Targets provided globally by CMake.
 
-# Special rule for the target edit_cache
-edit_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
-	/home/ec2-user/.local/bin/ccmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
-.PHONY : edit_cache
-
-# Special rule for the target edit_cache
-edit_cache/fast: edit_cache
-
-.PHONY : edit_cache/fast
-
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
@@ -94,6 +83,17 @@ rebuild_cache:
 rebuild_cache/fast: rebuild_cache
 
 .PHONY : rebuild_cache/fast
+
+# Special rule for the target edit_cache
+edit_cache:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
+	/home/ec2-user/.local/bin/ccmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+.PHONY : edit_cache
+
+# Special rule for the target edit_cache
+edit_cache/fast: edit_cache
+
+.PHONY : edit_cache/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -128,19 +128,19 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-zkboo/CMakeFiles/prover_test.dir/rule:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/prover_test.dir/rule
-.PHONY : zkboo/CMakeFiles/prover_test.dir/rule
+zkboo/CMakeFiles/Base.dir/rule:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/Base.dir/rule
+.PHONY : zkboo/CMakeFiles/Base.dir/rule
 
 # Convenience name for target.
-prover_test: zkboo/CMakeFiles/prover_test.dir/rule
+Base: zkboo/CMakeFiles/Base.dir/rule
 
-.PHONY : prover_test
+.PHONY : Base
 
 # fast build rule for target.
-prover_test/fast:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/build
-.PHONY : prover_test/fast
+Base/fast:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/build
+.PHONY : Base/fast
 
 # Convenience name for target.
 zkboo/CMakeFiles/Prover.dir/rule:
@@ -156,6 +156,21 @@ Prover: zkboo/CMakeFiles/Prover.dir/rule
 Prover/fast:
 	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/build
 .PHONY : Prover/fast
+
+# Convenience name for target.
+zkboo/CMakeFiles/prover_test.dir/rule:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/prover_test.dir/rule
+.PHONY : zkboo/CMakeFiles/prover_test.dir/rule
+
+# Convenience name for target.
+prover_test: zkboo/CMakeFiles/prover_test.dir/rule
+
+.PHONY : prover_test
+
+# fast build rule for target.
+prover_test/fast:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/build
+.PHONY : prover_test/fast
 
 common.o: common.cc.o
 
@@ -184,6 +199,33 @@ common.cc.s:
 	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/common.cc.s
 .PHONY : common.cc.s
 
+home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.o
+
+# target to build an object file
+home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
+.PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
+
+home/ec2-user/emp-tool/emp-tool/emp-tool.i: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.i
+
+# target to preprocess a source file
+home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
+.PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
+
+home/ec2-user/emp-tool/emp-tool/emp-tool.s: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.s
+
+# target to generate assembly for a file
+home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
+.PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
+
 prover.o: prover.cc.o
 
 .PHONY : prover.o
@@ -210,6 +252,33 @@ prover.s: prover.cc.s
 prover.cc.s:
 	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover.cc.s
 .PHONY : prover.cc.s
+
+prover_sys.o: prover_sys.cc.o
+
+.PHONY : prover_sys.o
+
+# target to build an object file
+prover_sys.cc.o:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o
+.PHONY : prover_sys.cc.o
+
+prover_sys.i: prover_sys.cc.i
+
+.PHONY : prover_sys.i
+
+# target to preprocess a source file
+prover_sys.cc.i:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover_sys.cc.i
+.PHONY : prover_sys.cc.i
+
+prover_sys.s: prover_sys.cc.s
+
+.PHONY : prover_sys.s
+
+# target to generate assembly for a file
+prover_sys.cc.s:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover_sys.cc.s
+.PHONY : prover_sys.cc.s
 
 prover_test.o: prover_test.cc.o
 
@@ -300,14 +369,21 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... Base"
 	@echo "... Prover"
 	@echo "... prover_test"
 	@echo "... common.o"
 	@echo "... common.i"
 	@echo "... common.s"
+	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.o"
+	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.i"
+	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.s"
 	@echo "... prover.o"
 	@echo "... prover.i"
 	@echo "... prover.s"
+	@echo "... prover_sys.o"
+	@echo "... prover_sys.i"
+	@echo "... prover_sys.s"
 	@echo "... prover_test.o"
 	@echo "... prover_test.i"
 	@echo "... prover_test.s"
