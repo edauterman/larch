@@ -26,19 +26,23 @@ void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView> &vi
         AbandonIO *aio = new AbandonIO();
         FILE *f = fopen(circuitFile.c_str(), "r");
         BristolFormat cf(f);
-        CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
-        //ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(aio, i);
-        //CircuitExecution::circ_exec = ex;
+        //CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
+        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(aio, i);
+        CircuitExecution::circ_exec = ex;
         block in0 = makeBlock(0, wShares[i]);
         block in1 = makeBlock(0, wShares[(i + 1) % WIRES]);
         block out = makeBlock(0, 0);
         cf.compute(&in0, &in1, &out);
         printf("did compute\n");
-        outShares[i] = out[0];
+        // TODO need to deal with output
+        //outShares[i] = out[0];
         // TODO need to get view
         //views.push_back(exec->view);
-        fclose(f);
+        // TODO cleanup
+        //delete ex;
+        //fclose(f);
     }
+    printf("done with the 3 gen views\n");
 }
 
 void CommitViews(vector<CircuitView> &views, CircuitComm *comms) {
