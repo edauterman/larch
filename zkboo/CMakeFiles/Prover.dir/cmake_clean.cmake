@@ -1,10 +1,10 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/Prover.dir/prover.cc.o"
-  "CMakeFiles/Prover.dir/view.cc.o"
   "CMakeFiles/Prover.dir/common.cc.o"
+  "CMakeFiles/Prover.dir/prover.cc.o"
   "CMakeFiles/Prover.dir/verifier.cc.o"
-  "libProver.pdb"
+  "CMakeFiles/Prover.dir/view.cc.o"
   "libProver.a"
+  "libProver.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream> 
+#include <string.h>
 
 #include <openssl/rand.h>
 #include <openssl/evp.h>

@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/prover_test.dir/prover_test.cc.o"
-  "../build/bin/prover_test.pdb"
   "../build/bin/prover_test"
+  "../build/bin/prover_test.pdb"
+  "CMakeFiles/prover_test.dir/prover_test.cc.o"
 )
 
 # Per-language clean rules from dependency scanning.

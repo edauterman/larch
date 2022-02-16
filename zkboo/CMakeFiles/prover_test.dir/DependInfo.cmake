@@ -4,19 +4,23 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/prover_test.cc" "/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/CMakeFiles/prover_test.dir/prover_test.cc.o"
+  "/home/ec2-user/zkboo-r1cs/zkboo/prover_test.cc" "/home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles/prover_test.dir/prover_test.cc.o"
   )
-set(CMAKE_CXX_COMPILER_ID "Clang")
+set(CMAKE_CXX_COMPILER_ID "GNU")
+
+# Preprocessor definitions for this target.
+set(CMAKE_TARGET_DEFINITIONS_CXX
+  "EMP_CIRCUIT_PATH=/usr/local/include/emp-tool/circuits/files/"
+  )
 
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "."
-  "/usr/local/Cellar/openssl@1.1/1.1.1j/include"
   )
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/CMakeFiles/Prover.dir/DependInfo.cmake"
+  "/home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles/Prover.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.
