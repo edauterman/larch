@@ -19,19 +19,20 @@ using namespace emp;
 void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView *> &views, uint64_t *out, int outLen) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
-    block* a = new block[128];
- 	block* b = new block[128];
-    block* c = new block[128];
+    block* a = new block[512];
+ 	block* b = NULL;
+ 	//block* b = new block[0];
+    block* c = new block[256];
  
 
-    for (int i = 0; i < WIRES; i++) {
         // TODO: need to pass in prover randomness???
         // TODO: witnesses not correct here
         //AbandonIO *aio = new AbandonIO();
         FILE *f = fopen(circuitFile.c_str(), "r");
         BristolFormat cf(f);
+        printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
         //CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
-        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(i);
+        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>();
         CircuitExecution::circ_exec = ex;
         //block* a = new block[128];
     	//block* b = new block[128];
@@ -43,15 +44,16 @@ void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView *> &
         //block out = zero_block;
         printf("about to compute\n");
         cf.compute(c, a, b);
-        printf("did compute %d\n", i);
         // TODO need to deal with output
         //outShares[i] = out[0];
         // TODO need to get view
-        views.push_back(ex->view);
+        for (int i = 0; i < 3; i++) {
+            views.push_back(ex->view[i]);
+        }
         // TODO cleanup
         delete ex;
         //fclose(f);
-    }
+    
     // ISSUE DELETING THESE
     //delete a;
     //delete b;

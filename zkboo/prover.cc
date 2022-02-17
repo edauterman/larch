@@ -12,6 +12,14 @@
 using namespace std;
 using namespace emp;
 
+static inline bool GetBit(uint32_t x, int bit) {
+    return (bool)(x & (1 << bit));
+}
+
+static inline void SetBit(uint32_t *x, int bit, bool val) {
+    *x = *x || (val << bit);
+}
+
 RandomSource::RandomSource() {
     RAND_bytes(seed, SHA256_DIGEST_LENGTH);
 }
@@ -36,69 +44,42 @@ Prover::Prover() {
     currGate = 0;
 }
 
-void Prover::AddConst(WireVal &in, uint8_t alpha, WireVal &out) {
-    out.Copy(in);
-    out.shares[0] += alpha % 2;
+void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-}
-
-uint64_t Prover::AddConst(const uint64_t in, uint8_t alpha) {
-    currGate++;
-    return (in + alpha) % 2;
-}
-
-void Prover::MultConst(WireVal &in, uint8_t alpha, WireVal &out) {
-    for (int i = 0; i < WIRES; i++) {
-        out.shares[i] = alpha * in.shares[i];
-        out.shares[i] %= 2;
+    for (int bit = 0; bit < 32; bit++) {
+        for (int i = 0; i < 3; i++) {
+            bool aBit = GetBit(a[i], bit);
+            bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
+            SetBit(&out[i], bit, res);
+        }
     }
-    currGate++;
 }
 
-uint64_t Prover::MultConst(uint64_t in, uint8_t alpha) {
-    currGate++;
-    return (in * alpha) % 2;
-}
-
-void Prover::AddShares(WireVal &in0, WireVal &in1, WireVal &out) {
-    for (int i = 0; i < WIRES; i++) {
-        out.shares[i] = in0.shares[i] + in1.shares[i];
-        out.shares[i] %= 2;
-    }
-    currGate++;
-}
-
-uint64_t Prover::AddShares(uint64_t a0, uint64_t b0) {
+void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     printf("add shares\n");
-    return (a0 + b0) % 2;
-}
-
-void Prover::SubShares(WireVal &in0, WireVal &in1, WireVal &out) {
-    for (int i = 0; i < WIRES; i++) {
-        int diff = in0.shares[i] > in1.shares[i] ? in0.shares[i] - in1.shares[i] : in1.shares[i] - in0.shares[i];
-        //out.shares[i] = in0.shares[i] - in1.shares[i];
-        out.shares[i] = diff % 2;
+    for (int bit = 0; bit < 32; bit++) {
+        for (int i = 0; i < 3; i++) {
+            bool aBit = GetBit(a[i], bit);
+            bool bBit = GetBit(b[i], bit);
+            SetBit(&out[i], bit, (aBit + bBit) % 2);
+        }
     }
-    currGate++;
 }
 
-void Prover::MultShares(WireVal &in0, WireVal &in1, WireVal &out) {
-    for (int i = 0; i < WIRES; i++) {
-        out.shares[i] = (in0.shares[i] * in1.shares[i]) + 
-                (in0.shares[(i + 1) % WIRES] * in1.shares[i]) + 
-                (in0.shares[i] * in1.shares[(i + 1) % WIRES]) +
-                rands[i].GetRand(currGate) - rands[(i + 1) % WIRES].GetRand(currGate);
-        out.shares[i] %= 2;
-    }
-    currGate++;
-}
-
-uint64_t Prover::MultShares(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1) {
+void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     printf("mult shares\n");
-    // TODO: need to make sure rands are correctly configured across runs
-    return ((a0 * b0) + (a1 * b0) + (a0 * b1) + rands[0].GetRand(currGate) - rands[1].GetRand(currGate)) % 2;
+    for (int bit = 0; bit < 32; bit++) {
+        for (int i = 0; i < 3; i++) {
+            bool a0Bit = GetBit(a[i], bit);
+            bool a1Bit = GetBit(a[(i+1)%3], bit);
+            bool b0Bit = GetBit(b[i], bit);
+            bool b1Bit = GetBit(b[(i+1)%3], bit);
+            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit) + rands[i].GetRand(currGate) - rands[(i+1)%3].GetRand(currGate)) % 2;
+            SetBit(&out[i], bit, res);
+        }
+    }
 }
 
 /*

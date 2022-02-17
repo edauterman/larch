@@ -1,4 +1,0 @@
-/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/CMakeFiles/rebuild_cache.dir
-/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/CMakeFiles/edit_cache.dir
-/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/CMakeFiles/prover_test.dir
-/Users/emmadauterman/Projects/zkboo-r1cs/emp-tool/zkboo/CMakeFiles/Prover.dir

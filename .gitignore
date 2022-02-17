@@ -1,6 +1,6 @@
 zkboo/CMakeLists.txt.user
 zkboo/CMakeCache.txt
-zkboo/CMakeFiles
+zkboo/CMakeFiles/*
 zkboo/CMakeScripts
 zkboo/Testing
 zkboo/Makefile

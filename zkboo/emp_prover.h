@@ -13,45 +13,67 @@ template<typename T>
 class ZKBooCircExecProver : public CircuitExecution {
     public:
         uint64_t and_ct = 0;
-        int wireIdx;
+        //int wireIdx;
         Prover p;
-        CircuitView *view;
+        CircuitView *view[3];
 
-        ZKBooCircExecProver(int wire) {
+        ZKBooCircExecProver() {
             printf("constructor\n");
-            wireIdx = wire;
-            view = new CircuitView();
+            for (int i = 0; i < 3; i++) {
+                view[i] = new CircuitView();
+            }
         }
+
 
         // each block is a share of 3 wire values
 
         block and_gate(const block &a, const block &b) override {
             and_ct++;
             printf("and gate\n");
-            uint64_t out = p.MultShares(a[0], a[1], b[0], b[1]);
-            view->wireShares.push_back(out);
-            return makeBlock(0, out); 
+            uint32_t a_shares[3];
+            uint32_t b_shares[3];
+            uint32_t out_shares[3];
+            memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
+            memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
+            p.MultShares(a_shares, b_shares, out_shares);
+            block out;
+            memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
+            for (int i = 0; i < 3; i++) {
+                view[i]->wireShares.push_back(out_shares[i]);
+            }
+            return out;
             //return a;
         }
 
         block xor_gate(const block &a, const block &b) override {
             printf("xor gate\n");
-            uint64_t out = p.AddShares(a[0], b[0]);
-            view->wireShares.push_back(out);
-            //return a;
-            return makeBlock(0, out);
+            uint32_t a_shares[3];
+            uint32_t b_shares[3];
+            uint32_t out_shares[3];
+            memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
+            memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
+            p.AddShares(a_shares, b_shares, out_shares);
+            block out;
+            memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
+            for (int i = 0; i < 3; i++) {
+                view[i]->wireShares.push_back(out_shares[i]);
+            }
+            return out;
         }
 
         block not_gate(const block &a) override {
             printf("not\n");
-            if (wireIdx == 0) {
-                uint64_t out = p.AddConst(a[0], 1); 
-                view->wireShares.push_back(out);
-                //return a;
-                return makeBlock(0, out);
-            }   
-            //view->wireShares.push_back(a[0]);
-            return a;
+            uint32_t a_shares[3];
+            uint32_t b_shares[3];
+            uint32_t out_shares[3];
+            memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
+            p.AddConst(a_shares, 1, out_shares);
+            block out;
+            memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
+            for (int i = 0; i < 3; i++) {
+                view[i]->wireShares.push_back(out_shares[i]);
+            }
+            return out;
             //return a;
         }
 

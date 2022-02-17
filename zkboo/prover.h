@@ -58,10 +58,9 @@ class Prover {
         void SubShares(WireVal &in0, WireVal &in1, WireVal &out);
         void MultShares(WireVal &in0, WireVal &in1, WireVal &out);
 
-        uint64_t AddConst(uint64_t in, uint8_t alpha);
-        uint64_t MultConst(uint64_t in, uint8_t alpha);
-        uint64_t AddShares(uint64_t a0, uint64_t b0);
-        uint64_t MultShares(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1);
+        void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
+        void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
+        void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
         //void GenViews(CircuitSpec &spec, WireVal w[], CircuitViews &views, WireVal out[]);
         //void CommitViews(CircuitViews &views, CircuitComm *comms);

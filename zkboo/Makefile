@@ -65,10 +65,10 @@ RM = /home/ec2-user/.local/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/ec2-user/zkboo-r1cs
+CMAKE_SOURCE_DIR = /home/ec2-user/zkboo-r1cs/zkboo
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/ec2-user/zkboo-r1cs
+CMAKE_BINARY_DIR = /home/ec2-user/zkboo-r1cs/zkboo
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -97,14 +97,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/ec2-user/zkboo-r1cs && $(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/CMakeFiles /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles/progress.marks
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles/progress.marks
+	$(MAKE) -f CMakeFiles/Makefile2 all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/clean
+	$(MAKE) -f CMakeFiles/Makefile2 clean
 .PHONY : clean
 
 # The main clean target
@@ -114,62 +114,56 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/preinstall
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/preinstall
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/ec2-user/zkboo-r1cs && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-# Convenience name for target.
-zkboo/CMakeFiles/Base.dir/rule:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/Base.dir/rule
-.PHONY : zkboo/CMakeFiles/Base.dir/rule
+#=============================================================================
+# Target rules for targets named Base
 
-# Convenience name for target.
-Base: zkboo/CMakeFiles/Base.dir/rule
-
+# Build rule for target.
+Base: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 Base
 .PHONY : Base
 
 # fast build rule for target.
 Base/fast:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/build
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/build
 .PHONY : Base/fast
 
-# Convenience name for target.
-zkboo/CMakeFiles/Prover.dir/rule:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/Prover.dir/rule
-.PHONY : zkboo/CMakeFiles/Prover.dir/rule
+#=============================================================================
+# Target rules for targets named Prover
 
-# Convenience name for target.
-Prover: zkboo/CMakeFiles/Prover.dir/rule
-
+# Build rule for target.
+Prover: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 Prover
 .PHONY : Prover
 
 # fast build rule for target.
 Prover/fast:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/build
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/build
 .PHONY : Prover/fast
 
-# Convenience name for target.
-zkboo/CMakeFiles/prover_test.dir/rule:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/prover_test.dir/rule
-.PHONY : zkboo/CMakeFiles/prover_test.dir/rule
+#=============================================================================
+# Target rules for targets named prover_test
 
-# Convenience name for target.
-prover_test: zkboo/CMakeFiles/prover_test.dir/rule
-
+# Build rule for target.
+prover_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 prover_test
 .PHONY : prover_test
 
 # fast build rule for target.
 prover_test/fast:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/build
+	$(MAKE) -f CMakeFiles/prover_test.dir/build.make CMakeFiles/prover_test.dir/build
 .PHONY : prover_test/fast
 
 common.o: common.cc.o
@@ -178,7 +172,7 @@ common.o: common.cc.o
 
 # target to build an object file
 common.cc.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/common.cc.o
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/common.cc.o
 .PHONY : common.cc.o
 
 common.i: common.cc.i
@@ -187,7 +181,7 @@ common.i: common.cc.i
 
 # target to preprocess a source file
 common.cc.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/common.cc.i
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/common.cc.i
 .PHONY : common.cc.i
 
 common.s: common.cc.s
@@ -196,7 +190,7 @@ common.s: common.cc.s
 
 # target to generate assembly for a file
 common.cc.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/common.cc.s
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/common.cc.s
 .PHONY : common.cc.s
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
@@ -205,7 +199,7 @@ home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-
 
 # target to build an object file
 home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
 .PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.i: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
@@ -214,7 +208,7 @@ home/ec2-user/emp-tool/emp-tool/emp-tool.i: home/ec2-user/emp-tool/emp-tool/emp-
 
 # target to preprocess a source file
 home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
 .PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.s: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
@@ -223,7 +217,7 @@ home/ec2-user/emp-tool/emp-tool/emp-tool.s: home/ec2-user/emp-tool/emp-tool/emp-
 
 # target to generate assembly for a file
 home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
 .PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
 
 prover.o: prover.cc.o
@@ -232,7 +226,7 @@ prover.o: prover.cc.o
 
 # target to build an object file
 prover.cc.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover.cc.o
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/prover.cc.o
 .PHONY : prover.cc.o
 
 prover.i: prover.cc.i
@@ -241,7 +235,7 @@ prover.i: prover.cc.i
 
 # target to preprocess a source file
 prover.cc.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover.cc.i
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/prover.cc.i
 .PHONY : prover.cc.i
 
 prover.s: prover.cc.s
@@ -250,7 +244,7 @@ prover.s: prover.cc.s
 
 # target to generate assembly for a file
 prover.cc.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover.cc.s
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/prover.cc.s
 .PHONY : prover.cc.s
 
 prover_sys.o: prover_sys.cc.o
@@ -259,7 +253,7 @@ prover_sys.o: prover_sys.cc.o
 
 # target to build an object file
 prover_sys.cc.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover_sys.cc.o
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/prover_sys.cc.o
 .PHONY : prover_sys.cc.o
 
 prover_sys.i: prover_sys.cc.i
@@ -268,7 +262,7 @@ prover_sys.i: prover_sys.cc.i
 
 # target to preprocess a source file
 prover_sys.cc.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover_sys.cc.i
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/prover_sys.cc.i
 .PHONY : prover_sys.cc.i
 
 prover_sys.s: prover_sys.cc.s
@@ -277,7 +271,7 @@ prover_sys.s: prover_sys.cc.s
 
 # target to generate assembly for a file
 prover_sys.cc.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/prover_sys.cc.s
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/prover_sys.cc.s
 .PHONY : prover_sys.cc.s
 
 prover_test.o: prover_test.cc.o
@@ -286,7 +280,7 @@ prover_test.o: prover_test.cc.o
 
 # target to build an object file
 prover_test.cc.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/prover_test.cc.o
+	$(MAKE) -f CMakeFiles/prover_test.dir/build.make CMakeFiles/prover_test.dir/prover_test.cc.o
 .PHONY : prover_test.cc.o
 
 prover_test.i: prover_test.cc.i
@@ -295,7 +289,7 @@ prover_test.i: prover_test.cc.i
 
 # target to preprocess a source file
 prover_test.cc.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/prover_test.cc.i
+	$(MAKE) -f CMakeFiles/prover_test.dir/build.make CMakeFiles/prover_test.dir/prover_test.cc.i
 .PHONY : prover_test.cc.i
 
 prover_test.s: prover_test.cc.s
@@ -304,7 +298,7 @@ prover_test.s: prover_test.cc.s
 
 # target to generate assembly for a file
 prover_test.cc.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/prover_test.cc.s
+	$(MAKE) -f CMakeFiles/prover_test.dir/build.make CMakeFiles/prover_test.dir/prover_test.cc.s
 .PHONY : prover_test.cc.s
 
 verifier.o: verifier.cc.o
@@ -313,7 +307,7 @@ verifier.o: verifier.cc.o
 
 # target to build an object file
 verifier.cc.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/verifier.cc.o
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/verifier.cc.o
 .PHONY : verifier.cc.o
 
 verifier.i: verifier.cc.i
@@ -322,7 +316,7 @@ verifier.i: verifier.cc.i
 
 # target to preprocess a source file
 verifier.cc.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/verifier.cc.i
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/verifier.cc.i
 .PHONY : verifier.cc.i
 
 verifier.s: verifier.cc.s
@@ -331,7 +325,7 @@ verifier.s: verifier.cc.s
 
 # target to generate assembly for a file
 verifier.cc.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/verifier.cc.s
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/verifier.cc.s
 .PHONY : verifier.cc.s
 
 view.o: view.cc.o
@@ -340,7 +334,7 @@ view.o: view.cc.o
 
 # target to build an object file
 view.cc.o:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/view.cc.o
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/view.cc.o
 .PHONY : view.cc.o
 
 view.i: view.cc.i
@@ -349,7 +343,7 @@ view.i: view.cc.i
 
 # target to preprocess a source file
 view.cc.i:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/view.cc.i
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/view.cc.i
 .PHONY : view.cc.i
 
 view.s: view.cc.s
@@ -358,7 +352,7 @@ view.s: view.cc.s
 
 # target to generate assembly for a file
 view.cc.s:
-	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/view.cc.s
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/view.cc.s
 .PHONY : view.cc.s
 
 # Help Target
@@ -404,6 +398,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/ec2-user/zkboo-r1cs && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 
