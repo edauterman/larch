@@ -39,7 +39,7 @@ class RandomOracle {
 class Proof {
     public:
         CircuitComm comms[3];
-        CircuitView views[2];
+        CircuitView *views[2];
         RandomSource rands[2];
         uint8_t *w[2];
         uint8_t *outShares[2];

@@ -23,7 +23,7 @@ class CircuitComm {
 
 class CircuitView {
     public:
-        vector<uint8_t> wireShares;
+        vector<uint64_t> wireShares;
 
         void Commit(CircuitComm &comm);
 };

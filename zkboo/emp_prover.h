@@ -15,13 +15,12 @@ class ZKBooCircExecProver : public CircuitExecution {
         uint64_t and_ct = 0;
         int wireIdx;
         Prover p;
-        T *io;
-        CircuitView view;
+        CircuitView *view;
 
-        ZKBooCircExecProver(T *io_in, int wire) {
+        ZKBooCircExecProver(int wire) {
             printf("constructor\n");
-            io = io_in;
             wireIdx = wire;
+            view = new CircuitView();
         }
 
         // each block is a share of 3 wire values
@@ -30,14 +29,16 @@ class ZKBooCircExecProver : public CircuitExecution {
             and_ct++;
             printf("and gate\n");
             uint64_t out = p.MultShares(a[0], a[1], b[0], b[1]);
-            view.wireShares.push_back(out);
+            view->wireShares.push_back(out);
             return makeBlock(0, out); 
+            //return a;
         }
 
         block xor_gate(const block &a, const block &b) override {
             printf("xor gate\n");
             uint64_t out = p.AddShares(a[0], b[0]);
-            view.wireShares.push_back(out);
+            view->wireShares.push_back(out);
+            //return a;
             return makeBlock(0, out);
         }
 
@@ -45,11 +46,13 @@ class ZKBooCircExecProver : public CircuitExecution {
             printf("not\n");
             if (wireIdx == 0) {
                 uint64_t out = p.AddConst(a[0], 1); 
-                view.wireShares.push_back(out);
+                view->wireShares.push_back(out);
+                //return a;
                 return makeBlock(0, out);
             }   
-            view.wireShares.push_back(a[0]);
+            //view->wireShares.push_back(a[0]);
             return a;
+            //return a;
         }
 
         uint64_t num_and() override {

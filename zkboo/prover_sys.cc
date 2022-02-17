@@ -16,44 +16,58 @@ using namespace std;
 using namespace emp;
 
 //template<typename IO>
-void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView> &views, uint64_t *out, int outLen) {
+void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView *> &views, uint64_t *out, int outLen) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
+    block* a = new block[128];
+ 	block* b = new block[128];
+    block* c = new block[128];
+ 
 
     for (int i = 0; i < WIRES; i++) {
         // TODO: need to pass in prover randomness???
         // TODO: witnesses not correct here
-        AbandonIO *aio = new AbandonIO();
+        //AbandonIO *aio = new AbandonIO();
         FILE *f = fopen(circuitFile.c_str(), "r");
         BristolFormat cf(f);
         //CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
-        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(aio, i);
+        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(i);
         CircuitExecution::circ_exec = ex;
-        block in0 = makeBlock(0, wShares[i]);
-        block in1 = makeBlock(0, wShares[(i + 1) % WIRES]);
-        block out = makeBlock(0, 0);
-        cf.compute(&in0, &in1, &out);
-        printf("did compute\n");
+        //block* a = new block[128];
+    	//block* b = new block[128];
+	    //block* c = new block[128];
+        //block in0 = zero_block;
+        //block in0 = makeBlock(0, wShares[i]);
+        //block in1 = zero_block;
+        //block in1 = makeBlock(0, wShares[(i + 1) % WIRES]);
+        //block out = zero_block;
+        printf("about to compute\n");
+        cf.compute(c, a, b);
+        printf("did compute %d\n", i);
         // TODO need to deal with output
         //outShares[i] = out[0];
         // TODO need to get view
-        //views.push_back(exec->view);
+        views.push_back(ex->view);
         // TODO cleanup
-        //delete ex;
+        delete ex;
         //fclose(f);
     }
+    // ISSUE DELETING THESE
+    //delete a;
+    //delete b;
+    //delete c;
     printf("done with the 3 gen views\n");
 }
 
-void CommitViews(vector<CircuitView> &views, CircuitComm *comms) {
+void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
     // Commit by hashing views
     for (int i = 0; i < 3; i++) {
-        views[i].Commit(comms[i]);
+        views[i]->Commit(comms[i]);
     }
 }
 
 void Prove(string circuitFile, uint64_t *w, int wLen, Proof &proof) {
-    vector<CircuitView> views;
+    vector<CircuitView *> views;
     uint64_t out[8];
     //currGate = 0;
     RandomOracle oracle;
