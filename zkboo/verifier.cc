@@ -88,15 +88,21 @@ bool Verify(string circuitFile, Proof &proof) {
         return false;
     }
 
-    // TODO match up with correct inputs/outputs
-    block *a = new block[512];
+    int in_len = 512;
+    block *w = new block[in_len];
     block *b = NULL;
-    block *c = new block[256];
+    block *out = new block[256];
+
+    for (int i = 0; i < in_len; i++) {
+        memcpy((uint8_t *)&w[i], proof.w[0], sizeof(uint32_t));
+        memcpy((uint8_t *)&w[i] + sizeof(uint32_t), proof.w[1], sizeof(uint32_t));
+    }
+
     FILE *f = fopen(circuitFile.c_str(), "r");
     BristolFormat cf(f);
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views);
     CircuitExecution::circ_exec = ex;
-    cf.compute(c, a, b);
+    cf.compute(out, w, b);
 
     // TODO check output lines up
     
