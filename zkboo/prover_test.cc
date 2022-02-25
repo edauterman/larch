@@ -14,23 +14,6 @@ const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 int main() {
     cout << "Hello world" << endl;
 
-    CircuitSpec spec;
-    spec.m = 5;
-    spec.n = 5;
-    spec.A = (uint8_t **)malloc(spec.m * sizeof(uint8_t *));
-    spec.B = (uint8_t **)malloc(spec.m * sizeof(uint8_t *));
-    spec.C = (uint8_t **)malloc(spec.m * sizeof(uint8_t *));
-    for (int i = 0; i < spec.m; i++) {
-        spec.A[i] = (uint8_t *)malloc(spec.n * sizeof(uint8_t));
-        spec.B[i] = (uint8_t *)malloc(spec.n * sizeof(uint8_t));
-        spec.C[i] = (uint8_t *)malloc(spec.n * sizeof(uint8_t));
-        for (int j = 0; j < spec.n; j++) {
-            spec.A[i][j] = 0;
-            spec.B[i][j] = 0;
-            spec.C[i][j] = 1; // should be 0
-        }
-    }
-    
     /*WireVal *w;
     w = (WireVal *)malloc(spec.n * sizeof(WireVal));
     for (int i = 0; i < spec.n; i++) {
@@ -57,4 +40,6 @@ int main() {
     } else {
         cout << "Proof FAILED to verify" << endl;
     }
+    free(w);
+    printf("at end\n");
 }

@@ -127,26 +127,15 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
     proof.w[1] = (uint8_t *)malloc(len * sizeof(uint32_t));
     memcpy(proof.w[0], indivShares[proof.idx], len * sizeof(uint32_t));
     memcpy(proof.w[1], indivShares[(proof.idx + 1) % 3], len * sizeof(uint32_t));
-    proof.outShares[0] = (uint8_t *)malloc(out_len * sizeof(uint32_t));
-    proof.outShares[1] = (uint8_t *)malloc(out_len * sizeof(uint32_t));
+    proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
+    proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
+    printf("malloc size = %d\n", out_len * sizeof(uint32_t));
     for (int i = 0; i < out_len; i++) {
-        memcpy(((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
-        memcpy(((uint8_t *)&proof.outShares[1]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+        printf("dst offset = %d %x\n", i * sizeof(uint32_t), ((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)));
+        memcpy(((uint8_t *)&proof.outShares[0][i]), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
+        //memcpy(((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
+        memcpy(((uint8_t *)&proof.outShares[1][i]), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+        //memcpy(((uint8_t *)&proof.outShares[1]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
     }
-/*
-    proof.w[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.w[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.outShares[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.outShares[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    proof.out = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
-    for (int i = 0; i < spec.m; i++) {
-        proof.w[0][i] = w[i].shares[proof.idx];
-        proof.w[1][i] = w[i].shares[(proof.idx + 1) % WIRES];
-        proof.outShares[0][i] = out[i].shares[proof.idx];
-        proof.outShares[1][i] = out[i].shares[(proof.idx + 1) % WIRES];
-        proof.out[i] = (out[i].shares[0] + out[i].shares[1] + out[i].shares[2]) % 2;
-        printf("output[%d] = %d\n", i, proof.out[i]);
-    }*/
-
 }
 
