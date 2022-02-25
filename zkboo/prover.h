@@ -71,4 +71,5 @@ class Prover {
         int currGate;
 };
 
+
 #endif

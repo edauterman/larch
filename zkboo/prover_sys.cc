@@ -16,11 +16,18 @@
 using namespace std;
 using namespace emp;
 
+static inline bool GetBit(uint32_t x, int bit) {
+    return (bool)(x & (1 << bit));
+}
+
+static inline void SetBit(uint32_t *x, int bit, bool val) {
+    *x = *x || (val << bit);
+}
+
 //template<typename IO>
 void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[]) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
-    block* a = new block[512];
  	block* b = NULL;
  	//block* b = new block[0];
     //block* c = new block[256];
@@ -44,7 +51,7 @@ void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &vie
         //block in1 = makeBlock(0, wShares[(i + 1) % WIRES]);
         //block out = zero_block;
         printf("about to compute\n");
-        cf.compute(c, a, b);
+        cf.compute(c, w, b);
         // TODO need to deal with output
         //outShares[i] = out[0];
         // TODO need to get view
@@ -69,7 +76,8 @@ void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
     }
 }
 
-void Prove(string circuitFile, uint32_t *w, int wLen, Proof &proof) {
+// each block just contains one bit
+void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
     vector<CircuitView *> views;
     int out_len = 256;
     block *out = new block[out_len];
@@ -80,9 +88,12 @@ void Prove(string circuitFile, uint32_t *w, int wLen, Proof &proof) {
         indivShares[i] = (uint32_t *)malloc(len * sizeof(uint32_t));
     }
     for (int i = 0; i < len; i++) {
+        // individual shares of bits
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ w[i];
+        indivShares[0][i] = indivShares[0][i] % 2;
+        indivShares[1][i] = indivShares[1][i] % 2;
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/8 * sizeof(uint32_t)], i % (8 * sizeof(uint32_t)));
         for (int j = 0; j < 3; j++) {
             memcpy(((uint8_t *)&wShares[i]), (uint8_t *)&indivShares[0][i], sizeof(uint32_t));
             memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));

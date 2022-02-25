@@ -46,12 +46,11 @@ int main() {
     // TODO use real params
     string circuitFile = circuit_file_location+"/bristol_format/sha-256.txt";
     cout << circuitFile << endl;
-    uint32_t *w = NULL;
+    uint8_t *w = NULL;
     int wLen = 0;
     Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
-    Verifier v;
-    bool check = v.Verify(spec, pi);
+    bool check = Verify(circuitFile, pi);
     if (check) {
         cout << "Proof verified" << endl;
     } else {

@@ -49,7 +49,8 @@ Prover::Prover(uint8_t *seeds[]) {
 
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 32; bit++) {
+    for (int bit = 0; bit < 1; bit++) {
+    //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             bool aBit = GetBit(a[i], bit);
             bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
@@ -60,7 +61,8 @@ void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
 
 void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 32; bit++) {
+    for (int bit = 0; bit < 1; bit++) {
+    //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             bool aBit = GetBit(a[i], bit);
             bool bBit = GetBit(b[i], bit);
@@ -71,7 +73,8 @@ void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
 
 void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 32; bit++) {
+    for (int bit = 0; bit < 1; bit++) {
+    //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             bool a0Bit = GetBit(a[i], bit);
             bool a1Bit = GetBit(a[(i+1)%3], bit);

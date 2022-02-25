@@ -26,6 +26,6 @@ class AbandonIO: public IOChannel<AbandonIO> { public:
 
 inline void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &views, block *out, int outLen);
 void CommitViews(vector<CircuitView *> &views, CircuitComm *comms);
-void Prove(string circuitFile, uint32_t *w, int wLen, Proof &proof);
+void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof);
 
 #endif

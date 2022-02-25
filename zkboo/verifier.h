@@ -14,14 +14,17 @@ using namespace std;
 
 class Verifier {
     public:
-        bool Verify(CircuitSpec &spec, Proof &proof);
+        Verifier(RandomSource rands[]);
+
+        void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
+        void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
+        void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
     private:
-        bool CheckAddConst(int wireIdx, uint8_t in0, uint8_t in1, uint8_t alpha, uint8_t out);
-        bool CheckMultConst(uint8_t in0, uint8_t in1, uint8_t alpha, uint8_t out);
-        bool CheckAddShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
-        bool CheckSubShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
-        bool CheckMultShares(int currGate, int wireIdx, RandomSource &rand0, RandomSource &rand1, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out);
+        RandomSource rands[2];
+        int currGate;
 };
+
+bool Verify(string circuitFile, Proof &proof);
 
 #endif

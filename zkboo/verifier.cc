@@ -7,42 +7,67 @@
 #include "prover.h"
 #include "common.h"
 #include "view.h"
+#include "emp_verifier.h"
 
 using namespace std;
+using namespace emp;
+
+static inline bool GetBit(uint32_t x, int bit) {
+    return (bool)(x & (1 << bit));
+}
+
+static inline void SetBit(uint32_t *x, int bit, bool val) {
+    *x = *x || (val << bit);
+}
 
 // QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
 
-bool Verifier::CheckAddConst(int wireIdx, uint8_t in0, uint8_t in1, uint8_t alpha, uint8_t out) {
-    if (wireIdx == 0 && ((out != (in0 + alpha) % 2))) {
-        return false;
-    } else if (wireIdx == 1 && (out != in0)) {
-        return false;
-    } else if (wireIdx == 2 && (out != in0)) {
-        return false;
+Verifier::Verifier(RandomSource in_rands[]) {
+    rands[0] = in_rands[0];
+    rands[1] = in_rands[1];
+    currGate = 0;
+}
+
+void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
+    currGate++;
+    for (int bit = 0; bit < 1; bit++) {
+    //for (int bit = 0; bit < 32; bit++) {
+        for (int i = 0; i < 1; i++) {
+            bool aBit = GetBit(a[i], bit);
+            bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
+            SetBit(&out[i], bit, res);
+        }
     }
-    return true;
 }
 
-bool Verifier::CheckMultConst(uint8_t in0, uint8_t in1, uint8_t alpha, uint8_t out) {
-    return ((in0 * alpha) % 2 == out);
+void Verifier::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
+    currGate++;
+    for (int bit = 0; bit < 1; bit++) {
+    //for (int bit = 0; bit < 32; bit++) {
+        for (int i = 0; i < 1; i++) {
+            bool aBit = GetBit(a[i], bit);
+            bool bBit = GetBit(b[i], bit);
+            SetBit(&out[i], bit, (aBit + bBit) % 2);
+        }
+    }
 }
 
-bool Verifier::CheckAddShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    return ((a0 + b0) % 2 == out);
+void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
+    currGate++;
+    for (int bit = 0; bit < 1; bit++) {
+    //for (int bit = 0; bit < 32; bit++) {
+        for (int i = 0; i < 1; i++) {
+            bool a0Bit = GetBit(a[i], bit);
+            bool a1Bit = GetBit(a[(i+1)], bit);
+            bool b0Bit = GetBit(b[i], bit);
+            bool b1Bit = GetBit(b[(i+1)], bit);
+            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit) + rands[i].GetRand(currGate) - rands[(i+1)].GetRand(currGate)) % 2;
+            SetBit(&out[i], bit, res);
+        }
+    }
 }
 
-bool Verifier::CheckSubShares(uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    int diff = a0 > b0 ? a0 - b0 : b0 - a0;
-    return (diff % 2 == out);
-}
-
-bool Verifier::CheckMultShares(int currGate, int wireIdx, RandomSource &rand0, RandomSource &rand1, uint8_t a0, uint8_t a1, uint8_t b0, uint8_t b1, uint8_t out) {
-    uint8_t out_check = ((a0 * b0) + (a1 * b1) + (a0 * b1) + rand0.GetRand(currGate) - rand1.GetRand(currGate)) % 2;
-    printf("out = %d, out-check = %d\n", out, out_check % 2);
-    return out_check % 2 == out;
-}
-
-bool Verifier::Verify(CircuitSpec &spec, Proof &proof) {
+bool Verify(string circuitFile, Proof &proof) {
     CircuitComm c0, c1;
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
@@ -63,71 +88,16 @@ bool Verifier::Verify(CircuitSpec &spec, Proof &proof) {
         return false;
     }
 
-    int idx = 0;
-    uint8_t A[2][spec.m];
-    uint8_t B[2][spec.m];
-    uint8_t C[2][spec.m];
-    for (int i = 0; i < spec.m; i++) {
-        A[0][i] = 0;
-        A[1][i] = 0;
-        B[0][i] = 0;
-        B[1][i] = 0;
-        C[0][i] = 0;
-        C[1][i] = 0;
-        for (int j = 0; j < spec.n; j++) {
-            cout << "i = " << i << ", j = " << j << endl;
-            if (!CheckMultConst(proof.w[0][j], proof.w[1][j], spec.A[i][j], proof.views[0]->wireShares[idx])) {
-                printf("bad mult const a\n");
-                return false;
-            }
-            idx++;
-            if (!CheckAddShares(proof.views[0]->wireShares[idx - 1], proof.views[1]->wireShares[idx - 1], A[0][i], A[1][i], proof.views[0]->wireShares[idx])) {
-                printf("bad add shares a\n");
-                return false;
-            }
-            A[0][i] = proof.views[0]->wireShares[idx];
-            A[1][i] = proof.views[1]->wireShares[idx];
-            idx++;
-            if (!CheckMultConst(proof.w[0][j], proof.w[1][j], spec.B[i][j], proof.views[0]->wireShares[idx])) {
-                printf("bad mult const b\n");
-                return false;
-            }
-            idx++;
-            if (!CheckAddShares(proof.views[0]->wireShares[idx - 1], proof.views[1]->wireShares[idx - 1], B[0][i], B[1][i], proof.views[0]->wireShares[idx])) {
-                printf("bad add shares b\n");
-                return false;
-            }
-            B[0][i] = proof.views[0]->wireShares[idx];
-            B[1][i] = proof.views[1]->wireShares[idx];
-            idx++;
-            if (!CheckMultConst(proof.w[0][j], proof.w[1][j], spec.C[i][j], proof.views[0]->wireShares[idx])) {
-                printf("bad mult const c\n");
-                return false;
-            }
-            idx++;
-            if (!CheckAddShares(proof.views[0]->wireShares[idx - 1], proof.views[1]->wireShares[idx - 1], C[0][i], C[1][i], proof.views[0]->wireShares[idx])) {
-                printf("bad add shares c\n");
-                return false;
-            }
-            C[0][i] = proof.views[0]->wireShares[idx];
-            C[1][i] = proof.views[1]->wireShares[idx];
-            idx++;
-        }
-        if (!CheckMultShares(idx, proof.idx, proof.rands[0], proof.rands[1], A[0][i], A[1][i], B[0][i], B[1][i], proof.views[0]->wireShares[idx])) {
-            printf("bad mult shares end\n");
-            return false;
-        }
-        idx++;
-        if (!CheckSubShares(proof.views[0]->wireShares[idx - 1], proof.views[1]->wireShares[idx - 1], C[0][i], C[1][i], proof.views[0]->wireShares[idx])) {
-            printf("bad sub shares end\n");
-            return false;
-        }
-        if ((proof.views[0]->wireShares[idx] != proof.outShares[0][i]) || (proof.views[1]->wireShares[idx] != proof.outShares[1][i])) {
-            printf("Output shares don't match\n");
-            return false;
-        }
-        idx++;
-    }
+    // TODO match up with correct inputs/outputs
+    block *a = new block[512];
+    block *b = NULL;
+    block *c = new block[256];
+    FILE *f = fopen(circuitFile.c_str(), "r");
+    BristolFormat cf(f);
+    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views);
+    CircuitExecution::circ_exec = ex;
+    cf.compute(c, a, b);
+
     // TODO check output lines up
     
     return true;
