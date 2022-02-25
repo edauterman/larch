@@ -96,13 +96,10 @@ bool Verify(string circuitFile, Proof &proof) {
     block *b = NULL;
     block *out = new block[256];
 
-    printf("witness: ");
     for (int i = 0; i < in_len; i++) {
         memcpy((uint8_t *)&w[i], (uint8_t *)&proof.w[0][i], sizeof(uint32_t));
         memcpy((uint8_t *)&w[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
-        printf("%d %d -----", proof.w[0][i], proof.w[1][i]);
     }
-    printf("\n");
 
     FILE *f = fopen(circuitFile.c_str(), "r");
     BristolFormat cf(f);

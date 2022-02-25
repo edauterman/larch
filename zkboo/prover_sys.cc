@@ -129,9 +129,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
     memcpy(proof.w[1], indivShares[(proof.idx + 1) % 3], len * sizeof(uint32_t));
     proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
-    printf("malloc size = %d\n", out_len * sizeof(uint32_t));
     for (int i = 0; i < out_len; i++) {
-        printf("dst offset = %d %x\n", i * sizeof(uint32_t), ((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)));
         memcpy(((uint8_t *)&proof.outShares[0][i]), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         //memcpy(((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         memcpy(((uint8_t *)&proof.outShares[1][i]), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
