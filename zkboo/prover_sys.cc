@@ -87,19 +87,23 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
     for (int i = 0; i < 3; i++) {
         indivShares[i] = (uint32_t *)malloc(len * sizeof(uint32_t));
     }
+    printf("going to do shares of w\n");
     for (int i = 0; i < len; i++) {
         // individual shares of bits
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[0][i] = indivShares[0][i] % 2;
         indivShares[1][i] = indivShares[1][i] % 2;
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/8 * sizeof(uint32_t)], i % (8 * sizeof(uint32_t)));
+        printf("before - %d, %d\n", i/(8 * sizeof(uint32_t)), i % (8 * sizeof(uint32_t)));
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/(8 * sizeof(uint32_t))], i % (8 * sizeof(uint32_t)));
+        printf("did indiv shares %d/%d\n", i, len);
         for (int j = 0; j < 3; j++) {
             memcpy(((uint8_t *)&wShares[i]), (uint8_t *)&indivShares[0][i], sizeof(uint32_t));
             memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));
             memcpy(((uint8_t *)&wShares[i]) + 2 * sizeof(uint32_t), (uint8_t *)&indivShares[2][i], sizeof(uint32_t));
         } 
     }
+    printf("finished shares of w\n");
     //currGate = 0;
     RandomOracle oracle;
     uint8_t *seeds[3];
@@ -107,6 +111,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
         seeds[i] = (uint8_t *)malloc(SHA256_DIGEST_LENGTH);
         RAND_bytes(seeds[i], SHA256_DIGEST_LENGTH);
     }
+    printf("about to gen views\n");
     GenViews(circuitFile, wShares, len, views, out, 8, seeds);
     cout << "Generated views" << endl;
     CommitViews(views, proof.comms);

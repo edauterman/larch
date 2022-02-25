@@ -71,11 +71,14 @@ bool Verify(string circuitFile, Proof &proof) {
     CircuitComm c0, c1;
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
+    printf("starting proof verification\n");
     if (memcmp(c0.digest, proof.comms[proof.idx].digest, SHA256_DIGEST_LENGTH) != 0) {
+        printf("commit for v0 failed\n");
         return false;
     }
 
     if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES].digest, SHA256_DIGEST_LENGTH) != 0) {
+        printf("commit for v1 failed\n");
         return false;
     }
 
@@ -93,10 +96,13 @@ bool Verify(string circuitFile, Proof &proof) {
     block *b = NULL;
     block *out = new block[256];
 
+    printf("witness: ");
     for (int i = 0; i < in_len; i++) {
-        memcpy((uint8_t *)&w[i], proof.w[0], sizeof(uint32_t));
-        memcpy((uint8_t *)&w[i] + sizeof(uint32_t), proof.w[1], sizeof(uint32_t));
+        memcpy((uint8_t *)&w[i], (uint8_t *)&proof.w[0][i], sizeof(uint32_t));
+        memcpy((uint8_t *)&w[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
+        printf("%d %d -----", proof.w[0][i], proof.w[1][i]);
     }
+    printf("\n");
 
     FILE *f = fopen(circuitFile.c_str(), "r");
     BristolFormat cf(f);

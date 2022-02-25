@@ -39,9 +39,11 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
             memcpy(b_shares, (uint8_t *)&b, 2 * sizeof(uint32_t));
             if (views[0]->wireShares[gateNum] != a_shares[0]) {
+                //printf("and gate input (v0) failed\n");
                 verified = false;
             }
             if (views[1]->wireShares[gateNum] != b_shares[0]) {
+                //printf("and gate input (v1) failed\n");
                 verified = false;
             }
             v->MultShares(a_shares, b_shares, out_shares);
@@ -49,6 +51,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
             if (views[0]->wireShares[gateNum] != out_shares[0]) {
+                //printf("and gate output failed\n");
                 verified = false;
             } 
             return out;
@@ -63,9 +66,11 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
             memcpy(b_shares, (uint8_t *)&b, 2 * sizeof(uint32_t));
             if (views[0]->wireShares[gateNum] != a_shares[0]) {
+                //printf("xor gate input (v0) failed\n");
                 verified = false;
             }
             if (views[1]->wireShares[gateNum] != b_shares[0]) {
+                //printf("xor gate input (v1) failed\n");
                 verified = false;
             }
             v->AddShares(a_shares, b_shares, out_shares);
@@ -73,6 +78,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
             if (views[0]->wireShares[gateNum] != out_shares[0]) {
+                //printf("xor gate output failed\n");
                 verified = false;
             } 
             return out;
@@ -85,6 +91,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t out_shares[2];
             memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
             if (views[0]->wireShares[gateNum] != a_shares[0]) {
+                //printf("not gate input failed\n");
                 verified = false;
             } 
             v->AddConst(a_shares, 1, out_shares);
@@ -92,6 +99,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
             if (views[0]->wireShares[gateNum] != out_shares[0]) {
+                //printf("not gate output failed\n");
                 verified = false;
             } 
             return out;

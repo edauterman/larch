@@ -46,7 +46,8 @@ int main() {
     // TODO use real params
     string circuitFile = circuit_file_location+"/bristol_format/sha-256.txt";
     cout << circuitFile << endl;
-    uint8_t *w = NULL;
+    // TODO: should actually be 512/8
+    uint8_t *w = (uint8_t *)malloc(512/8);
     int wLen = 0;
     Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
