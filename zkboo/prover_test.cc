@@ -46,7 +46,7 @@ int main() {
     // TODO use real params
     string circuitFile = circuit_file_location+"/bristol_format/sha-256.txt";
     cout << circuitFile << endl;
-    uint64_t *w = NULL;
+    uint32_t *w = NULL;
     int wLen = 0;
     Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 

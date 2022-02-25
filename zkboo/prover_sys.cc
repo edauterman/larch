@@ -4,6 +4,7 @@
 #include <emp-tool/emp-tool.h>
 #include "emp-tool/execution/circuit_execution.h"
 #include <vector>
+#include <string>
 
 #include <openssl/rand.h>
 
@@ -16,13 +17,13 @@ using namespace std;
 using namespace emp;
 
 //template<typename IO>
-void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView *> &views, uint64_t *out, int outLen) {
+void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[]) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
     block* a = new block[512];
  	block* b = NULL;
  	//block* b = new block[0];
-    block* c = new block[256];
+    //block* c = new block[256];
  
 
         // TODO: need to pass in prover randomness???
@@ -32,7 +33,7 @@ void GenViews(string circuitFile, uint64_t *w, int wLen, vector<CircuitView *> &
         BristolFormat cf(f);
         printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
         //CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
-        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>();
+        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds);
         CircuitExecution::circ_exec = ex;
         //block* a = new block[128];
     	//block* b = new block[128];
@@ -68,12 +69,34 @@ void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
     }
 }
 
-void Prove(string circuitFile, uint64_t *w, int wLen, Proof &proof) {
+void Prove(string circuitFile, uint32_t *w, int wLen, Proof &proof) {
     vector<CircuitView *> views;
-    uint64_t out[8];
+    int out_len = 256;
+    block *out = new block[out_len];
+    int len = 512;
+    block *wShares = (block *)malloc(len * sizeof(block));
+    uint32_t *indivShares[3];
+    for (int i = 0; i < 3; i++) {
+        indivShares[i] = (uint32_t *)malloc(len * sizeof(uint32_t));
+    }
+    for (int i = 0; i < len; i++) {
+        RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
+        RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ w[i];
+        for (int j = 0; j < 3; j++) {
+            memcpy(((uint8_t *)&wShares[i]), (uint8_t *)&indivShares[0][i], sizeof(uint32_t));
+            memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));
+            memcpy(((uint8_t *)&wShares[i]) + 2 * sizeof(uint32_t), (uint8_t *)&indivShares[2][i], sizeof(uint32_t));
+        } 
+    }
     //currGate = 0;
     RandomOracle oracle;
-    GenViews(circuitFile, w, wLen, views, out, 8);
+    uint8_t *seeds[3];
+    for (int i = 0; i < 3; i++) {
+        seeds[i] = (uint8_t *)malloc(SHA256_DIGEST_LENGTH);
+        RAND_bytes(seeds[i], SHA256_DIGEST_LENGTH);
+    }
+    GenViews(circuitFile, wShares, len, views, out, 8, seeds);
     cout << "Generated views" << endl;
     CommitViews(views, proof.comms);
     cout << "Committed to views" << endl;
@@ -81,9 +104,19 @@ void Prove(string circuitFile, uint64_t *w, int wLen, Proof &proof) {
     proof.idx = oracle.GetRand(proof.comms) % WIRES;
     proof.views[0] = views[proof.idx];
     proof.views[1] = views[(proof.idx + 1) % WIRES];
-    // TODO: need some way to get random tapes into proof
-    //proof.rands[0] = rands[proof.idx];
-    //proof.rands[1] = rands[(proof.idx + 1) % WIRES];
+    memcpy(proof.rands[0].seed, seeds[proof.idx], SHA256_DIGEST_LENGTH);
+    memcpy(proof.rands[1].seed, seeds[(proof.idx + 1) % 3], SHA256_DIGEST_LENGTH);
+
+    proof.w[0] = (uint8_t *)malloc(len * sizeof(uint32_t));
+    proof.w[1] = (uint8_t *)malloc(len * sizeof(uint32_t));
+    memcpy(proof.w[0], indivShares[proof.idx], len * sizeof(uint32_t));
+    memcpy(proof.w[1], indivShares[(proof.idx + 1) % 3], len * sizeof(uint32_t));
+    proof.outShares[0] = (uint8_t *)malloc(out_len * sizeof(uint32_t));
+    proof.outShares[1] = (uint8_t *)malloc(out_len * sizeof(uint32_t));
+    for (int i = 0; i < out_len; i++) {
+        memcpy(((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
+        memcpy(((uint8_t *)&proof.outShares[1]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+    }
 /*
     proof.w[0] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
     proof.w[1] = (uint8_t *)malloc(spec.m * sizeof(uint8_t));
@@ -97,7 +130,7 @@ void Prove(string circuitFile, uint64_t *w, int wLen, Proof &proof) {
         proof.outShares[1][i] = out[i].shares[(proof.idx + 1) % WIRES];
         proof.out[i] = (out[i].shares[0] + out[i].shares[1] + out[i].shares[2]) % 2;
         printf("output[%d] = %d\n", i, proof.out[i]);
-    }
-*/
+    }*/
+
 }
 

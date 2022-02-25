@@ -14,14 +14,15 @@ class ZKBooCircExecProver : public CircuitExecution {
     public:
         uint64_t and_ct = 0;
         //int wireIdx;
-        Prover p;
+        Prover *p;
         CircuitView *view[3];
 
-        ZKBooCircExecProver() {
+        ZKBooCircExecProver(uint8_t *seeds[]) {
             printf("constructor\n");
             for (int i = 0; i < 3; i++) {
                 view[i] = new CircuitView();
             }
+            p = new Prover(seeds);
         }
 
 
@@ -29,13 +30,13 @@ class ZKBooCircExecProver : public CircuitExecution {
 
         block and_gate(const block &a, const block &b) override {
             and_ct++;
-            printf("and gate\n");
+            //printf("and gate\n");
             uint32_t a_shares[3];
             uint32_t b_shares[3];
             uint32_t out_shares[3];
             memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
-            p.MultShares(a_shares, b_shares, out_shares);
+            p->MultShares(a_shares, b_shares, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             for (int i = 0; i < 3; i++) {
@@ -46,13 +47,13 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         block xor_gate(const block &a, const block &b) override {
-            printf("xor gate\n");
+            //printf("xor gate\n");
             uint32_t a_shares[3];
             uint32_t b_shares[3];
             uint32_t out_shares[3];
             memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
-            p.AddShares(a_shares, b_shares, out_shares);
+            p->AddShares(a_shares, b_shares, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             for (int i = 0; i < 3; i++) {
@@ -62,12 +63,12 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         block not_gate(const block &a) override {
-            printf("not\n");
+            //printf("not\n");
             uint32_t a_shares[3];
             uint32_t b_shares[3];
             uint32_t out_shares[3];
             memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
-            p.AddConst(a_shares, 1, out_shares);
+            p->AddConst(a_shares, 1, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             for (int i = 0; i < 3; i++) {
@@ -82,7 +83,7 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         block public_label(bool b) override {
-            printf("label\n");
+            //printf("label\n");
             return makeBlock(0,0);
         }
 };

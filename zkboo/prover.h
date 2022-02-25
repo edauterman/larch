@@ -50,7 +50,7 @@ class Proof {
 
 class Prover {
     public:
-        Prover();
+        Prover(uint8_t *seeds[]);
         
         void AddConst(WireVal &in, uint8_t alpha, WireVal &out);
         void MultConst(WireVal &in, uint8_t alpha, WireVal &out);

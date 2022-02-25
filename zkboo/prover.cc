@@ -40,8 +40,11 @@ uint8_t RandomOracle::GetRand(CircuitComm *in) {
     return out;
 }
 
-Prover::Prover() {
+Prover::Prover(uint8_t *seeds[]) {
     currGate = 0;
+    for (int i = 0; i < 3; i++) {
+        memcpy(rands[i].seed, seeds[i], SHA256_DIGEST_LENGTH);
+    }
 }
 
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
@@ -57,7 +60,6 @@ void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
 
 void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    printf("add shares\n");
     for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             bool aBit = GetBit(a[i], bit);
@@ -69,7 +71,6 @@ void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
 
 void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    printf("mult shares\n");
     for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             bool a0Bit = GetBit(a[i], bit);
