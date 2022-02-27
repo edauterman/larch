@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <openssl/evp.h>
+#include <openssl/sha.h>
 
 #include "view.h"
 #include "prover.h"
@@ -31,8 +33,8 @@ int main() {
     cout << circuitFile << endl;
     // TODO: should actually be 512/8
     uint8_t *w = (uint8_t *)malloc(512/8);
-    int wLen = 0;
-    memset(w, 0xa, wLen);
+    int wLen = 512;
+    memset(w, 0xff, wLen / 8);
     Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
     bool check = Verify(circuitFile, pi);
@@ -41,6 +43,18 @@ int main() {
     } else {
         cout << "Proof FAILED to verify" << endl;
     }
+
+    uint8_t buf[SHA256_DIGEST_LENGTH];
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+    EVP_DigestUpdate(mdctx, w, 512/8);
+    EVP_DigestFinal(mdctx, buf, NULL);
+    printf("CORRECT OUTPUT len %d: ", SHA256_DIGEST_LENGTH);
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        printf("%x", buf[i]);
+    }
+    printf("\n");
+
     free(w);
     printf("at end\n");
 }

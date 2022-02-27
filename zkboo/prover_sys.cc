@@ -106,16 +106,15 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
     printf("going to do shares of w\n");
     for (int i = 0; i < len; i++) {
         // individual shares of bits
+        printf("input = %x %d\n", w[i / 8], GetBit(w[i/8], i % 8));
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[0][i] = indivShares[0][i] % 2;
         indivShares[1][i] = indivShares[1][i] % 2;
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/(8 * sizeof(uint32_t))], i % (8 * sizeof(uint32_t)));
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/8], i%8);
         for (int j = 0; j < 3; j++) {
             SetWireNum(&indivShares[j][i], i);
             memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
-            //memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));
-            //memcpy(((uint8_t *)&wShares[i]) + 2 * sizeof(uint32_t), (uint8_t *)&indivShares[2][i], sizeof(uint32_t));
         }
        printf("(%d, %d, %d) ", indivShares[0][i], indivShares[1][i], indivShares[2][i]); 
     }
@@ -168,7 +167,8 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
         for (int j = 0; j < 3; j++) {
             shares[j] = *(((uint32_t *)&out[i]) + j);
         }
-        printf("%d %d %d -> %d\n ", shares[0], shares[1], shares[2], (shares[0] + shares[1] + shares[2]) % 2);
+        //printf("%d %d %d -> %d\n ", shares[0], shares[1], shares[2], (shares[0] + shares[1] + shares[2]) % 2);
+        printf("%d", (shares[0] + shares[1] + shares[2]) % 2);
     }
     printf("\n");
 }
