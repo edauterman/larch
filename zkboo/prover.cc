@@ -91,8 +91,8 @@ void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
             bool a1Bit = GetBit(a[(i+1)%3], bit);
             bool b0Bit = GetBit(b[i], bit);
             bool b1Bit = GetBit(b[(i+1)%3], bit);
-            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)) % 2;
-                   // + rands[i].GetRand(currGate) - rands[(i+1)%3].GetRand(currGate)) % 2;
+            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
+                    + rands[i].GetRand(currGate) - rands[(i+1)%3].GetRand(currGate)) % 2;
             SetBit(&out[i], bit, res);
         }
     }
