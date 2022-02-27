@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdint.h>
 #include <openssl/sha.h>
+#include <map>
 
 #define WIRES 3
 
@@ -23,15 +24,9 @@ class CircuitComm {
 
 class CircuitView {
     public:
-        vector<uint64_t> wireShares;
+        map<uint32_t, uint32_t> wireMap;
 
         void Commit(CircuitComm &comm);
-};
-
-class CircuitViews {
-    public:
-        vector<WireVal> wires;
-        CircuitView GetView(int idx);
 };
 
 #endif

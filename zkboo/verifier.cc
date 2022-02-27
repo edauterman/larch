@@ -37,6 +37,7 @@ void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     for (int bit = 0; bit < 1; bit++) {
     //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 1; i++) {
+            out[i] = 0;
             bool aBit = GetBit(a[i], bit);
             bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
             SetBit(&out[i], bit, res);
@@ -49,6 +50,7 @@ void Verifier::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     for (int bit = 0; bit < 1; bit++) {
     //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 1; i++) {
+            out[i] = 0;
             bool aBit = GetBit(a[i], bit);
             bool bBit = GetBit(b[i], bit);
             SetBit(&out[i], bit, (aBit + bBit) % 2);
@@ -61,11 +63,13 @@ void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     for (int bit = 0; bit < 1; bit++) {
     //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 1; i++) {
+            out[i] = 0;
             bool a0Bit = GetBit(a[i], bit);
             bool a1Bit = GetBit(a[(i+1)], bit);
             bool b0Bit = GetBit(b[i], bit);
             bool b1Bit = GetBit(b[(i+1)], bit);
-            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit) + rands[i].GetRand(currGate) - rands[(i+1)].GetRand(currGate)) % 2;
+            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)) % 2;
+                   // + rands[i].GetRand(currGate) - rands[(i+1)].GetRand(currGate)) % 2;
             SetBit(&out[i], bit, res);
         }
     }
@@ -108,7 +112,7 @@ bool Verify(string circuitFile, Proof &proof) {
 
     FILE *f = fopen(circuitFile.c_str(), "r");
     BristolFormat cf(f);
-    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views);
+    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len);
     CircuitExecution::circ_exec = ex;
     cf.compute(out, w, b);
     if (ex->verified) {

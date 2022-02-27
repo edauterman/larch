@@ -28,6 +28,14 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
     }
 }
 /*
+static inline void SetWireNum(uint32_t *x, uint32_t wireNum) {
+    *x = *x | (wireNum << 1);
+}
+
+static inline uint32_t GetWireNum(uint32_t x) {
+    return x >> 1;
+}*/
+/*
 static inline void SetBit(uint32_t *x, int bit, bool val) {
     *x = *x || (val << bit);
 }*/
@@ -48,7 +56,7 @@ void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &vie
         BristolFormat cf(f);
         printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
         //CircuitExecution::circ_exec = new ZKBooCircExecProver<AbandonIO>(aio, i);
-        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds);
+        ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen);
         CircuitExecution::circ_exec = ex;
         //block* a = new block[128];
     	//block* b = new block[128];
@@ -104,6 +112,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
         indivShares[1][i] = indivShares[1][i] % 2;
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/(8 * sizeof(uint32_t))], i % (8 * sizeof(uint32_t)));
         for (int j = 0; j < 3; j++) {
+            SetWireNum(&indivShares[j][i], i);
             memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             //memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));
             //memcpy(((uint8_t *)&wShares[i]) + 2 * sizeof(uint32_t), (uint8_t *)&indivShares[2][i], sizeof(uint32_t));
