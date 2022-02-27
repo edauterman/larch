@@ -84,7 +84,6 @@ void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
 void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     for (int bit = 0; bit < 1; bit++) {
-    //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             out[i] = 0;
             bool a0Bit = GetBit(a[i], bit);

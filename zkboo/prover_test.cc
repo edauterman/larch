@@ -34,7 +34,7 @@ int main() {
     // TODO: should actually be 512/8
     uint8_t *w = (uint8_t *)malloc(512/8);
     int wLen = 512;
-    memset(w, 0xff, wLen / 8);
+    memset(w, 0, wLen / 8);
     Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
     bool check = Verify(circuitFile, pi);
@@ -43,6 +43,7 @@ int main() {
     } else {
         cout << "Proof FAILED to verify" << endl;
     }
+    cout << "location = " << circuitFile << endl;
 
     uint8_t buf[SHA256_DIGEST_LENGTH];
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
