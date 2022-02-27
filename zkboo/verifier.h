@@ -14,7 +14,7 @@ using namespace std;
 
 class Verifier {
     public:
-        Verifier(RandomSource rands[]);
+        Verifier(RandomSource rands[], int idx);
 
         void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
         void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
@@ -23,6 +23,7 @@ class Verifier {
     private:
         RandomSource rands[2];
         int currGate;
+        int idx;
 };
 
 bool Verify(string circuitFile, Proof &proof);

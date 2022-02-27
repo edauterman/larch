@@ -26,10 +26,11 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
 
 // QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
 
-Verifier::Verifier(RandomSource in_rands[]) {
+Verifier::Verifier(RandomSource in_rands[], int in_idx) {
     rands[0] = in_rands[0];
     rands[1] = in_rands[1];
     currGate = 0;
+    idx = in_idx;
 }
 
 void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
@@ -39,7 +40,7 @@ void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
         for (int i = 0; i < 1; i++) {
             out[i] = 0;
             bool aBit = GetBit(a[i], bit);
-            bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
+            bool res = idx + i == 0 ? (aBit + alpha) % 2 : aBit;
             SetBit(&out[i], bit, res);
         }
     }
@@ -112,7 +113,7 @@ bool Verify(string circuitFile, Proof &proof) {
 
     FILE *f = fopen(circuitFile.c_str(), "r");
     BristolFormat cf(f);
-    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len);
+    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
     CircuitExecution::circ_exec = ex;
     cf.compute(out, w, b);
     if (ex->verified) {
