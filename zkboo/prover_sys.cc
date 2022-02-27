@@ -21,8 +21,16 @@ static inline bool GetBit(uint32_t x, int bit) {
 }
 
 static inline void SetBit(uint32_t *x, int bit, bool val) {
-    *x = *x || (val << bit);
+    if (val == 0) {
+        *x = *x & (val << bit);
+    } else {
+        *x = *x | (val << bit);
+    }
 }
+/*
+static inline void SetBit(uint32_t *x, int bit, bool val) {
+    *x = *x || (val << bit);
+}*/
 
 //template<typename IO>
 void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[]) {
@@ -94,14 +102,13 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[0][i] = indivShares[0][i] % 2;
         indivShares[1][i] = indivShares[1][i] % 2;
-        printf("before - %d, %d\n", i/(8 * sizeof(uint32_t)), i % (8 * sizeof(uint32_t)));
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ GetBit(w[i/(8 * sizeof(uint32_t))], i % (8 * sizeof(uint32_t)));
-        printf("did indiv shares %d/%d\n", i, len);
         for (int j = 0; j < 3; j++) {
-            memcpy(((uint8_t *)&wShares[i]), (uint8_t *)&indivShares[0][i], sizeof(uint32_t));
-            memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));
-            memcpy(((uint8_t *)&wShares[i]) + 2 * sizeof(uint32_t), (uint8_t *)&indivShares[2][i], sizeof(uint32_t));
-        } 
+            memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
+            //memcpy(((uint8_t *)&wShares[i]) + sizeof(uint32_t), (uint8_t *)&indivShares[1][i], sizeof(uint32_t));
+            //memcpy(((uint8_t *)&wShares[i]) + 2 * sizeof(uint32_t), (uint8_t *)&indivShares[2][i], sizeof(uint32_t));
+        }
+       printf("(%d, %d, %d) ", indivShares[0][i], indivShares[1][i], indivShares[2][i]); 
     }
     printf("finished shares of w\n");
     //currGate = 0;
@@ -118,22 +125,42 @@ void Prove(string circuitFile, uint8_t *w, int wLen, Proof &proof) {
     cout << "Committed to views" << endl;
     
     proof.idx = oracle.GetRand(proof.comms) % WIRES;
+    printf("IDX = %d\n", proof.idx);
     proof.views[0] = views[proof.idx];
     proof.views[1] = views[(proof.idx + 1) % WIRES];
     memcpy(proof.rands[0].seed, seeds[proof.idx], SHA256_DIGEST_LENGTH);
     memcpy(proof.rands[1].seed, seeds[(proof.idx + 1) % 3], SHA256_DIGEST_LENGTH);
 
-    proof.w[0] = (uint8_t *)malloc(len * sizeof(uint32_t));
+    proof.w[0] = indivShares[proof.idx];
+    proof.w[1] = indivShares[(proof.idx + 1) % 3];
+/*    proof.w[0] = (uint8_t *)malloc(len * sizeof(uint32_t));
     proof.w[1] = (uint8_t *)malloc(len * sizeof(uint32_t));
     memcpy(proof.w[0], indivShares[proof.idx], len * sizeof(uint32_t));
-    memcpy(proof.w[1], indivShares[(proof.idx + 1) % 3], len * sizeof(uint32_t));
+    memcpy(proof.w[1], indivShares[(proof.idx + 1) % 3], len * sizeof(uint32_t));*/
+    printf("reading indiv shares: ");
+    for (int i = 0; i < len; i++) {
+        printf("(%d %d) ", indivShares[proof.idx][i], indivShares[(proof.idx + 1) % 3][i]);
+    }
+    printf("\n");
+    printf("writing witness shares: ");
+    for (int i = 0; i < len; i++) {
+        printf("(%d %d) ", proof.w[0][i], proof.w[1][i]);
+    }
+    printf("\n");
     proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
+    printf("output: ");
     for (int i = 0; i < out_len; i++) {
         memcpy(((uint8_t *)&proof.outShares[0][i]), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         //memcpy(((uint8_t *)&proof.outShares[0]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         memcpy(((uint8_t *)&proof.outShares[1][i]), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
         //memcpy(((uint8_t *)&proof.outShares[1]) + (i * sizeof(uint32_t)), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+        uint32_t shares[3];
+        for (int j = 0; j < 3; j++) {
+            shares[j] = *(((uint32_t *)&out[i]) + j);
+        }
+        printf("%d %d %d -> %d\n ", shares[0], shares[1], shares[2], (shares[0] + shares[1] + shares[2]) % 2);
     }
+    printf("\n");
 }
 

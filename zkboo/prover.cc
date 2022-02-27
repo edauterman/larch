@@ -17,7 +17,11 @@ static inline bool GetBit(uint32_t x, int bit) {
 }
 
 static inline void SetBit(uint32_t *x, int bit, bool val) {
-    *x = *x || (val << bit);
+    if (val == 0) {    
+        *x = *x & (val << bit);
+    } else {
+        *x = *x | (val << bit);
+    }
 }
 
 RandomSource::RandomSource() {
@@ -50,12 +54,16 @@ Prover::Prover(uint8_t *seeds[]) {
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
     for (int bit = 0; bit < 1; bit++) {
-    //for (int bit = 0; bit < 32; bit++) {
+        //printf("NOT (inner) ");
+        //for (int bit = 0; bit < 32; bit++) {
         for (int i = 0; i < 3; i++) {
             bool aBit = GetBit(a[i], bit);
             bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
+            //printf("%d -> %d ; ", aBit, res);
             SetBit(&out[i], bit, res);
+            //printf(" (%d) ", out[i]);
         }
+        //printf("\n");
     }
 }
 

@@ -42,6 +42,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             for (int i = 0; i < 3; i++) {
                 view[i]->wireShares.push_back(out_shares[i]);
             }
+            //printf("AND %d %d -> %d\n", (a_shares[0] + a_shares[1] + a_shares[2]) % 2, (b_shares[0] + b_shares[1] + b_shares[2]) % 2, (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
             //return a;
         }
@@ -59,6 +60,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             for (int i = 0; i < 3; i++) {
                 view[i]->wireShares.push_back(out_shares[i]);
             }
+            //printf("XOR %d %d -> %d\n", (a_shares[0] + a_shares[1] + a_shares[2]) % 2, (b_shares[0] + b_shares[1] + b_shares[2]) % 2, (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
         }
 
@@ -74,6 +76,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             for (int i = 0; i < 3; i++) {
                 view[i]->wireShares.push_back(out_shares[i]);
             }
+            //printf("NOT (%d, %d, %d) %d -> (%d, %d, %d) %d\n", a_shares[0], a_shares[1], a_shares[2], (a_shares[0] + a_shares[1] + a_shares[2]) % 2,  out_shares[0], out_shares[1], out_shares[2], (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
             //return a;
         }

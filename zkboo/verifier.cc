@@ -17,7 +17,11 @@ static inline bool GetBit(uint32_t x, int bit) {
 }
 
 static inline void SetBit(uint32_t *x, int bit, bool val) {
-    *x = *x || (val << bit);
+    if (val == 0) {
+        *x = *x & (val << bit);
+    } else {
+        *x = *x | (val << bit);
+    }
 }
 
 // QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
@@ -99,6 +103,7 @@ bool Verify(string circuitFile, Proof &proof) {
     for (int i = 0; i < in_len; i++) {
         memcpy((uint8_t *)&w[i], (uint8_t *)&proof.w[0][i], sizeof(uint32_t));
         memcpy((uint8_t *)&w[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
+        printf("(%d %d) ", proof.w[0][i], proof.w[1][i]);
     }
 
     FILE *f = fopen(circuitFile.c_str(), "r");
@@ -106,6 +111,13 @@ bool Verify(string circuitFile, Proof &proof) {
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views);
     CircuitExecution::circ_exec = ex;
     cf.compute(out, w, b);
+    if (ex->verified) {
+        printf("VERIFIED\n");
+        return true;
+    } else {
+        printf("verification flag set false\n");
+        return false;
+    }
 
     // TODO check output lines up
     

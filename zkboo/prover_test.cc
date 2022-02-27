@@ -32,6 +32,7 @@ int main() {
     // TODO: should actually be 512/8
     uint8_t *w = (uint8_t *)malloc(512/8);
     int wLen = 0;
+    memset(w, 0xa, wLen);
     Prove(circuitFile, w, wLen, pi);
     cout << "Finished proving" << endl; 
     bool check = Verify(circuitFile, pi);

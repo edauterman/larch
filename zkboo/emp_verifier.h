@@ -50,6 +50,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
+            //printf("AND compare %d and %d\n", views[0]->wireShares[gateNum], out_shares[0]);
             if (views[0]->wireShares[gateNum] != out_shares[0]) {
                 //printf("and gate output failed\n");
                 verified = false;
@@ -77,6 +78,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
+            //printf("XOR compare %d and %d\n", views[0]->wireShares[gateNum], out_shares[0]);
             if (views[0]->wireShares[gateNum] != out_shares[0]) {
                 //printf("xor gate output failed\n");
                 verified = false;
@@ -98,6 +100,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
+            //printf("NOT compare %d and %d\n", views[0]->wireShares[gateNum], out_shares[0]);
             if (views[0]->wireShares[gateNum] != out_shares[0]) {
                 //printf("not gate output failed\n");
                 verified = false;
