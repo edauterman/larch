@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <openssl/rand.h>
+#include <openssl/evp.h>
 
 #include "prover.h"
 #include "common.h"
@@ -13,7 +14,7 @@ using namespace std;
 using namespace emp;
 
 static inline bool GetBit(uint32_t x, int bit) {
-    return (bool)(x & (1 << bit));
+    return (bool)((x & (1 << bit)) >> bit);
 }
 
 static inline void SetBit(uint32_t *x, int bit, bool val) {
@@ -24,18 +25,36 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
     }
 }
 
-RandomSource::RandomSource() {
-    RAND_bytes(seed, SHA256_DIGEST_LENGTH);
+RandomSource::RandomSource(uint8_t *in_seed, int numRands) {
+    memcpy(seed, in_seed, 16);
+    //RAND_bytes(seed, 16);
+
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(ctx);
+
+    uint8_t iv[16];
+    uint8_t pt[16];
+    memset(iv, 0, 16);
+    memset(pt, 0, 16);
+    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
+    int len;
+    randomness = (uint8_t *)malloc(numRands / 8 + 16);
+    for (int i = 0; i < numRands / (8 * 16) + 1; i++) {
+        EVP_EncryptUpdate(ctx, &randomness[i * 16], &len, pt, 16);
+    }
+    EVP_CIPHER_CTX_free(ctx);
 }
 
 uint8_t RandomSource::GetRand(int gate) {
+    return GetBit(randomness[gate/8], gate%8);
+    /*return 1;
     int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
     buf[0] = gate;
     //buf[1] = wireIdx % 3;
     memcpy((uint8_t *)(buf + 1), seed, SHA256_DIGEST_LENGTH);
     uint8_t out;
     hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, sizeof(int) + SHA256_DIGEST_LENGTH);
-    return (out) % 2;
+    return (out) % 2;*/
 }
 
 uint8_t RandomOracle::GetRand(CircuitComm *in) {
@@ -44,57 +63,49 @@ uint8_t RandomOracle::GetRand(CircuitComm *in) {
     return out;
 }
 
-Prover::Prover(uint8_t *seeds[]) {
+Prover::Prover(uint8_t *seeds[], int numRands) {
     currGate = 0;
+    numAnds = 0;
     for (int i = 0; i < 3; i++) {
-        memcpy(rands[i].seed, seeds[i], SHA256_DIGEST_LENGTH);
+        rands[i] = new RandomSource(seeds[i], numRands);
+        //memcpy(rands[i].seed, seeds[i], SHA256_DIGEST_LENGTH);
     }
 }
 
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 1; bit++) {
-        //printf("NOT (inner) ");
-        //for (int bit = 0; bit < 32; bit++) {
-        for (int i = 0; i < 3; i++) {
-            out[i] = 0;
-            bool aBit = GetBit(a[i], bit);
-            bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
-            //printf("%d -> %d ; ", aBit, res);
-            SetBit(&out[i], bit, res);
-            //printf(" (%d) ", out[i]);
-        }
-        //printf("\n");
+    int bit = 0;
+    for (int i = 0; i < 3; i++) {
+        out[i] = 0;
+        bool aBit = GetBit(a[i], bit);
+        bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
+        SetBit(&out[i], bit, res);
     }
 }
 
 void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 1; bit++) {
-    //for (int bit = 0; bit < 32; bit++) {
-        for (int i = 0; i < 3; i++) {
-            out[i] = 0;
-            bool aBit = GetBit(a[i], bit);
-            bool bBit = GetBit(b[i], bit);
-            SetBit(&out[i], bit, (aBit + bBit) % 2);
-        }
+    int bit = 0;
+    for (int i = 0; i < 3; i++) {
+        out[i] = 0;
+        SetBit(&out[i], bit, ((a[i] & 1) + (b[i] & 1)) % 2);
     }
 }
 
 void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 1; bit++) {
-        for (int i = 0; i < 3; i++) {
-            out[i] = 0;
-            bool a0Bit = GetBit(a[i], bit);
-            bool a1Bit = GetBit(a[(i+1)%3], bit);
-            bool b0Bit = GetBit(b[i], bit);
-            bool b1Bit = GetBit(b[(i+1)%3], bit);
-            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
-                    + rands[i].GetRand(currGate) - rands[(i+1)%3].GetRand(currGate)) % 2;
-            SetBit(&out[i], bit, res);
-        }
+    int bit = 0;    
+    for (int i = 0; i < 3; i++) {
+        out[i] = 0;
+        bool a0Bit = a[i] & 1;
+        bool a1Bit = a[(i+1)%3] & 1;
+        bool b0Bit = b[i] & 1;
+        bool b1Bit = b[(i+1)%3] & 1;
+        bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
+                + rands[i]->GetRand(numAnds) - rands[(i+1)%3]->GetRand(numAnds)) % 2;
+        SetBit(&out[i], bit, res);
     }
+    numAnds++;
 }
 
 /*

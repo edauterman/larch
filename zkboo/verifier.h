@@ -14,15 +14,16 @@ using namespace std;
 
 class Verifier {
     public:
-        Verifier(RandomSource rands[], int idx);
+        Verifier(RandomSource *rands[], int idx);
 
         void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
         void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
         void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
     private:
-        RandomSource rands[2];
+        RandomSource *rands[2];
         int currGate;
+        int numAnds;
         int idx;
 };
 

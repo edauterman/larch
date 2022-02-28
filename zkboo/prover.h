@@ -24,9 +24,10 @@ class CircuitSpec {
 
 class RandomSource {
     public:
-        uint8_t seed[SHA256_DIGEST_LENGTH];
+        uint8_t seed[16];
+        uint8_t *randomness;
 
-        RandomSource();
+        RandomSource(uint8_t *seed, int numRands);
         uint8_t GetRand(int gate);
         //uint8_t GetRand(int gate, int wireIdx);
 };
@@ -40,7 +41,7 @@ class Proof {
     public:
         CircuitComm comms[3];
         CircuitView *views[2];
-        RandomSource rands[2];
+        RandomSource *rands[2];
         uint32_t *w[2];
         uint32_t *outShares[2];
         uint8_t *out;
@@ -50,7 +51,7 @@ class Proof {
 
 class Prover {
     public:
-        Prover(uint8_t *seeds[]);
+        Prover(uint8_t *seeds[], int numRands);
         
         void AddConst(WireVal &in, uint8_t alpha, WireVal &out);
         void MultConst(WireVal &in, uint8_t alpha, WireVal &out);
@@ -65,9 +66,10 @@ class Prover {
         //void GenViews(CircuitSpec &spec, WireVal w[], CircuitViews &views, WireVal out[]);
         //void CommitViews(CircuitViews &views, CircuitComm *comms);
         //void Prove(CircuitSpec &spec, WireVal w[], Proof &proof);
+        int numAnds;
     private:
         RandomOracle oracle;
-        RandomSource rands[WIRES];
+        RandomSource *rands[3];
         int currGate;
 };
 

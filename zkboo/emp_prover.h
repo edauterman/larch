@@ -25,17 +25,21 @@ class ZKBooCircExecProver : public CircuitExecution {
         CircuitView *view[3];
         int nextWireNum;
 
-        ZKBooCircExecProver(uint8_t *seeds[], block *w, int wLen) {
+        ZKBooCircExecProver(uint8_t *seeds[], block *w, int wLen, int numRands) {
             for (int i = 0; i < 3; i++) {
                 view[i] = new CircuitView();
             }
-            p = new Prover(seeds);
+            p = new Prover(seeds, numRands);
             for (int i = 0; i < wLen; i++) {
                 for (int j = 0; j < 3; j++) {
                     view[j]->wireMap[GetWireNum(*(uint32_t *)&w[i])] = *(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1;
                 }
             }
             nextWireNum = wLen;
+        }
+
+        ~ZKBooCircExecProver() {
+            printf("Num ands: %d\n", p->numAnds);
         }
 
 

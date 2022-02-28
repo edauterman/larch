@@ -13,7 +13,7 @@ using namespace std;
 using namespace emp;
 
 static inline bool GetBit(uint32_t x, int bit) {
-    return (bool)(x & (1 << bit));
+    return (bool)((x & (1 << bit)) >> bit);
 }
 
 static inline void SetBit(uint32_t *x, int bit, bool val) {
@@ -26,54 +26,46 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
 
 // QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
 
-Verifier::Verifier(RandomSource in_rands[], int in_idx) {
+Verifier::Verifier(RandomSource *in_rands[], int in_idx) {
     rands[0] = in_rands[0];
     rands[1] = in_rands[1];
     currGate = 0;
     idx = in_idx;
+    numAnds = 0;
 }
 
 void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 1; bit++) {
-    //for (int bit = 0; bit < 32; bit++) {
-        for (int i = 0; i < 1; i++) {
-            out[i] = 0;
-            bool aBit = GetBit(a[i], bit);
-            bool res = idx + i == 0 ? (aBit + alpha) % 2 : aBit;
-            SetBit(&out[i], bit, res);
-        }
+
+    for (int i = 0; i < 1; i++) {
+        out[i] = 0;
+        bool aBit = a[i] & 1;
+        bool res = idx + i == 0 ? (aBit + alpha) % 2 : aBit;
+        SetBit(&out[i], 0, res);
     }
 }
 
 void Verifier::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 1; bit++) {
-    //for (int bit = 0; bit < 32; bit++) {
-        for (int i = 0; i < 1; i++) {
-            out[i] = 0;
-            bool aBit = GetBit(a[i], bit);
-            bool bBit = GetBit(b[i], bit);
-            SetBit(&out[i], bit, (aBit + bBit) % 2);
-        }
+    for (int i = 0; i < 1; i++) {
+        out[i] = 0;
+        SetBit(&out[i], 0, ((a[i] & 1) + (b[i] & 1)) % 2);
     }
 }
 
 void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int bit = 0; bit < 1; bit++) {
-    //for (int bit = 0; bit < 32; bit++) {
-        for (int i = 0; i < 1; i++) {
-            out[i] = 0;
-            bool a0Bit = GetBit(a[i], bit);
-            bool a1Bit = GetBit(a[(i+1)], bit);
-            bool b0Bit = GetBit(b[i], bit);
-            bool b1Bit = GetBit(b[(i+1)], bit);
-            bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
-                   + rands[i].GetRand(currGate) - rands[(i+1)].GetRand(currGate)) % 2;
-            SetBit(&out[i], bit, res);
-        }
+    for (int i = 0; i < 1; i++) {
+        out[i] = 0;
+        bool a0Bit = a[i] & 1;
+        bool a1Bit = a[i+1] & 1;
+        bool b0Bit = b[i] & 1;
+        bool b1Bit = b[i+1] & 1;
+        bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
+                + rands[i]->GetRand(numAnds) - rands[(i+1)]->GetRand(numAnds)) % 2;
+        SetBit(&out[i], 0, res);
     }
+    numAnds++;
 }
 
 bool Verify(string circuitFile, Proof &proof) {
