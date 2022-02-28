@@ -26,7 +26,6 @@ class ZKBooCircExecProver : public CircuitExecution {
         int nextWireNum;
 
         ZKBooCircExecProver(uint8_t *seeds[], block *w, int wLen) {
-            printf("constructor\n");
             for (int i = 0; i < 3; i++) {
                 view[i] = new CircuitView();
             }

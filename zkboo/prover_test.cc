@@ -43,7 +43,6 @@ int main() {
     } else {
         cout << "Proof FAILED to verify" << endl;
     }
-    cout << "location = " << circuitFile << endl;
 
     uint8_t buf[SHA256_DIGEST_LENGTH];
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
