@@ -13,7 +13,5 @@
 using namespace std;
 
 void CircuitView::Commit(CircuitComm &comm) {
-    printf("going to commit\n");
     hash_to_bytes(comm.digest, SHA256_DIGEST_LENGTH, (const uint8_t *)wires.data(), wires.size() * sizeof(uint8_t));
-    printf("committed\n");
 }
