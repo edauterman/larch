@@ -32,7 +32,8 @@ class ZKBooCircExecProver : public CircuitExecution {
             p = new Prover(seeds, numRands);
             for (int i = 0; i < wLen; i++) {
                 for (int j = 0; j < 3; j++) {
-                    view[j]->wireMap[GetWireNum(*(uint32_t *)&w[i])] = *(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1;
+                    view[j]->wires.push_back(*(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1);
+                    //view[j]->wires[GetWireNum(*(uint32_t *)&w[i])] = *(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1;
                 }
             }
             nextWireNum = wLen;
@@ -56,7 +57,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->MultShares(a_shares, b_shares, out_shares);
             block out;
             for (int i = 0; i < 3; i++) {
-                view[i]->wireMap[nextWireNum] = out_shares[i];
+                view[i]->wires.push_back(out_shares[i]);
                 SetWireNum(&out_shares[i], nextWireNum);
             }
             nextWireNum++;
@@ -76,7 +77,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->AddShares(a_shares, b_shares, out_shares);
             block out;
             for (int i = 0; i < 3; i++) {
-                view[i]->wireMap[nextWireNum] = out_shares[i];
+                view[i]->wires.push_back(out_shares[i]);
                 SetWireNum(&out_shares[i], nextWireNum);
             }
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
@@ -94,7 +95,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->AddConst(a_shares, 1, out_shares);
             block out;
             for (int i = 0; i < 3; i++) {
-                view[i]->wireMap[nextWireNum] = out_shares[i];
+                view[i]->wires.push_back(out_shares[i]);
                 SetWireNum(&out_shares[i], nextWireNum);
             }
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
