@@ -131,7 +131,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
     proof.w[1] = indivShares[(proof.idx + 1) % 3];
     proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
-    printf("output binary: ");
+    bool *bs = new bool[out_len];
     for (int i = 0; i < out_len; i++) {
         memcpy(((uint8_t *)&proof.outShares[0][i]), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         memcpy(((uint8_t *)&proof.outShares[1][i]), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
@@ -141,24 +141,14 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
             //shares[j] = *(((uint32_t *)&out[i]) + j);
         }
         //printf("%d %d %d -> %d\n ", shares[0], shares[1], shares[2], (shares[0] + shares[1] + shares[2]) % 2);
-        printf("%d", (shares[0]) % 2);
+        bs[i] = (shares[0] + shares[1] + shares[2]) % 2;
         //printf("%d", (shares[0] + shares[1] + shares[2]) % 2);
     }
-    printf("\n: output share 1: ");
-    for (int i = 0; i < out_len; i++) {
-        uint32_t shares[3];
-        for (int j = 0; j < 3; j++) {
-            memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[i]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
-        }
-        printf("%d", shares[1] % 2);
-    }
-    printf("\n output share 2: ");
-    for (int i = 0; i < out_len; i++) {
-        uint32_t shares[3];
-        for (int j = 0; j < 3; j++) {
-            memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[i]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
-        }
-        printf("%d", shares[2] % 2);
+    uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
+    from_bool(bs, output_bytes, out_len);
+    printf("output bytes: ");
+    for (int i = 0; i < out_len / 8; i++) {
+        printf("%x", output_bytes[i]);
     }
     printf("\n");
 }
