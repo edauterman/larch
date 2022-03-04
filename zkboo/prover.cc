@@ -101,8 +101,8 @@ void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
         bool a1Bit = a[(i+1)%3] & 1;
         bool b0Bit = b[i] & 1;
         bool b1Bit = b[(i+1)%3] & 1;
-        bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)) % 2;
-               // + rands[i]->GetRand(numAnds) - rands[(i+1)%3]->GetRand(numAnds)) % 2;
+        bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
+                + rands[i]->GetRand(numAnds) - rands[(i+1)%3]->GetRand(numAnds)) % 2;
         SetBit(&out[i], bit, res);
     }
     numAnds++;

@@ -42,7 +42,7 @@ int main() {
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = true; //Verify(circuitFile, pi);
+    bool check = Verify(circuitFile, pi);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

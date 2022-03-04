@@ -69,16 +69,16 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t out_shares[2];
             for (int i = 0; i < 2; i++) {
                 if (IsZeroWireNum(a)) {
-                    a_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                    a_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
                 } else if (IsOneWireNum(a)) {
-                    a_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                    a_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
                 } else {
                     a_shares[i] = views[i]->wires[GetWireNum(a)];
                 }
                 if (IsZeroWireNum(b)) {
-                    b_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                    b_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
                 } else if (IsOneWireNum(b)) {
-                    b_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                    b_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
                 } else {
                     b_shares[i] = views[i]->wires[GetWireNum(b)];
                 }
@@ -119,16 +119,16 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t out_shares[2];
             for (int i = 0; i < 2; i++) {
                 if (IsZeroWireNum(a)) {
-                    a_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                    a_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
                 } else if (IsOneWireNum(a)) {
-                    a_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                    a_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
                 } else {
                     a_shares[i] = views[i]->wires[GetWireNum(a)];
                 }
                 if (IsZeroWireNum(b)) {
-                    b_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                    b_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
                 } else if (IsOneWireNum(b)) {
-                    b_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                    b_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
                 } else {
                     b_shares[i] = views[i]->wires[GetWireNum(b)];
                 }
@@ -165,9 +165,9 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t out_shares[2];
             for (int i = 0; i < 2; i++) {
                 if (IsZeroWireNum(a)) {
-                    a_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                    a_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
                 } else if (IsOneWireNum(a)) {
-                    a_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                    a_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
                 } else {
                     a_shares[i] = views[i]->wires[GetWireNum(a)];
                 }
@@ -204,7 +204,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out = makeBlock(0,0);
             uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
-                shares[i] = i == 0 ? b : 1 - b;
+                shares[i] = b; 
                 if (b == 0) {
                     SetZeroWireNum(&shares[i]);
                 } else {

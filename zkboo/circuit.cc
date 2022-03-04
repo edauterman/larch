@@ -15,7 +15,7 @@ void hash_in_circuit(block output[], block input[], int len) {
     printf("just finished calc\n");
     //sha3_256_calc.sha3_256(output, input, len);
 
-    bool bs[256];
+    /*bool bs[256];
     for (int i = 0; i < 256; i++) {
         bs[i] = getLSB(output[i]);
     }
@@ -25,7 +25,7 @@ void hash_in_circuit(block output[], block input[], int len) {
     for (int i = 0; i < 32; i++) {
         printf("%x", output_bytes[i]);
     }
-    printf("\n");
+    printf("\n");*/
     //sha3_256_calc.sha3_256(output, input, len);
 
 }
