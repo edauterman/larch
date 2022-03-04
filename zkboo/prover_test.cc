@@ -37,9 +37,10 @@ int main() {
     int numRands = 38400;
     //int numRands = 22272;
     memset(w, 0xff, wLen / 8);
+    uint8_t output[SHA256_DIGEST_LENGTH];
     INIT_TIMER;
     START_TIMER;
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi);
+    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
     //Prove(circuitFile, w, wLen, 256, numRands, pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
@@ -63,6 +64,18 @@ int main() {
         printf("%x", buf[i]);
     }
     printf("\n");
+
+    bool output_correct = true;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        if (output[i] != buf[i]) {
+            output_correct = false;
+        }
+    }
+    if (output_correct) {
+        printf("Output CORRECT\n");
+    } else {
+        printf("Output INCORRECT\n");
+    }
 
     free(w);
     printf("at end\n");

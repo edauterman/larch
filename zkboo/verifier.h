@@ -30,6 +30,5 @@ class Verifier {
 };
 
 bool Verify(void (*f)(block[], block[], int), Proof &proof);
-//bool Verify(string circuitFile, Proof &proof);
 
 #endif

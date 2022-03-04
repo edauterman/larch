@@ -77,7 +77,7 @@ void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
 }
 
 // each block just contains one bit
-void Prove(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len, int numRands, Proof &proof) {
+void Prove(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len, int numRands, Proof &proof, uint8_t *output) {
 //void Prove(string circuitFile, uint8_t *w, int in_len, int out_len, int numRands, Proof &proof) {
     vector<CircuitView *> views;
     //int out_len = 256;
@@ -141,11 +141,11 @@ void Prove(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len
         }
         bs[i] = (shares[0] + shares[1] + shares[2]) % 2;
     }
-    uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
-    from_bool(bs, output_bytes, out_len);
+    //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
+    from_bool(bs, output, out_len);
     printf("output bytes: ");
     for (int i = 0; i < out_len / 8; i++) {
-        printf("%x", output_bytes[i]);
+        printf("%x", output[i]);
     }
     printf("\n");
 }
