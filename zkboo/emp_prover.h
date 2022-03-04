@@ -81,7 +81,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             block out;
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
-                SetWireNum(&out_shares[i], nextWireNum);
+                //SetWireNum(&out_shares[i], nextWireNum);
             }
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
@@ -101,7 +101,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             block out;
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
-                SetWireNum(&out_shares[i], nextWireNum);
+                //SetWireNum(&out_shares[i], nextWireNum);
             }
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             nextWireNum++;
@@ -119,7 +119,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             block out;
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
-                SetWireNum(&out_shares[i], nextWireNum);
+                //SetWireNum(&out_shares[i], nextWireNum);
             }
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             nextWireNum++;
@@ -137,12 +137,12 @@ class ZKBooCircExecProver : public CircuitExecution {
             block out = makeBlock(0,0);
             uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
-                shares[i] = i == 0 ? b : 1 - b;
-                if (b == 0) {
+                shares[i] = i == 0 ? b : 0;
+                /*if (b == 0) {
                     SetZeroWireNum(&shares[i]);
                 } else {
                     SetOneWireNum(&shares[i]);
-                }
+                }*/
             }
             memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
             return out;

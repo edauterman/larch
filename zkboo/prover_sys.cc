@@ -54,7 +54,9 @@ void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &vie
     //printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
+    setup_plain_prot(false, "");
     hash_in_circuit(c, w, 512);
+    finalize_plain_prot();
     //cf.compute(c, w, b);
     for (int i = 0; i < 3; i++) {
         views.push_back(ex->view[i]);
@@ -89,12 +91,16 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
         // individual shares of bits
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
-        indivShares[0][i] = indivShares[0][i] % 2;
-        indivShares[1][i] = indivShares[1][i] % 2;
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit(w[i/8], i%8);
+        indivShares[0][i] = 0;//GetBit(w[i/8], i%8);;
+        //indivShares[0][i] = indivShares[0][i] % 2;
+        indivShares[1][i] = 0;
+        //indivShares[1][i] = indivShares[1][i] % 2;
+        indivShares[2][i] = 0;
+        //indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit(w[i/8], i%8);
         for (int j = 0; j < 3; j++) {
-            SetWireNum(&indivShares[j][i], i);
-            memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
+            //SetWireNum(&indivShares[j][i], i);
+            // SHOULD BE UNCOMMENTED
+            //memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
         }
     }
     //currGate = 0;
@@ -135,7 +141,24 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
             //shares[j] = *(((uint32_t *)&out[i]) + j);
         }
         //printf("%d %d %d -> %d\n ", shares[0], shares[1], shares[2], (shares[0] + shares[1] + shares[2]) % 2);
-        printf("%d", (shares[0] + shares[1] + shares[2]) % 2);
+        printf("%d", (shares[0]) % 2);
+        //printf("%d", (shares[0] + shares[1] + shares[2]) % 2);
+    }
+    printf("\n: output share 1: ");
+    for (int i = 0; i < out_len; i++) {
+        uint32_t shares[3];
+        for (int j = 0; j < 3; j++) {
+            memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[i]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
+        }
+        printf("%d", shares[1] % 2);
+    }
+    printf("\n output share 2: ");
+    for (int i = 0; i < out_len; i++) {
+        uint32_t shares[3];
+        for (int j = 0; j < 3; j++) {
+            memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[i]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
+        }
+        printf("%d", shares[2] % 2);
     }
     printf("\n");
 }
