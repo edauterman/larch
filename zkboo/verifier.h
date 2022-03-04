@@ -4,13 +4,14 @@
 #include <vector>
 #include <stdint.h>
 #include <openssl/sha.h>
-
+#include <emp-tool/emp-tool.h>
 #include "view.h"
 #include "prover.h"
 
 #define WIRES 3
 
 using namespace std;
+using namespace emp;
 
 class Verifier {
     public:
@@ -28,6 +29,7 @@ class Verifier {
         int numAnds;
 };
 
-bool Verify(string circuitFile, Proof &proof);
+bool Verify(void (*f)(block[], block[], int), Proof &proof);
+//bool Verify(string circuitFile, Proof &proof);
 
 #endif

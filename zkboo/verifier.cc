@@ -69,7 +69,7 @@ void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     numAnds++;
 }
 
-bool Verify(string circuitFile, Proof &proof) {
+bool Verify(void (*f)(block[], block[], int), Proof &proof) {
     CircuitComm c0, c1;
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
@@ -100,12 +100,13 @@ bool Verify(string circuitFile, Proof &proof) {
         memcpy((uint8_t *)&w[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
     }
 
-    FILE *f = fopen(circuitFile.c_str(), "r");
-    BristolFormat cf(f);
+    //FILE *f = fopen(circuitFile.c_str(), "r");
+    //BristolFormat cf(f);
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
     CircuitExecution::circ_exec = ex;
     printf("going to hash in verifier circuit\n");
-    hash_in_circuit(out, w, in_len);
+    (*f)(out, w, in_len);
+    //hash_in_circuit(out, w, in_len);
     //cf.compute(out, w, b);
     if (ex->verified) {
         printf("VERIFIED\n");

@@ -10,6 +10,7 @@
 #include "prover_sys.h"
 #include "verifier.h"
 #include "timer.h"
+#include "circuit.h"
 
 using namespace std;
 using namespace emp;
@@ -35,14 +36,15 @@ int main() {
     int wLen = 512;
     int numRands = 38400;
     //int numRands = 22272;
-    memset(w, 0, wLen / 8);
+    memset(w, 0xff, wLen / 8);
     INIT_TIMER;
     START_TIMER;
-    Prove(circuitFile, w, wLen, 256, numRands, pi);
+    Prove(hash_in_circuit, w, wLen, 256, numRands, pi);
+    //Prove(circuitFile, w, wLen, 256, numRands, pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = Verify(circuitFile, pi);
+    bool check = Verify(hash_in_circuit, pi);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;
