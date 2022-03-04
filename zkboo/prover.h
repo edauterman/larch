@@ -43,6 +43,7 @@ class Proof {
         CircuitView *views[2];
         RandomSource *rands[2];
         uint32_t *w[2];
+        int wLen;
         uint32_t *outShares[2];
         uint8_t *out;
         int output;

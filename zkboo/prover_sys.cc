@@ -55,7 +55,7 @@ void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &vie
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
     //setup_plain_prot(false, "");
-    hash_in_circuit(c, w, 512);
+    hash_in_circuit(c, w, wLen);
     //finalize_plain_prot();
     //cf.compute(c, w, b);
     for (int i = 0; i < 3; i++) {
@@ -75,19 +75,18 @@ void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
 }
 
 // each block just contains one bit
-void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof) {
+void Prove(string circuitFile, uint8_t *w, int in_len, int out_len, int numRands, Proof &proof) {
     vector<CircuitView *> views;
-    int out_len = 256;
+    //int out_len = 256;
     block *out = new block[out_len];
-    int len = 512;
-    block *wShares = (block *)malloc(len * sizeof(block));
+    block *wShares = (block *)malloc(in_len * sizeof(block));
     memset((void *)out, 0, sizeof(block) * out_len);
     uint32_t *indivShares[3];
     for (int i = 0; i < 3; i++) {
-        indivShares[i] = (uint32_t *)malloc(len * sizeof(uint32_t));
+        indivShares[i] = (uint32_t *)malloc(in_len * sizeof(uint32_t));
     }
-    memset(wShares, 0, len * sizeof(block));
-    for (int i = 0; i < len; i++) {
+    memset(wShares, 0, in_len * sizeof(block));
+    for (int i = 0; i < in_len; i++) {
         // individual shares of bits
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
@@ -108,7 +107,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
     }
     INIT_TIMER;
     START_TIMER;
-    GenViews(circuitFile, wShares, len, views, out, 8, seeds, numRands);
+    GenViews(circuitFile, wShares, in_len, views, out, 8, seeds, numRands);
     STOP_TIMER("gen views");
     START_TIMER;
     CommitViews(views, proof.comms);
@@ -125,6 +124,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
 
     proof.w[0] = indivShares[proof.idx];
     proof.w[1] = indivShares[(proof.idx + 1) % 3];
+    proof.wLen = in_len;
     proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     bool *bs = new bool[out_len];

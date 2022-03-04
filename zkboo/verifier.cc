@@ -90,7 +90,7 @@ bool Verify(string circuitFile, Proof &proof) {
         return false;
     }
 
-    int in_len = 512;
+    int in_len = proof.wLen;
     block *w = new block[in_len];
     block *b = NULL;
     block *out = new block[256];
@@ -105,7 +105,7 @@ bool Verify(string circuitFile, Proof &proof) {
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
     CircuitExecution::circ_exec = ex;
     printf("going to hash in verifier circuit\n");
-    hash_in_circuit(out, w, 512);
+    hash_in_circuit(out, w, in_len);
     //cf.compute(out, w, b);
     if (ex->verified) {
         printf("VERIFIED\n");

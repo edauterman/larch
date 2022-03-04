@@ -38,7 +38,7 @@ int main() {
     memset(w, 0, wLen / 8);
     INIT_TIMER;
     START_TIMER;
-    Prove(circuitFile, w, wLen, numRands, pi);
+    Prove(circuitFile, w, wLen, 256, numRands, pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
