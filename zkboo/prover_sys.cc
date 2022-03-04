@@ -54,9 +54,9 @@ void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &vie
     //printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
-    setup_plain_prot(false, "");
+    //setup_plain_prot(false, "");
     hash_in_circuit(c, w, 512);
-    finalize_plain_prot();
+    //finalize_plain_prot();
     //cf.compute(c, w, b);
     for (int i = 0; i < 3; i++) {
         views.push_back(ex->view[i]);
