@@ -24,6 +24,22 @@ static inline uint32_t GetWireNum(const block &x) {
     return GetWireNum(x32);
 }
 
+static inline void SetZeroWireNum(uint32_t *x) {
+    SetWireNum(x, 1000000);
+}
+
+static inline void SetOneWireNum(uint32_t *x) {
+    SetWireNum(x, 2000000);
+}
+
+static inline bool IsZeroWireNum(const block &x) {
+    return GetWireNum(x) == 1000000;
+}
+
+static inline bool IsOneWireNum(const block &x) {
+    return GetWireNum(x) == 2000000;
+}
+
 template<typename T>
 class ZKBooCircExecVerifier : public CircuitExecution {
     public:
@@ -52,8 +68,20 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t b_shares[2];
             uint32_t out_shares[2];
             for (int i = 0; i < 2; i++) {
-                a_shares[i] = views[i]->wires[GetWireNum(a)];
-                b_shares[i] = views[i]->wires[GetWireNum(b)];
+                if (IsZeroWireNum(a)) {
+                    a_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                } else if (IsOneWireNum(a)) {
+                    a_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                } else {
+                    a_shares[i] = views[i]->wires[GetWireNum(a)];
+                }
+                if (IsZeroWireNum(b)) {
+                    b_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                } else if (IsOneWireNum(b)) {
+                    b_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                } else {
+                    b_shares[i] = views[i]->wires[GetWireNum(b)];
+                }
             }
             //memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
             //memcpy(b_shares, (uint8_t *)&b, 2 * sizeof(uint32_t));
@@ -90,8 +118,20 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t b_shares[2];
             uint32_t out_shares[2];
             for (int i = 0; i < 2; i++) {
-                a_shares[i] = views[i]->wires[GetWireNum(a)];
-                b_shares[i] = views[i]->wires[GetWireNum(b)];
+                if (IsZeroWireNum(a)) {
+                    a_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                } else if (IsOneWireNum(a)) {
+                    a_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                } else {
+                    a_shares[i] = views[i]->wires[GetWireNum(a)];
+                }
+                if (IsZeroWireNum(b)) {
+                    b_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                } else if (IsOneWireNum(b)) {
+                    b_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                } else {
+                    b_shares[i] = views[i]->wires[GetWireNum(b)];
+                }
             }
  
 /*            if (gateNum != -1) {
@@ -108,7 +148,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("XOR compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
             if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("xor gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
+                printf("xor gate output failed -- wanted %d got %d (%d - %d, %d - %d)\n", views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);
@@ -124,7 +164,14 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t a_shares[2];
             uint32_t out_shares[2];
             for (int i = 0; i < 2; i++) {
-                a_shares[i] = views[i]->wires[GetWireNum(a)];
+                if (IsZeroWireNum(a)) {
+                    a_shares[i] = (v->idx + i) % 3 == 0 ? 0 : 1;
+                } else if (IsOneWireNum(a)) {
+                    a_shares[i] = (v->idx + i) % 3 == 0 ? 1 : 0;
+                } else {
+                    a_shares[i] = views[i]->wires[GetWireNum(a)];
+                }
+ 
             }
 /*            if (gateNum != -1) {
             if (views[0]->wireShares[gateNum] != a_shares[0]) {
@@ -154,7 +201,18 @@ class ZKBooCircExecVerifier : public CircuitExecution {
 
         block public_label(bool b) override {
             //printf("label\n");
-            return makeBlock(0,0);
+            block out = makeBlock(0,0);
+            uint32_t shares[3];
+            for (int i = 0; i < 3; i++) {
+                shares[i] = i == 0 ? b : 1 - b;
+                if (b == 0) {
+                    SetZeroWireNum(&shares[i]);
+                } else {
+                    SetOneWireNum(&shares[i]);
+                }
+            }
+            memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
+            return out;
         }
 };
 

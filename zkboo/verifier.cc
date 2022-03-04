@@ -104,6 +104,7 @@ bool Verify(string circuitFile, Proof &proof) {
     BristolFormat cf(f);
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
     CircuitExecution::circ_exec = ex;
+    printf("going to hash in verifier circuit\n");
     hash_in_circuit(out, w, 512);
     //cf.compute(out, w, b);
     if (ex->verified) {

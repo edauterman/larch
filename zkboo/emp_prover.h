@@ -16,6 +16,29 @@ static inline uint32_t GetWireNum(uint32_t x) {
     return x >> 1;
 }
 
+static inline uint32_t GetWireNum(const block &x) {
+    uint32_t x32;
+    memcpy((uint8_t *)&x32, (uint8_t *)&x, sizeof(uint32_t));
+    return GetWireNum(x32);
+}
+
+static inline void SetZeroWireNum(uint32_t *x) {
+    SetWireNum(x, 1000000);
+}
+
+static inline void SetOneWireNum(uint32_t *x) {
+    SetWireNum(x, 2000000);
+}
+
+static inline bool IsZeroWireNum(const block &x) {
+    return GetWireNum(x) == 1000000;
+}
+
+static inline bool IsOneWireNum(const block &x) {
+    return GetWireNum(x) == 2000000;
+}
+
+
 template<typename T>
 class ZKBooCircExecProver : public CircuitExecution {
     public:
@@ -111,7 +134,18 @@ class ZKBooCircExecProver : public CircuitExecution {
 
         block public_label(bool b) override {
             //printf("label\n");
-            return makeBlock(0,0);
+            block out = makeBlock(0,0);
+            uint32_t shares[3];
+            for (int i = 0; i < 3; i++) {
+                shares[i] = i == 0 ? b : 1 - b;
+                if (b == 0) {
+                    SetZeroWireNum(&shares[i]);
+                } else {
+                    SetOneWireNum(&shares[i]);
+                }
+            }
+            memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
+            return out;
         }
 };
 

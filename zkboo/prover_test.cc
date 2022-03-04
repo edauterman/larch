@@ -3,6 +3,7 @@
 #include <iostream>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
+#include <emp-tool/emp-tool.h>
 
 #include "view.h"
 #include "prover.h"
@@ -11,6 +12,7 @@
 #include "timer.h"
 
 using namespace std;
+using namespace emp;
 
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
@@ -31,7 +33,7 @@ int main() {
     // TODO: should actually be 512/8
     uint8_t *w = (uint8_t *)malloc(512/8);
     int wLen = 512;
-    int numRands = 2* 38400;
+    int numRands = 38400;
     //int numRands = 22272;
     memset(w, 0, wLen / 8);
     INIT_TIMER;
@@ -49,11 +51,12 @@ int main() {
     }
 
     uint8_t buf[SHA256_DIGEST_LENGTH];
-    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+    sha3_256(buf, w, 512/8);
+/*    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx, EVP_sha3_256(), NULL);
     EVP_DigestUpdate(mdctx, w, 512/8);
     EVP_DigestFinal(mdctx, buf, NULL);
-    printf("CORRECT OUTPUT len %d: ", SHA256_DIGEST_LENGTH);
+    printf("CORRECT OUTPUT len %d: ", SHA256_DIGEST_LENGTH);*/
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%x", buf[i]);
     }

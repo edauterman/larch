@@ -20,11 +20,12 @@ class Verifier {
         void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
         void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
+        int idx;
+
     private:
         RandomSource *rands[2];
         int currGate;
         int numAnds;
-        int idx;
 };
 
 bool Verify(string circuitFile, Proof &proof);
