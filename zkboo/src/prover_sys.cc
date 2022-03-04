@@ -12,7 +12,7 @@
 #include "emp_prover.h"
 #include "common.h"
 #include "prover_sys.h"
-#include "timer.h"
+#include "../utils/timer.h"
 #include "circuit.h"
 
 using namespace std;

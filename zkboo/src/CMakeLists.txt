@@ -20,7 +20,5 @@ set(sources
     /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp
     /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )
-add_library(Base SHARED ${sources})
 
-add_subdirectory(src)
-add_subdirectory(test)
+add_library(Prover prover.cc prover_sys.cc view.cc common.cc verifier.cc circuit.cc)

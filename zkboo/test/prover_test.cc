@@ -5,12 +5,12 @@
 #include <openssl/sha.h>
 #include <emp-tool/emp-tool.h>
 
-#include "view.h"
-#include "prover.h"
-#include "prover_sys.h"
-#include "verifier.h"
-#include "timer.h"
-#include "circuit.h"
+#include "../src/view.h"
+#include "../src/prover.h"
+#include "../src/prover_sys.h"
+#include "../src/verifier.h"
+#include "../utils/timer.h"
+#include "../src/circuit.h"
 
 using namespace std;
 using namespace emp;
