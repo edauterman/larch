@@ -31,7 +31,8 @@ int main() {
     // TODO: should actually be 512/8
     uint8_t *w = (uint8_t *)malloc(512/8);
     int wLen = 512;
-    int numRands = 22272;
+    int numRands = 2* 38400;
+    //int numRands = 22272;
     memset(w, 0, wLen / 8);
     INIT_TIMER;
     START_TIMER;
@@ -39,7 +40,7 @@ int main() {
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = Verify(circuitFile, pi);
+    bool check = true; //Verify(circuitFile, pi);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

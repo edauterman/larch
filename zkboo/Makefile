@@ -166,6 +166,33 @@ prover_test/fast:
 	$(MAKE) -f CMakeFiles/prover_test.dir/build.make CMakeFiles/prover_test.dir/build
 .PHONY : prover_test/fast
 
+circuit.o: circuit.cc.o
+
+.PHONY : circuit.o
+
+# target to build an object file
+circuit.cc.o:
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/circuit.cc.o
+.PHONY : circuit.cc.o
+
+circuit.i: circuit.cc.i
+
+.PHONY : circuit.i
+
+# target to preprocess a source file
+circuit.cc.i:
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/circuit.cc.i
+.PHONY : circuit.cc.i
+
+circuit.s: circuit.cc.s
+
+.PHONY : circuit.s
+
+# target to generate assembly for a file
+circuit.cc.s:
+	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/circuit.cc.s
+.PHONY : circuit.cc.s
+
 common.o: common.cc.o
 
 .PHONY : common.o
@@ -192,6 +219,33 @@ common.s: common.cc.s
 common.cc.s:
 	$(MAKE) -f CMakeFiles/Prover.dir/build.make CMakeFiles/Prover.dir/common.cc.s
 .PHONY : common.cc.s
+
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o
+
+# target to build an object file
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o:
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
+
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i
+
+# target to preprocess a source file
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i:
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
+
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s
+
+# target to generate assembly for a file
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s:
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
 
@@ -366,9 +420,15 @@ help:
 	@echo "... Base"
 	@echo "... Prover"
 	@echo "... prover_test"
+	@echo "... circuit.o"
+	@echo "... circuit.i"
+	@echo "... circuit.s"
 	@echo "... common.o"
 	@echo "... common.i"
 	@echo "... common.s"
+	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o"
+	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i"
+	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s"
 	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.o"
 	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.i"
 	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.s"

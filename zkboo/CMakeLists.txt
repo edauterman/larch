@@ -17,13 +17,15 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 set(sources
-    /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp)
+    /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp
+    /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    )
 add_library(Base SHARED ${sources})
 
-add_library(Prover prover.cc prover_sys.cc view.cc common.cc verifier.cc)
+add_library(Prover prover.cc prover_sys.cc view.cc common.cc verifier.cc circuit.cc /home/ec2-user/emp-tool/emp-tool/circuits/sha3_256.h)
 
 add_executable(prover_test prover_test.cc)
 target_link_libraries(prover_test
 	Prover
     Base
-	OpenSSL::SSL)
+    OpenSSL::SSL)

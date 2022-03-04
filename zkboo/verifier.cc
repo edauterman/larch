@@ -7,6 +7,7 @@
 #include "prover.h"
 #include "common.h"
 #include "view.h"
+#include "circuit.h"
 #include "emp_verifier.h"
 
 using namespace std;
@@ -103,7 +104,8 @@ bool Verify(string circuitFile, Proof &proof) {
     BristolFormat cf(f);
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
     CircuitExecution::circ_exec = ex;
-    cf.compute(out, w, b);
+    hash_in_circuit(out, w, 512);
+    //cf.compute(out, w, b);
     if (ex->verified) {
         printf("VERIFIED\n");
         return true;

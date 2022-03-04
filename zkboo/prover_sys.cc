@@ -13,6 +13,7 @@
 #include "common.h"
 #include "prover_sys.h"
 #include "timer.h"
+#include "circuit.h"
 
 using namespace std;
 using namespace emp;
@@ -53,7 +54,8 @@ void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &vie
     //printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
-    cf.compute(c, w, b);
+    hash_in_circuit(c, w, 512);
+    //cf.compute(c, w, b);
     for (int i = 0; i < 3; i++) {
         views.push_back(ex->view[i]);
     }
@@ -123,6 +125,7 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
     proof.w[1] = indivShares[(proof.idx + 1) % 3];
     proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
+    printf("output binary: ");
     for (int i = 0; i < out_len; i++) {
         memcpy(((uint8_t *)&proof.outShares[0][i]), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         memcpy(((uint8_t *)&proof.outShares[1][i]), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
@@ -132,6 +135,8 @@ void Prove(string circuitFile, uint8_t *w, int wLen, int numRands, Proof &proof)
             //shares[j] = *(((uint32_t *)&out[i]) + j);
         }
         //printf("%d %d %d -> %d\n ", shares[0], shares[1], shares[2], (shares[0] + shares[1] + shares[2]) % 2);
+        printf("%d", (shares[0] + shares[1] + shares[2]) % 2);
     }
+    printf("\n");
 }
 
