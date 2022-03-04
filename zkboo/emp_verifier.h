@@ -99,7 +99,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("AND compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
             if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("and gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
+                //printf("and gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);
@@ -148,7 +148,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("XOR compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
             if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("xor gate output failed -- wanted %d got %d (%d - %d, %d - %d)\n", views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
+                //printf("xor gate output failed -- wanted %d got %d (%d - %d, %d - %d)\n", views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);
@@ -183,7 +183,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("NOT compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
            if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("not gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
+                //printf("not gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);

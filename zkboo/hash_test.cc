@@ -20,8 +20,6 @@ const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
 void test_hash(string testName, uint8_t *w) { 
     Proof pi;
-    //string circuitFile = circuit_file_location+"/bristol_format/sha-256.txt";
-    // TODO: should actually be 512/8
     int wLen = 512;
     int numRands = 38400;
     //int numRands = 22272;
@@ -37,11 +35,6 @@ void test_hash(string testName, uint8_t *w) {
 
     uint8_t buf[SHA256_DIGEST_LENGTH];
     sha3_256(buf, w, 512/8);
-/*    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(mdctx, EVP_sha3_256(), NULL);
-    EVP_DigestUpdate(mdctx, w, 512/8);
-    EVP_DigestFinal(mdctx, buf, NULL);
-    printf("CORRECT OUTPUT len %d: ", SHA256_DIGEST_LENGTH);*/
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%x", buf[i]);
     }
@@ -61,11 +54,92 @@ void test_hash(string testName, uint8_t *w) {
 
 }
 
+void test_bad_commit(string testName, uint8_t *w) { 
+    Proof pi;
+    int wLen = 512;
+    int numRands = 38400;
+    //int numRands = 22272;
+    memset(w, 0xff, wLen / 8);
+    uint8_t output[SHA256_DIGEST_LENGTH];
+    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    // Zero out commit
+    memset(pi.comms[pi.idx].digest, 0, SHA256_DIGEST_LENGTH);
+    bool check = Verify(hash_in_circuit, pi);
+    if (check) {
+        cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
+    } else {
+        cout << GREEN << testName << ": Proof FAILED to verify" << RESET << endl;
+    }
+}
+
+void test_bad_idx(string testName, uint8_t *w) { 
+    Proof pi;
+    int wLen = 512;
+    int numRands = 38400;
+    //int numRands = 22272;
+    memset(w, 0xff, wLen / 8);
+    uint8_t output[SHA256_DIGEST_LENGTH];
+    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    // Increase index 
+    pi.idx = (pi.idx + 1) % 3;
+    bool check = Verify(hash_in_circuit, pi);
+    if (check) {
+        cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
+    } else {
+        cout << GREEN << testName << ": Proof FAILED to verify" << RESET << endl;
+    }
+}
+
+void test_bad_rands(string testName, uint8_t *w) { 
+    Proof pi;
+    int wLen = 512;
+    int numRands = 38400;
+    //int numRands = 22272;
+    memset(w, 0xff, wLen / 8);
+    uint8_t output[SHA256_DIGEST_LENGTH];
+    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    // Bad randomness 
+    uint8_t seed[16];
+    memset(seed, 0, 16);
+    pi.rands[0] = new RandomSource(seed, numRands);
+    bool check = Verify(hash_in_circuit, pi);
+    if (check) {
+        cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
+    } else {
+        cout << GREEN << testName << ": Proof FAILED to verify" << RESET << endl;
+    }
+}
+
+void test_bad_view(string testName, uint8_t *w) { 
+    Proof pi;
+    int wLen = 512;
+    int numRands = 38400;
+    //int numRands = 22272;
+    memset(w, 0xff, wLen / 8);
+    uint8_t output[SHA256_DIGEST_LENGTH];
+    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    // Flip bit in view 
+    uint8_t seed[16];
+    memset(seed, 0, 16);
+    pi.views[0]->wires[100] = pi.views[0]->wires[100] ^ 1;
+    bool check = Verify(hash_in_circuit, pi);
+    if (check) {
+        cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
+    } else {
+        cout << GREEN << testName << ": Proof FAILED to verify" << RESET << endl;
+    }
+}
+
+
 int main() {
     uint8_t *input = (uint8_t *)malloc(512/8);
     memset(input, 0xff, 512/8);
     test_hash("0xff hash correct", input);
     memset(input, 0, 512/8);
     test_hash("0 hash correct", input);
+    test_bad_commit("Bad commit", input);
+    test_bad_idx("Bad index", input);
+    test_bad_rands("Bad randomness", input);
+    test_bad_view("Bad view", input);
     free(input);
 }
