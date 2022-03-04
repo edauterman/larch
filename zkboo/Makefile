@@ -172,6 +172,21 @@ prover_test/fast:
 	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/prover_test.dir/build.make zkboo/CMakeFiles/prover_test.dir/build
 .PHONY : prover_test/fast
 
+# Convenience name for target.
+zkboo/CMakeFiles/hash_test.dir/rule:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/hash_test.dir/rule
+.PHONY : zkboo/CMakeFiles/hash_test.dir/rule
+
+# Convenience name for target.
+hash_test: zkboo/CMakeFiles/hash_test.dir/rule
+
+.PHONY : hash_test
+
+# fast build rule for target.
+hash_test/fast:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/hash_test.dir/build.make zkboo/CMakeFiles/hash_test.dir/build
+.PHONY : hash_test/fast
+
 circuit.o: circuit.cc.o
 
 .PHONY : circuit.o
@@ -225,6 +240,33 @@ common.s: common.cc.s
 common.cc.s:
 	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Prover.dir/build.make zkboo/CMakeFiles/Prover.dir/common.cc.s
 .PHONY : common.cc.s
+
+hash_test.o: hash_test.cc.o
+
+.PHONY : hash_test.o
+
+# target to build an object file
+hash_test.cc.o:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/hash_test.dir/build.make zkboo/CMakeFiles/hash_test.dir/hash_test.cc.o
+.PHONY : hash_test.cc.o
+
+hash_test.i: hash_test.cc.i
+
+.PHONY : hash_test.i
+
+# target to preprocess a source file
+hash_test.cc.i:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/hash_test.dir/build.make zkboo/CMakeFiles/hash_test.dir/hash_test.cc.i
+.PHONY : hash_test.cc.i
+
+hash_test.s: hash_test.cc.s
+
+.PHONY : hash_test.s
+
+# target to generate assembly for a file
+hash_test.cc.s:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/hash_test.dir/build.make zkboo/CMakeFiles/hash_test.dir/hash_test.cc.s
+.PHONY : hash_test.cc.s
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
 
@@ -425,6 +467,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... Base"
 	@echo "... Prover"
+	@echo "... hash_test"
 	@echo "... prover_test"
 	@echo "... circuit.o"
 	@echo "... circuit.i"
@@ -432,6 +475,9 @@ help:
 	@echo "... common.o"
 	@echo "... common.i"
 	@echo "... common.s"
+	@echo "... hash_test.o"
+	@echo "... hash_test.i"
+	@echo "... hash_test.s"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s"

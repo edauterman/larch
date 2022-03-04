@@ -104,15 +104,12 @@ bool Verify(void (*f)(block[], block[], int), Proof &proof) {
     //BristolFormat cf(f);
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
     CircuitExecution::circ_exec = ex;
-    printf("going to hash in verifier circuit\n");
     (*f)(out, w, in_len);
     //hash_in_circuit(out, w, in_len);
     //cf.compute(out, w, b);
     if (ex->verified) {
-        printf("VERIFIED\n");
         return true;
     } else {
-        printf("verification flag set false\n");
         return false;
     }
 

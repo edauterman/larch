@@ -29,3 +29,9 @@ target_link_libraries(prover_test
 	Prover
     Base
     OpenSSL::SSL)
+
+add_executable(hash_test hash_test.cc)
+target_link_libraries(hash_test
+	Prover
+    Base
+    OpenSSL::SSL)

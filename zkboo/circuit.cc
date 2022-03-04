@@ -8,9 +8,7 @@ using namespace emp;
 void hash_in_circuit(block output[], block input[], int len) {
 
     SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
-    printf("about to do calc\n");
     sha3_256_calc.sha3_256(output, (const block *)input, len);
-    printf("just finished calc\n");
     //sha3_256_calc.sha3_256(output, input, len);
 
     /*bool bs[256];
