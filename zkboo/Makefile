@@ -154,6 +154,19 @@ Prover/fast:
 .PHONY : Prover/fast
 
 #=============================================================================
+# Target rules for targets named prover_test
+
+# Build rule for target.
+prover_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 prover_test
+.PHONY : prover_test
+
+# fast build rule for target.
+prover_test/fast:
+	$(MAKE) -f test/CMakeFiles/prover_test.dir/build.make test/CMakeFiles/prover_test.dir/build
+.PHONY : prover_test/fast
+
+#=============================================================================
 # Target rules for targets named hash_test
 
 # Build rule for target.
@@ -167,17 +180,17 @@ hash_test/fast:
 .PHONY : hash_test/fast
 
 #=============================================================================
-# Target rules for targets named prover_test
+# Target rules for targets named ct_test
 
 # Build rule for target.
-prover_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 prover_test
-.PHONY : prover_test
+ct_test: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ct_test
+.PHONY : ct_test
 
 # fast build rule for target.
-prover_test/fast:
-	$(MAKE) -f test/CMakeFiles/prover_test.dir/build.make test/CMakeFiles/prover_test.dir/build
-.PHONY : prover_test/fast
+ct_test/fast:
+	$(MAKE) -f test/CMakeFiles/ct_test.dir/build.make test/CMakeFiles/ct_test.dir/build
+.PHONY : ct_test/fast
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
 
@@ -205,6 +218,33 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s: h
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s:
 	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
+
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.o: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.o
+
+# target to build an object file
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o:
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
+
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.i: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.i
+
+# target to preprocess a source file
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i:
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
+
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.s: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
+
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.s
+
+# target to generate assembly for a file
+home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s:
+	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
+.PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
 
@@ -243,11 +283,15 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... Base"
 	@echo "... Prover"
+	@echo "... ct_test"
 	@echo "... hash_test"
 	@echo "... prover_test"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s"
+	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.o"
+	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.i"
+	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.s"
 	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.o"
 	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.i"
 	@echo "... home/ec2-user/emp-tool/emp-tool/emp-tool.s"

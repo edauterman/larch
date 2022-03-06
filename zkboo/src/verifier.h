@@ -29,6 +29,7 @@ class Verifier {
         int numAnds;
 };
 
-bool Verify(void (*f)(block[], block[], int), Proof &proof);
+bool VerifyHash(void (*f)(block[], block[], int), Proof &proof);
+bool VerifyCtCircuit(Proof &proof, __m128i iv);
 
 #endif

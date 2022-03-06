@@ -116,7 +116,7 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst0, uin
     }
 }
 
-void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof &proof, uint8_t *output) {
+void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof &proof) {
     vector<CircuitView *>views;
     RandomOracle oracle; 
     // BUG!!!!! Can't get index until have gotten commitments....

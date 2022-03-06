@@ -19,6 +19,7 @@ include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 set(sources
     /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp
     /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp
     )
 add_library(Base SHARED ${sources})
 

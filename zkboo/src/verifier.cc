@@ -69,7 +69,82 @@ void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     numAnds++;
 }
 
-bool Verify(void (*f)(block[], block[], int), Proof &proof) {
+bool VerifyCtCircuit(Proof &proof, __m128i iv) {
+    CircuitComm c0, c1;
+    proof.views[0]->Commit(c0);
+    proof.views[1]->Commit(c1);
+    if (memcmp(c0.digest, proof.comms[proof.idx].digest, SHA256_DIGEST_LENGTH) != 0) {
+        printf("commit for v0 failed\n");
+        return false;
+    }
+
+    if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES].digest, SHA256_DIGEST_LENGTH) != 0) {
+        printf("commit for v1 failed\n");
+        return false;
+    }
+
+    // Need to check that views chosen randomly correctly?
+    RandomOracle oracle;
+    uint8_t idx_check = oracle.GetRand(proof.comms) % WIRES;
+    if (proof.idx != idx_check) {
+        return false;
+    }
+
+    int m_len = proof.wLen - 256 - 128 - 128 - 128 - 256;
+    block *m = new block[m_len];
+    block *hashOut = new block[256];
+    block *ct = new block[128];
+    block *key = new block[128];
+    block *keyR = new block[128];
+    block *keyComm = new block[256];
+    block *out = new block[1];
+
+    for (int i = 0; i < m_len; i++) {
+        memcpy((uint8_t *)&m[i], (uint8_t *)&proof.w[0][i], sizeof(uint32_t));
+        memcpy((uint8_t *)&m[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
+    }
+
+    for (int i = 0; i < 256; i++) {
+        memcpy((uint8_t *)&hashOut[i], (uint8_t *)&proof.w[0][i + m_len], sizeof(uint32_t));
+        memcpy((uint8_t *)&hashOut[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len], sizeof(uint32_t));
+    }
+
+    for (int i = 0; i < 128; i++) {
+        memcpy((uint8_t *)&ct[i], (uint8_t *)&proof.w[0][i + m_len + 256], sizeof(uint32_t));
+        memcpy((uint8_t *)&ct[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256], sizeof(uint32_t));
+    }
+
+    for (int i = 0; i < 128; i++) {
+        memcpy((uint8_t *)&key[i], (uint8_t *)&proof.w[0][i + m_len + 256 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&key[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + 128], sizeof(uint32_t));
+    }
+
+    for (int i = 0; i < 128; i++) {
+        memcpy((uint8_t *)&keyR[i], (uint8_t *)&proof.w[0][i + m_len + 256 + 128 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&keyR[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + 128 + 128], sizeof(uint32_t));
+    }
+
+    for (int i = 0; i < 256; i++) {
+        memcpy((uint8_t *)&keyComm[i], (uint8_t *)&proof.w[0][i + m_len + 256 + 128 + 128 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + 128 + 128 + 128], sizeof(uint32_t));
+    }
+
+    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);
+    CircuitExecution::circ_exec = ex;
+    check_ciphertext_circuit(hashOut, m, m_len, ct, iv, key, keyComm, keyR, out);
+    if (ex->verified) {
+        return true;
+    } else {
+        return false;
+    }
+
+    // TODO check output lines up
+    
+    return true;
+    
+}
+
+bool VerifyHash(void (*f)(block[], block[], int), Proof &proof) {
     CircuitComm c0, c1;
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);

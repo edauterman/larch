@@ -40,12 +40,12 @@ int main() {
     uint8_t output[SHA256_DIGEST_LENGTH];
     INIT_TIMER;
     START_TIMER;
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
     //Prove(circuitFile, w, wLen, 256, numRands, pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = Verify(hash_in_circuit, pi);
+    bool check = VerifyHash(hash_in_circuit, pi);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

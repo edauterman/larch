@@ -25,8 +25,8 @@ void test_hash(string testName, uint8_t *w) {
     //int numRands = 22272;
     memset(w, 0xff, wLen / 8);
     uint8_t output[SHA256_DIGEST_LENGTH];
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
-    bool check = Verify(hash_in_circuit, pi);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    bool check = VerifyHash(hash_in_circuit, pi);
     if (check) {
         cout << GREEN << testName << ": Proof VERIFIED" << RESET << endl;
     } else {
@@ -61,10 +61,10 @@ void test_bad_commit(string testName, uint8_t *w) {
     //int numRands = 22272;
     memset(w, 0xff, wLen / 8);
     uint8_t output[SHA256_DIGEST_LENGTH];
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
     // Zero out commit
     memset(pi.comms[pi.idx].digest, 0, SHA256_DIGEST_LENGTH);
-    bool check = Verify(hash_in_circuit, pi);
+    bool check = VerifyHash(hash_in_circuit, pi);
     if (check) {
         cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
     } else {
@@ -79,10 +79,10 @@ void test_bad_idx(string testName, uint8_t *w) {
     //int numRands = 22272;
     memset(w, 0xff, wLen / 8);
     uint8_t output[SHA256_DIGEST_LENGTH];
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
     // Increase index 
     pi.idx = (pi.idx + 1) % 3;
-    bool check = Verify(hash_in_circuit, pi);
+    bool check = VerifyHash(hash_in_circuit, pi);
     if (check) {
         cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
     } else {
@@ -97,12 +97,12 @@ void test_bad_rands(string testName, uint8_t *w) {
     //int numRands = 22272;
     memset(w, 0xff, wLen / 8);
     uint8_t output[SHA256_DIGEST_LENGTH];
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
     // Bad randomness 
     uint8_t seed[16];
     memset(seed, 0, 16);
     pi.rands[0] = new RandomSource(seed, numRands);
-    bool check = Verify(hash_in_circuit, pi);
+    bool check = VerifyHash(hash_in_circuit, pi);
     if (check) {
         cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
     } else {
@@ -117,12 +117,12 @@ void test_bad_view(string testName, uint8_t *w) {
     //int numRands = 22272;
     memset(w, 0xff, wLen / 8);
     uint8_t output[SHA256_DIGEST_LENGTH];
-    Prove(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
     // Flip bit in view 
     uint8_t seed[16];
     memset(seed, 0, 16);
     pi.views[0]->wires[100] = pi.views[0]->wires[100] ^ 1;
-    bool check = Verify(hash_in_circuit, pi);
+    bool check = VerifyHash(hash_in_circuit, pi);
     if (check) {
         cout << RED << testName << ": Proof VERIFIED" << RESET << endl;
     } else {
