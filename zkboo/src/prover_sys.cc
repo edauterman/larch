@@ -43,7 +43,7 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
 }*/
 
 //template<typename IO>
-void GenViews(void (*f)(block[], block[], int), block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[], int numRands) {
+void GenViewsHash(void (*f)(block[], block[], int), block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[], int numRands) {
 //void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[], int numRands) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
@@ -69,6 +69,24 @@ void GenViews(void (*f)(block[], block[], int), block *w, int wLen, vector<Circu
     
 }
 
+void GenViewsCtCircuit(block *mShares, int m_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t *seeds[], int numRands) {
+    int wLen = m_len + 256 + 128 + 128 + 256 + 128;
+    block *w = new block[wLen];
+    memcpy((uint8_t *)w, mShares, m_len * sizeof(block));
+    memcpy((uint8_t *)w + m_len * sizeof(block), hashOutShares, 256);
+    memcpy((uint8_t *)w + (m_len + 256) * sizeof(block), ctShares, 128);
+    memcpy((uint8_t *)w + (m_len + 256 + 128) * sizeof(block), keyShares, 128);
+    memcpy((uint8_t *)w + (m_len + 256 + 128 + 128) * sizeof(block), keyCommShares, 256);
+    memcpy((uint8_t *)w + (m_len + 256 + 128 + 128 + 256) * sizeof(block), keyRShares, 128);
+    ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
+    CircuitExecution::circ_exec = ex;
+    check_ciphertext_circuit(hashOutShares, mShares, m_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
+    for (int i = 0; i < 3; i++) {
+        views.push_back(ex->view[i]);
+    }
+    delete ex;
+}
+
 void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
     // Commit by hashing views
     for (int i = 0; i < 3; i++) {
@@ -76,8 +94,90 @@ void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
     }
 }
 
+void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst0, uint32_t *dst1, int idx) {
+    uint32_t *indivShares[3];
+    for (int i = 0; i < 3; i++) {
+        indivShares[i] = (uint32_t *)malloc(len * sizeof(uint32_t));
+    }
+    memset(inputShares, 0, len * sizeof(block));
+    for (int i = 0; i < len; i++) {
+        // individual shares of bits
+        RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
+        RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
+        indivShares[0][i] = indivShares[0][i] % 2;
+        indivShares[1][i] = indivShares[1][i] % 2;
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit(input[i/8], i%8);
+        for (int j = 0; j < 3; j++) {
+            SetWireNum(&indivShares[j][i], i);
+            memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
+        }
+        dst0[i] = indivShares[idx][i];
+        dst1[i] = indivShares[(idx + 1) % 3][i];
+    }
+}
+
+void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof &proof, uint8_t *output) {
+    vector<CircuitView *>views;
+    RandomOracle oracle; 
+    // BUG!!!!! Can't get index until have gotten commitments....
+    proof.idx = oracle.GetRand(proof.comms) % WIRES;
+
+    block *out = new block[1];
+    memset((void *)out, 0, sizeof(block));
+    block *mShares = new block[m_len];
+    ShareInput(m, mShares, m_len, proof.w[0], proof.w[1], proof.idx);
+    block *hashOutShares = new block[256];
+    ShareInput(hashOut, hashOutShares, 256, proof.w[0] + m_len, proof.w[1] + m_len, proof.idx);
+    block *ctShares = new block[128];
+    ShareInput(ct, ctShares, 128, proof.w[0] + m_len + 256, proof.w[1] + m_len + 256, proof.idx);
+    block *keyShares = new block[128];
+    ShareInput(key, keyShares, 128, proof.w[0] + m_len + 256 + 128, proof.w[1] + m_len + 256 + 128, proof.idx);
+    block *keyRShares = new block[128];
+    ShareInput(keyR, keyRShares, 128, proof.w[0] + m_len + 256 + 128 + 128 , proof.w[1] + m_len + 256 + 128 + 128, proof.idx);
+    block *keyCommShares = new block[256];
+    ShareInput(keyComm, keyCommShares, 256, proof.w[0] + m_len + 256 + 128 + 128 + 128, proof.w[1] + m_len + 256 + 128 + 128 + 128, proof.idx);
+    proof.wLen = m_len + 256 + 128 + 128 + 128 + 256;
+
+    uint8_t *seeds[3];
+    for (int i = 0; i < 3; i++) {
+        seeds[i] = (uint8_t *)malloc(16);
+        RAND_bytes(seeds[i], 16);
+    }
+
+    GenViewsCtCircuit(mShares, m_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands);
+    CommitViews(views, proof.comms);
+    
+    proof.idx = oracle.GetRand(proof.comms) % WIRES;
+    proof.views[0] = views[proof.idx];
+    proof.views[1] = views[(proof.idx + 1) % WIRES];
+    // TODO run randomness tape on verifier
+    proof.rands[0] = new RandomSource(seeds[proof.idx], numRands);
+    proof.rands[1] = new RandomSource(seeds[(proof.idx+1)%3], numRands);
+    //memcpy(proof.rands[0].seed, seeds[proof.idx], SHA256_DIGEST_LENGTH);
+    //memcpy(proof.rands[1].seed, seeds[(proof.idx + 1) % 3], SHA256_DIGEST_LENGTH);
+
+    proof.outShares[0] = (uint32_t *)malloc(sizeof(uint32_t));
+    proof.outShares[1] = (uint32_t *)malloc(sizeof(uint32_t));
+    bool b;
+    memcpy(((uint8_t *)&proof.outShares[0][0]), ((uint8_t *)&out[0]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
+    memcpy(((uint8_t *)&proof.outShares[1][0]), ((uint8_t *)&out[0]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+    uint32_t shares[3];
+    for (int j = 0; j < 3; j++) {
+        memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[0]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
+    }
+    b = (shares[0] + shares[1] + shares[2]) % 2;
+    printf("OUTPUT: %d\n", b);
+    //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
+    /*from_bool(bs, output, out_len);
+    printf("output bytes: ");
+    for (int i = 0; i < out_len / 8; i++) {
+        printf("%x", output[i]);
+    }
+    printf("\n");*/
+}
+
 // each block just contains one bit
-void Prove(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len, int numRands, Proof &proof, uint8_t *output) {
+void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len, int numRands, Proof &proof, uint8_t *output) {
 //void Prove(string circuitFile, uint8_t *w, int in_len, int out_len, int numRands, Proof &proof) {
     vector<CircuitView *> views;
     //int out_len = 256;
@@ -110,7 +210,7 @@ void Prove(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len
     }
     INIT_TIMER;
     START_TIMER;
-    GenViews(*f, wShares, in_len, views, out, 8, seeds, numRands);
+    GenViewsHash(*f, wShares, in_len, views, out, 8, seeds, numRands);
     //GenViews(circuitFile, wShares, in_len, views, out, 8, seeds, numRands);
     STOP_TIMER("gen views");
     START_TIMER;
