@@ -108,16 +108,14 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
         // individual shares of bits
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
-        indivShares[0][i] = 0; //indivShares[0][i] % 2;
-        indivShares[1][i] = 0; //indivShares[1][i] % 2;
+        indivShares[0][i] = indivShares[0][i] % 2;
+        indivShares[1][i] = indivShares[1][i] % 2;
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit(input[i/8], i%8);
         for (int j = 0; j < 3; j++) {
             SetWireNum(&indivShares[j][i], i + offset);
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             dst[j][i + offset] = indivShares[j][i];
         }
-        //dst0[i] = indivShares[idx][i];
-        //dst1[i] = indivShares[(idx + 1) % 3][i];
     }
 }
 
@@ -130,8 +128,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
     for (int i = 0; i < 3; i++) {
         w_tmp[i] = (uint32_t *)malloc(proof.wLen * sizeof(uint32_t));
     }
-    //proof.w[0] = (uint32_t *)malloc(proof.wLen * sizeof(uint32_t));
-    //proof.w[1] = (uint32_t *)malloc(proof.wLen * sizeof(uint32_t));
     block *out = new block[1];
     memset((void *)out, 0, sizeof(block));
     block *mShares = new block[m_len];
@@ -159,7 +155,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
     printf("going to commit views\n");
     CommitViews(views, proof.comms);
     
-    proof.idx = 2; //oracle.GetRand(proof.comms) % 3;
+    proof.idx = oracle.GetRand(proof.comms) % 3;
     printf("got idx = %d\n", proof.idx);
     proof.views[0] = views[proof.idx];
     proof.views[1] = views[(proof.idx + 1) % 3];

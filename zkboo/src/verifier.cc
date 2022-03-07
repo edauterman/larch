@@ -85,7 +85,7 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv) {
 
     // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
-    uint8_t idx_check = 2; //oracle.GetRand(proof.comms) % WIRES;
+    uint8_t idx_check = oracle.GetRand(proof.comms) % WIRES;
     if (proof.idx != idx_check) {
         return false;
     }
