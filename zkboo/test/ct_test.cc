@@ -20,7 +20,7 @@ const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 int main() {
 
     Proof pi;
-    int numRands = 103040;
+    int numRands = 103424;
     //int numRands = 89984;
 
     int m_len = 512;
@@ -32,13 +32,17 @@ int main() {
     uint8_t *m = (uint8_t *)malloc(m_len / 8);
     uint8_t *ct = (uint8_t *)malloc(m_len / 8);
     uint8_t hash_out[256 / 8];
-    uint8_t comm_in[(128 + 128) / 8];
+    uint8_t comm_in[512 / 8];
     
+    memset(m, 0, m_len/8);
+    memset(key, 0, 128/8);
     sha3_256(hash_out, m, m_len / 8);
+    memset(comm_in, 0, 512 / 8);
     memcpy(comm_in, key, 128 / 8);
     memcpy(comm_in + (128 / 8), r, 128 / 8);
-    sha3_256(comm, comm_in, (128 + 128) / 8);
-    aes_128_ctr(key_raw, iv, m, ct, m_len / 8);
+    sha3_256(comm, comm_in, (512) / 8);
+    memset(key, 0, 128/8);
+    aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);
 
     printf("finished setup, starting proving\n");
     INIT_TIMER;

@@ -44,10 +44,14 @@ void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block ct[]
     }
 
     // H(key, key_r) ?= key_comm
-    block key_and_r[256];
+    block key_and_r[512];
     memcpy((uint8_t *)key_and_r, (uint8_t *)key, 128 * sizeof(block));
     memcpy((uint8_t *)key_and_r + 128 * sizeof(block), (uint8_t *)key_r, 128 * sizeof(block));
-    sha3_256_calc.sha3_256(hash_out_calc, key_and_r, 256);
+    for (int i = 0; i < 256; i++) {
+        key_and_r[i + 256] = CircuitExecution::circ_exec->public_label(false);
+    }
+    //SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
+    sha3_256_calc.sha3_256(hash_out_calc, key_and_r, 512);
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
@@ -59,10 +63,10 @@ void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block ct[]
     // Enc(k, iv, m) ?= ct
     block *ct_calc = new block[m_len];
     AES_128_CTR_Calculator aes128_calc = AES_128_CTR_Calculator();
-    aes128_calc.aes_128_ctr(key, iv, m, ct_calc, m_len);
-   
+    aes128_calc.aes_128_ctr(key, iv, m, ct_calc, m_len, 0);
+
     // Check ciphertext matches
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < m_len; i++) {
         block out = CircuitExecution::circ_exec->xor_gate(ct_calc[i], ct[i]);
         out = CircuitExecution::circ_exec->not_gate(out);
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
