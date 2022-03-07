@@ -39,7 +39,6 @@ RandomSource::RandomSource(uint8_t *in_seed, int numRands) {
     EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
     int len;
     randomness = (uint8_t *)malloc(numRands / 8 + 16);
-    if (randomness == NULL) printf("MALLOC ERR\n");
     for (int i = 0; i < numRands / (8 * 16) + 1; i++) {
         EVP_EncryptUpdate(ctx, &randomness[i * 16], &len, pt, 16);
     }

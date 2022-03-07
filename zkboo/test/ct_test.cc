@@ -20,10 +20,10 @@ const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 int main() {
 
     Proof pi;
-    int numRands = 90500;
+    int numRands = 103040;
     //int numRands = 89984;
 
-    int m_len = 128;
+    int m_len = 512;
     uint8_t key[128 / 8];
     __m128i key_raw = makeBlock(0,0);
     __m128i iv = makeBlock(0,0);

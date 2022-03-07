@@ -149,8 +149,12 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("XOR compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
             if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("xor gate output failed %d -- wanted %d got %d (%d - %d, %d - %d)\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
+                printf("xor gate failed -- LSBs are %d %d -> %d (wanted %d)\n", getLSB(a), getLSB(b), out_shares[0], views[0]->wires[nextWireNum]);
+                printf("xor gate output failed %d -- wanted %d got %d (%d - %d, %d - %d), len is %d\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b), views[0]->wires.size());
                 verified = false;
+            }
+            if (nextWireNum >= 1075) {
+                //printf("xor gate detail %d -- wanted %d got %d (%d - %d, %d - %d), len is %d\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b), views[0]->wires.size());
             }
             SetWireNum(&out_shares[0], nextWireNum);
             SetWireNum(&out_shares[1], nextWireNum);

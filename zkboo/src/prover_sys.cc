@@ -72,12 +72,16 @@ void GenViewsHash(void (*f)(block[], block[], int), block *w, int wLen, vector<C
 void GenViewsCtCircuit(block *mShares, int m_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t *seeds[], int numRands) {
     int wLen = m_len + 256 + 128 + m_len + 256 + 128;
     block *w = new block[wLen];
+
+    memset(w, 0xff, wLen * sizeof(block));
     memcpy((uint8_t *)w, mShares, m_len * sizeof(block));
-    memcpy((uint8_t *)w + m_len * sizeof(block), hashOutShares, 256);
-    memcpy((uint8_t *)w + (m_len + 256) * sizeof(block), ctShares, m_len);
-    memcpy((uint8_t *)w + (m_len + 256 + m_len) * sizeof(block), keyShares, 128);
-    memcpy((uint8_t *)w + (m_len + 256 + m_len + 128) * sizeof(block), keyRShares, 128);
-    memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128) * sizeof(block), keyCommShares, 256);
+    memcpy((uint8_t *)w + m_len * sizeof(block), hashOutShares, 256 * sizeof(block));
+    memcpy((uint8_t *)w + (m_len + 256) * sizeof(block), ctShares, m_len * sizeof(block));
+    memcpy((uint8_t *)w + (m_len + 256 + m_len) * sizeof(block), keyShares, 128 * sizeof(block));
+    memcpy((uint8_t *)w + (m_len + 256 + m_len + 128) * sizeof(block), keyRShares, 128 * sizeof(block));
+    memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128) * sizeof(block), keyCommShares, 256 * sizeof(block));
+
+
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
     check_ciphertext_circuit(hashOutShares, mShares, m_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
@@ -155,7 +159,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
     printf("going to commit views\n");
     CommitViews(views, proof.comms);
     
-    proof.idx = 1; //oracle.GetRand(proof.comms) % 3;
+    proof.idx = 2; //oracle.GetRand(proof.comms) % 3;
     printf("got idx = %d\n", proof.idx);
     proof.views[0] = views[proof.idx];
     proof.views[1] = views[(proof.idx + 1) % 3];

@@ -54,8 +54,11 @@ class ZKBooCircExecProver : public CircuitExecution {
             }
             p = new Prover(seeds, numRands);
             for (int i = 0; i < wLen; i++) {
+                uint32_t shares[3];
+                memcpy(shares, (uint8_t *)&w[i], 3 * sizeof(uint32_t));
                 for (int j = 0; j < 3; j++) {
-                    view[j]->wires.push_back(*(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1);
+                    view[j]->wires.push_back(shares[j] & 1);
+                    //view[j]->wires.push_back(*(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1);
                     //view[j]->wires[GetWireNum(*(uint32_t *)&w[i])] = *(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1;
                 }
             }
@@ -103,7 +106,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
             p->AddShares(a_shares, b_shares, out_shares);
             block out;
-            if (nextWireNum == 193513) {
+            if (nextWireNum == 1084) {
                 cout << b << endl;
                 printf("a (%d) = %d %d %d, b (%d) = %d %d %d, out = %d %d %d\n", GetWireNum(a_shares[0]), a_shares[0], a_shares[1], a_shares[2],GetWireNum(b_shares[0]), b_shares[0], b_shares[1], b_shares[2], out_shares[0], out_shares[1], out_shares[2]);
             }
