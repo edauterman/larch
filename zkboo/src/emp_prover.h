@@ -23,19 +23,19 @@ static inline uint32_t GetWireNum(const block &x) {
 }
 
 static inline void SetZeroWireNum(uint32_t *x) {
-    SetWireNum(x, 1000000);
+    SetWireNum(x, 1000000000);
 }
 
 static inline void SetOneWireNum(uint32_t *x) {
-    SetWireNum(x, 2000000);
+    SetWireNum(x, 2000000000);
 }
 
 static inline bool IsZeroWireNum(const block &x) {
-    return GetWireNum(x) == 1000000;
+    return GetWireNum(x) == 1000000000;
 }
 
 static inline bool IsOneWireNum(const block &x) {
-    return GetWireNum(x) == 2000000;
+    return GetWireNum(x) == 2000000000;
 }
 
 
@@ -79,6 +79,10 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
             p->MultShares(a_shares, b_shares, out_shares);
             block out;
+/*            if (nextWireNum == 193513) {
+                cout << b << endl;
+                printf("a (%d) = %d %d %d, b (%d) = %d %d %d, out = %d %d %d\n", GetWireNum(a_shares[0]), a_shares[0], a_shares[1], a_shares[2],GetWireNum(b_shares[0]), b_shares[0], b_shares[1], b_shares[2], out_shares[0], out_shares[1], out_shares[2]);
+            } */
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
                 SetWireNum(&out_shares[i], nextWireNum);
@@ -99,6 +103,10 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
             p->AddShares(a_shares, b_shares, out_shares);
             block out;
+            if (nextWireNum == 193513) {
+                cout << b << endl;
+                printf("a (%d) = %d %d %d, b (%d) = %d %d %d, out = %d %d %d\n", GetWireNum(a_shares[0]), a_shares[0], a_shares[1], a_shares[2],GetWireNum(b_shares[0]), b_shares[0], b_shares[1], b_shares[2], out_shares[0], out_shares[1], out_shares[2]);
+            }
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
                 SetWireNum(&out_shares[i], nextWireNum);

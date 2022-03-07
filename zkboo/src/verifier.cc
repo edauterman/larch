@@ -85,15 +85,15 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv) {
 
     // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
-    uint8_t idx_check = oracle.GetRand(proof.comms) % WIRES;
+    uint8_t idx_check = 1; //oracle.GetRand(proof.comms) % WIRES;
     if (proof.idx != idx_check) {
         return false;
     }
 
-    int m_len = proof.wLen - 256 - 128 - 128 - 128 - 256;
+    int m_len = (proof.wLen - 256 - 128 - 128 - 256) / 2;
     block *m = new block[m_len];
     block *hashOut = new block[256];
-    block *ct = new block[128];
+    block *ct = new block[m_len];
     block *key = new block[128];
     block *keyR = new block[128];
     block *keyComm = new block[256];
@@ -109,24 +109,24 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv) {
         memcpy((uint8_t *)&hashOut[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len], sizeof(uint32_t));
     }
 
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < m_len; i++) {
         memcpy((uint8_t *)&ct[i], (uint8_t *)&proof.w[0][i + m_len + 256], sizeof(uint32_t));
         memcpy((uint8_t *)&ct[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256], sizeof(uint32_t));
     }
 
     for (int i = 0; i < 128; i++) {
-        memcpy((uint8_t *)&key[i], (uint8_t *)&proof.w[0][i + m_len + 256 + 128], sizeof(uint32_t));
-        memcpy((uint8_t *)&key[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&key[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len], sizeof(uint32_t));
+        memcpy((uint8_t *)&key[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len], sizeof(uint32_t));
     }
 
     for (int i = 0; i < 128; i++) {
-        memcpy((uint8_t *)&keyR[i], (uint8_t *)&proof.w[0][i + m_len + 256 + 128 + 128], sizeof(uint32_t));
-        memcpy((uint8_t *)&keyR[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + 128 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&keyR[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&keyR[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128], sizeof(uint32_t));
     }
 
     for (int i = 0; i < 256; i++) {
-        memcpy((uint8_t *)&keyComm[i], (uint8_t *)&proof.w[0][i + m_len + 256 + 128 + 128 + 128], sizeof(uint32_t));
-        memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + 128 + 128 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&keyComm[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
+        memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
     }
 
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);

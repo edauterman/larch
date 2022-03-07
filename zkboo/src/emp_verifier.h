@@ -25,19 +25,19 @@ static inline uint32_t GetWireNum(const block &x) {
 }
 
 static inline void SetZeroWireNum(uint32_t *x) {
-    SetWireNum(x, 1000000);
+    SetWireNum(x, 1000000000);
 }
 
 static inline void SetOneWireNum(uint32_t *x) {
-    SetWireNum(x, 2000000);
+    SetWireNum(x, 2000000000);
 }
 
 static inline bool IsZeroWireNum(const block &x) {
-    return GetWireNum(x) == 1000000;
+    return GetWireNum(x) == 1000000000;
 }
 
 static inline bool IsOneWireNum(const block &x) {
-    return GetWireNum(x) == 2000000;
+    return GetWireNum(x) == 2000000000;
 }
 
 template<typename T>
@@ -55,6 +55,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             }
             verified = true;
             gateNum = -1;
+            printf("idx = %d\n", idx);
             v = new Verifier(in_rands, idx);
             nextWireNum = wLen;
         }
@@ -99,7 +100,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("AND compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
             if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                //printf("and gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
+                //printf("and gate output failed (%d) -- wanted %d got %d (%d - %d, %d - %d)\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);
@@ -148,7 +149,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("XOR compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
             if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                //printf("xor gate output failed -- wanted %d got %d (%d - %d, %d - %d)\n", views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
+                printf("xor gate output failed %d -- wanted %d got %d (%d - %d, %d - %d)\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);
@@ -183,7 +184,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             //printf("NOT compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
            if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                //printf("not gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
+                printf("not gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
                 verified = false;
             }
             SetWireNum(&out_shares[0], nextWireNum);
