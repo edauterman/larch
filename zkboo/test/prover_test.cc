@@ -36,7 +36,7 @@ int main() {
     int wLen = 512;
     int numRands = 38400;
     //int numRands = 22272;
-    memset(w, 0xff, wLen / 8);
+    memset(w, 0, wLen / 8);
     uint8_t output[SHA256_DIGEST_LENGTH];
     INIT_TIMER;
     START_TIMER;
@@ -53,13 +53,28 @@ int main() {
         cout << "Proof FAILED to verify" << endl;
     }
 
+    /*
+    setup_plain_prot(false, "");
+    Integer inp = Integer(512, 0, PUBLIC);
+
+    Integer out = Integer(256, 0, PUBLIC);
+
+    printf("going to set up\n");
+    cout << circuitFile << endl;
+    BristolFormat cf(circuitFile.c_str());
+    printf("about to compute\n");
+    cf.compute(out.bits.data(), inp.bits.data(), NULL);
+    printf("did compute\n");
+    std::cout << out.reveal<string>() << std::endl;
+    finalize_plain_prot();*/
+
     uint8_t buf[SHA256_DIGEST_LENGTH];
     sha3_256(buf, w, 512/8);
-/*    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
-    EVP_DigestInit_ex(mdctx, EVP_sha3_256(), NULL);
+    /*EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(mdctx, w, 512/8);
-    EVP_DigestFinal(mdctx, buf, NULL);
-    printf("CORRECT OUTPUT len %d: ", SHA256_DIGEST_LENGTH);*/
+    EVP_DigestFinal(mdctx, buf, NULL);*/
+    printf("CORRECT OUTPUT len %d: ", SHA256_DIGEST_LENGTH);
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
         printf("%x", buf[i]);
     }

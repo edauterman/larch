@@ -65,10 +65,10 @@ RM = /home/ec2-user/.local/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/ec2-user/zkboo-r1cs/zkboo
+CMAKE_SOURCE_DIR = /home/ec2-user/zkboo-r1cs
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/ec2-user/zkboo-r1cs/zkboo
+CMAKE_BINARY_DIR = /home/ec2-user/zkboo-r1cs
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -97,14 +97,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles/progress.marks
-	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles 0
+	cd /home/ec2-user/zkboo-r1cs && $(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/CMakeFiles /home/ec2-user/zkboo-r1cs/zkboo/CMakeFiles/progress.marks
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ec2-user/zkboo-r1cs/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	$(MAKE) -f CMakeFiles/Makefile2 clean
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/clean
 .PHONY : clean
 
 # The main clean target
@@ -114,83 +114,33 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/ec2-user/zkboo-r1cs && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
-#=============================================================================
-# Target rules for targets named Base
+# Convenience name for target.
+zkboo/CMakeFiles/Base.dir/rule:
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f CMakeFiles/Makefile2 zkboo/CMakeFiles/Base.dir/rule
+.PHONY : zkboo/CMakeFiles/Base.dir/rule
 
-# Build rule for target.
-Base: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 Base
+# Convenience name for target.
+Base: zkboo/CMakeFiles/Base.dir/rule
+
 .PHONY : Base
 
 # fast build rule for target.
 Base/fast:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/build
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/build
 .PHONY : Base/fast
-
-#=============================================================================
-# Target rules for targets named Prover
-
-# Build rule for target.
-Prover: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 Prover
-.PHONY : Prover
-
-# fast build rule for target.
-Prover/fast:
-	$(MAKE) -f src/CMakeFiles/Prover.dir/build.make src/CMakeFiles/Prover.dir/build
-.PHONY : Prover/fast
-
-#=============================================================================
-# Target rules for targets named prover_test
-
-# Build rule for target.
-prover_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 prover_test
-.PHONY : prover_test
-
-# fast build rule for target.
-prover_test/fast:
-	$(MAKE) -f test/CMakeFiles/prover_test.dir/build.make test/CMakeFiles/prover_test.dir/build
-.PHONY : prover_test/fast
-
-#=============================================================================
-# Target rules for targets named hash_test
-
-# Build rule for target.
-hash_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 hash_test
-.PHONY : hash_test
-
-# fast build rule for target.
-hash_test/fast:
-	$(MAKE) -f test/CMakeFiles/hash_test.dir/build.make test/CMakeFiles/hash_test.dir/build
-.PHONY : hash_test/fast
-
-#=============================================================================
-# Target rules for targets named ct_test
-
-# Build rule for target.
-ct_test: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 ct_test
-.PHONY : ct_test
-
-# fast build rule for target.
-ct_test/fast:
-	$(MAKE) -f test/CMakeFiles/ct_test.dir/build.make test/CMakeFiles/ct_test.dir/build
-.PHONY : ct_test/fast
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
 
@@ -198,7 +148,7 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o: h
 
 # target to build an object file
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.o
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
@@ -207,7 +157,7 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i: h
 
 # target to preprocess a source file
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.i
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
@@ -216,7 +166,7 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s: h
 
 # target to generate assembly for a file
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp.s
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.o: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
@@ -225,7 +175,7 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.o: ho
 
 # target to build an object file
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.o
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.i: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
@@ -234,7 +184,7 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.i: ho
 
 # target to preprocess a source file
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.i
 
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.s: home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
@@ -243,7 +193,7 @@ home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.s: ho
 
 # target to generate assembly for a file
 home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
 .PHONY : home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/aes_128.txt.cpp.s
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
@@ -252,7 +202,7 @@ home/ec2-user/emp-tool/emp-tool/emp-tool.o: home/ec2-user/emp-tool/emp-tool/emp-
 
 # target to build an object file
 home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
 .PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.o
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.i: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
@@ -261,7 +211,7 @@ home/ec2-user/emp-tool/emp-tool/emp-tool.i: home/ec2-user/emp-tool/emp-tool/emp-
 
 # target to preprocess a source file
 home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
 .PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.i
 
 home/ec2-user/emp-tool/emp-tool/emp-tool.s: home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
@@ -270,7 +220,7 @@ home/ec2-user/emp-tool/emp-tool/emp-tool.s: home/ec2-user/emp-tool/emp-tool/emp-
 
 # target to generate assembly for a file
 home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s:
-	$(MAKE) -f CMakeFiles/Base.dir/build.make CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
+	cd /home/ec2-user/zkboo-r1cs && $(MAKE) -f zkboo/CMakeFiles/Base.dir/build.make zkboo/CMakeFiles/Base.dir/home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
 .PHONY : home/ec2-user/emp-tool/emp-tool/emp-tool.cpp.s
 
 # Help Target
@@ -282,10 +232,6 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... Base"
-	@echo "... Prover"
-	@echo "... ct_test"
-	@echo "... hash_test"
-	@echo "... prover_test"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.o"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.i"
 	@echo "... home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.s"
@@ -306,6 +252,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/ec2-user/zkboo-r1cs && $(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

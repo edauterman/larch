@@ -2,6 +2,7 @@
 #include <emp-tool/circuits/sha3_256.h>
 #include <openssl/sha.h>
 #include "circuit.h"
+#include "circuit_utils.h"
 
 using namespace std;
 using namespace emp;
@@ -33,8 +34,13 @@ void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block ct[]
 
     // H(m) ?= hash_out
     block hash_out_calc[256];
-    SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
-    sha3_256_calc.sha3_256(hash_out_calc, m, m_len);
+    /*const string fileLoc = macro_xstr(EMP_CIRCUIT_PATH);
+    string circuitFile = fileLoc + "bristol_format/sha-256.txt";
+    BristolFormat cf(circuitFile.c_str());
+    cf.compute(hash_out_calc, m, NULL);*/
+    sha256(m, hash_out_calc, m_len);
+    //SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
+    //sha3_256_calc.sha3_256(hash_out_calc, m, m_len);
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
@@ -51,7 +57,9 @@ void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block ct[]
         key_and_r[i + 256] = CircuitExecution::circ_exec->public_label(false);
     }
     //SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
-    sha3_256_calc.sha3_256(hash_out_calc, key_and_r, 512);
+    //sha3_256_calc.sha3_256(hash_out_calc, key_and_r, 512);
+    sha256(key_and_r, hash_out_calc, 512);
+    //cf.compute(hash_out_calc, key_and_r, NULL);
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
