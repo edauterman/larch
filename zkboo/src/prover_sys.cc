@@ -142,7 +142,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
     ShareInput(keyR, keyRShares, 128, w_tmp, m_len + 256 + m_len + 128);
     block *keyCommShares = new block[256];
     ShareInput(keyComm, keyCommShares, 256, w_tmp, m_len + 256 + m_len + 128 + 128);
-    printf("finished sharing inputs\n");
 
     uint8_t *seeds[3];
     for (int i = 0; i < 3; i++) {
@@ -150,9 +149,10 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
         RAND_bytes(seeds[i], 16);
     }
 
-    printf("going to generate views\n");
+    INIT_TIMER;
+    START_TIMER;
     GenViewsCtCircuit(mShares, m_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands);
-    printf("going to commit views\n");
+    STOP_TIMER("Gen views");
     CommitViews(views, proof.comms);
     
     proof.idx = oracle.GetRand(proof.comms) % 3;
