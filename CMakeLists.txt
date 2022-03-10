@@ -19,3 +19,4 @@ find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 
 add_subdirectory(zkboo)
+add_subdirectory(agent)
