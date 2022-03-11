@@ -23,7 +23,15 @@
 extern "C"{
 #endif
 
-struct params;
+struct params {
+  EC_GROUP *group;
+  BIGNUM *order;
+  BIGNUM *base_prime;
+  BN_CTX *ctx;
+
+  EC_POINT *g;
+  EC_POINT *h;
+};
 typedef struct params* Params;
 typedef const struct params* const_Params;
 

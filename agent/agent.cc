@@ -120,6 +120,7 @@ void handle_registration(json request) {
 
   /* Register with device. */
   uint8_t *cert_sig_ptr = u2f_resp.keyHandleCertSig + MAX_KH_SIZE;
+  fprintf(stderr, "det2f: got cert sig ptr\n");
   int cert_sig_len = Register(app_id, challenge, u2f_resp.keyHandleCertSig,
                               &u2f_resp.pubKey, cert_sig_ptr);
   if (cert_sig_len > 0) {

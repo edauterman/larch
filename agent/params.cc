@@ -29,16 +29,6 @@
 
 const uint8_t b_buf[32] = {0x5a, 0xc6, 0x35, 0xd8, 0xaa, 0x3a, 0x93, 0xe7, 0xb3, 0xeb, 0xbd, 0x55, 0x76, 0x98, 0x86,0xbc, 0x65, 0x1d, 0x06, 0xb0, 0xcc, 0x53, 0xb0, 0xf6, 0x3b, 0xce, 0x3c, 0x3e, 0x27, 0xd2, 0x60, 0x4b};
 
-struct params {
-  EC_GROUP *group;
-  BIGNUM *order;
-  BIGNUM *base_prime;
-  BN_CTX *ctx;
-
-  EC_POINT *g;
-  EC_POINT *h;
-};
-
 int min(int a, int b); 
 
 inline int min (int a, int b) {
@@ -79,10 +69,11 @@ Params_new (CurveName c)
   p->ctx = NULL;
 
   BIGNUM *tmp;
+  p->ctx = BN_CTX_new ();
+  p->group = EC_GROUP_new_by_curve_name (nid);
+
   const EC_POINT *gen = EC_GROUP_get0_generator(p->group);
 
-  CHECK_A (p->ctx = BN_CTX_new ());
-  CHECK_A (p->group = EC_GROUP_new_by_curve_name (nid));
 
   CHECK_A (p->order = BN_new());
   CHECK_C (EC_GROUP_get_order (p->group, p->order, NULL));
@@ -96,6 +87,7 @@ Params_new (CurveName c)
     Params_free (p);
     return NULL;
   }
+
 
   CHECK_A (p->g = EC_POINT_dup(gen, p->group));
   CHECK_A (p->h = EC_POINT_new(p->group));

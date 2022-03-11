@@ -34,8 +34,6 @@
 
 using namespace std;
 
-Params params = Params_new(P256);
-
 /* Wrapper for storing key handles in a map. Allows lookup in map by key handle
  * value instead of by address of pointer. */
 KeyHandle::KeyHandle(const uint8_t *data)
@@ -96,38 +94,53 @@ int Register(const uint8_t *app_id, const uint8_t *challenge,
   uint8_t reg_id = U2F_REGISTER_HASH_ID;
   const BIGNUM *r = NULL;
   const BIGNUM *s = NULL;
+  BIGNUM *x;
+  BIGNUM *y;
   uint8_t signed_data[1 + U2F_APPID_SIZE + U2F_NONCE_SIZE + MAX_KH_SIZE +
       P256_POINT_SIZE];
   EVP_PKEY *anon_pkey;
   string str;
-#ifdef VRF_OPTIMIZED
-  cached_vrf *vrf;
-#endif
-#ifdef HASH2PT_OPTIMIZED
-  int num_roots;
-#endif
+  fprintf(stderr, "det2f: before params\n");
+  Params params = Params_new(P256);
+  fprintf(stderr, "det2f: after params\n");
 
-  CHECK_A(pk = Params_point_new(params));
   CHECK_A(cert = X509_new());
   CHECK_A(anon_key = EC_KEY_new());
   CHECK_A(evpctx = EVP_MD_CTX_create());
   CHECK_A(r = BN_new());
   CHECK_A(s = BN_new());
+  CHECK_A(x = BN_new());
+  CHECK_A(y = BN_new());
   CHECK_A(anon_pkey = EVP_PKEY_new());
+  pk = Params_point_new(params);
+
+  fprintf(stderr, "det2f: going to generate key handle\n");
 
   /* Generate key handle. */
   generate_key_handle(app_id, U2F_APPID_SIZE, key_handle_out, MAX_KH_SIZE);
 
+  fprintf(stderr, "det2f: generated key handle\n");
+
   /* Output result. */
   // TODO choose keypair
+  Params_rand_point(params, pk);
+  EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
+  BN_bn2bin(x, pk_out->x);
+  BN_bn2bin(y, pk_out->y);
   pk_out->format = UNCOMPRESSED_POINT;
+
+  fprintf(stderr, "det2f: chose pub key\n");
 
   /* Randomly choose key for attestation. */
   CHECK_C (EC_KEY_set_group(anon_key, Params_group(params)));
   CHECK_C (EC_KEY_generate_key(anon_key));
 
+  fprintf(stderr, "det2f: chose attestation key\n");
+
   /* Generate self-signed cert. */
   cert_len = generate_cert(params, anon_key, cert_sig_out);
+
+  fprintf(stderr, "det2f: self signed cert\n");
 
   /* Sign hash of U2F_REGISTER_ID, app_id, challenge, kh, and pk with key from
    * self-signed attestation cert. */
@@ -144,6 +157,8 @@ int Register(const uint8_t *app_id, const uint8_t *challenge,
                          U2F_NONCE_SIZE + MAX_KH_SIZE + P256_POINT_SIZE));
   CHECK_C(EVP_SignFinal(evpctx, cert_sig_out + cert_len,
                         (unsigned int *)&sig_len, anon_pkey));
+
+  fprintf(stderr, "det2f: did sig\n");
 
 cleanup:
   if (rv == ERROR && pk) EC_POINT_clear_free(pk);
@@ -167,6 +182,7 @@ int Authenticate(const uint8_t *app_id, const uint8_t *challenge,
   int sig_len = 0;
   uint8_t flags;
   uint8_t ctr[4];
+  Params params = Params_new(P256);
 
   CHECK_A (r = BN_new());
   CHECK_A (s = BN_new());
