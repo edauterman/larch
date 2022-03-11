@@ -19,6 +19,7 @@
 //#include "common.h"
 #include "base64.h"
 #include "u2f.h"
+#include "reqs.h"
 
 // Used to define JSON messages.
 #define ID "agent-det2f"
@@ -119,8 +120,8 @@ void handle_registration(json request) {
 
   /* Register with device. */
   uint8_t *cert_sig_ptr = u2f_resp.keyHandleCertSig + MAX_KH_SIZE;
-  int cert_sig_len = 0; /*Register(app_id, challenge, u2f_resp.keyHandleCertSig,
-                              &u2f_resp.pubKey, cert_sig_ptr);*/
+  int cert_sig_len = Register(app_id, challenge, u2f_resp.keyHandleCertSig,
+                              &u2f_resp.pubKey, cert_sig_ptr);
   if (cert_sig_len > 0) {
     /* Successful registration. */
     fprintf(stderr, "det2f: successful register\n");
@@ -186,8 +187,8 @@ void handle_authentication(json request) {
             MAX_KH_SIZE: %d\n", key_handle_size);
 
   /* Authenticate with device. */
-  int sig_len = 0; /*Authenticate(app_id, challenge, key_handle, &u2f_resp.flags,
-                             &u2f_resp.ctr, u2f_resp.sig);*/
+  int sig_len = Authenticate(app_id, challenge, key_handle, &u2f_resp.flags,
+                             &u2f_resp.ctr, u2f_resp.sig);
   if (sig_len > 0) {
     /* Successful authentication. */
     fprintf(stderr, "det2f: successful authentication\n");

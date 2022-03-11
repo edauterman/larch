@@ -22,8 +22,9 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 #    /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
 #    )
 
-add_library(Utils asn1.cc base64.cc reqs.cc sig_parse.cc x509.cc)
+add_library(Utils asn1.cc base64.cc reqs.cc sig_parse.cc x509.cc params.cc)
 
 add_executable(agent agent.cc)
 target_link_libraries(agent
-    Utils)
+    Utils
+    OpenSSL::SSL)
