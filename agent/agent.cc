@@ -34,6 +34,7 @@
 #define APP_ID "app_id"
 #define CHALLENGE "challenge"
 #define KEY_HANDLE "key_handle"
+#define PUB_KEY "public_key"
 #define ENROLL_DATA "enrollData"
 #define SIGN_DATA "signData"
 #define RESPONSE_DATA "responseData"
@@ -93,6 +94,7 @@ void handle_registration(json request) {
   uint8_t resp_buf[sizeof(U2F_REGISTER_RESP)];
   uint8_t app_id[U2F_APPID_SIZE + 1];
   uint8_t challenge[U2F_NONCE_SIZE + 1];
+  uint8_t key_handle[MAX_KH_SIZE];
 
   fprintf(stderr, "det2f: handling registration request\n");
 
@@ -139,6 +141,14 @@ void handle_registration(json request) {
     char *encoded_enroll = encode_base64(resp_size, resp_buf);
     response[ENROLL_DATA] = string(encoded_enroll);
     free(encoded_enroll);
+
+    char *encoded_kh = encode_base64(MAX_KH_SIZE, u2f_resp.keyHandleCertSig);
+    response[KEY_HANDLE] = string(encoded_kh);
+    free(encoded_kh);
+
+    char *encoded_pk = encode_base64(sizeof(P256_POINT), (uint8_t *)&u2f_resp.pubKey);
+    response[PUB_KEY] = string(encoded_pk);
+    free(encoded_pk);
   } else {
     /* Unsuccessful. Report error. */
     fprintf(stderr, "det2f: unsuccessful register\n");

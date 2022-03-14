@@ -56,6 +56,7 @@ typedef struct {
 typedef struct {
   uint8_t registerId;
   P256_POINT pubKey;
+  uint8_t keyHandle[MAX_KH_SIZE];
   uint8_t keyHandleLen;
   uint8_t keyHandleCertSig[
       MAX_KH_SIZE +
