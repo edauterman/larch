@@ -12,27 +12,54 @@
 
 #include <iostream>
 #include <iomanip>
+#include <json.hpp>
+#include <string>
 
-#include <openssl/bn.h>
 #include <openssl/ec.h>
-#include <openssl/rand.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
-#include <openssl/ecdsa.h>
+#include <openssl/rand.h>
 #include <openssl/x509.h>
 
-#include "u2f.h"
-#include "reqs.h"
-#include "asn1.h"
-#include "sig_parse.h"
-#include "x509.h"
+//#include "agent.h"
 #include "common.h"
+#include "base64.h"
+#include "u2f.h"
+#include "client.h"
+#include "x509.h"
+#include "asn1.h"
 
-
-#define VENDOR_ID 0x18d1
-#define PRODUCT_ID 0x5026
+// Used to define JSON messages.
+#define ID "agent-det2f"
+#define AUTH_REQ "sign_helper_request"
+#define AUTH_RESP "sign_helper_reply"
+#define REG_REQ "enroll_helper_request"
+#define REG_RESP "enroll_helper_reply"
+#define TYPE "type"
+#define CODE "code"
+#define VERSION "version"
+#define ENROLL_CHALLENGES "enrollChallenges"
+#define APP_ID "app_id"
+#define CHALLENGE "challenge"
+#define KEY_HANDLE "key_handle"
+#define PUB_KEY "public_key"
+#define ENROLL_DATA "enrollData"
+#define SIGN_DATA "signData"
+#define RESPONSE_DATA "responseData"
+#define SIGNATURE "signature"
+#define COUNTER "counter"
+#define DEVICE_OK 0
+#define DEVICE_ERR 0x6984
+#define U2F_V2 "U2F_V2"
+#define KH_FILE "~/kh_file.txt"
 
 using namespace std;
+using namespace nlohmann;
+
+struct message_t {
+  string content;
+  uint32_t length;
+};
 
 /* Wrapper for storing key handles in a map. Allows lookup in map by key handle
  * value instead of by address of pointer. */
@@ -44,6 +71,19 @@ KeyHandle::KeyHandle(const uint8_t *data)
 bool KeyHandle::operator<(const KeyHandle &src) const
 {
   return memcmp(this->data, src.data, MAX_KH_SIZE) < 0;
+}
+
+/* Generate key handle using app_id and randomness. */
+int
+generate_key_handle(const uint8_t *app_id, int app_id_len, uint8_t *key_handle,
+                    int key_handle_len)
+{
+  int rv = ERROR;
+  memcpy(key_handle, app_id, app_id_len);
+  CHECK_C (RAND_bytes(key_handle + app_id_len, key_handle_len - app_id_len));
+
+cleanup:
+  return rv; 
 }
 
 /* Convert buffers containing x and y coordinates to EC_POINT. */
@@ -66,22 +106,91 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
   memcpy(y, buf + 1 + 32, 32);
 }
 
-/* Generate key handle using app_id and randomness. */
-int
-generate_key_handle(const uint8_t *app_id, int app_id_len, uint8_t *key_handle,
-                    int key_handle_len)
-{
-  int rv = ERROR;
-  memcpy(key_handle, app_id, app_id_len);
-  CHECK_C (RAND_bytes(key_handle + app_id_len, key_handle_len - app_id_len));
+Client::Client() {
+    params = Params_new(P256);
+}
 
-cleanup:
-  return rv;
+/* Write agent state to file, including root public keys and map of key handles
+ * to public keys. Should be called when creating a new agent. */
+// TODO: error checking
+void Client::WriteToStorage() {
+  /* Write mpk and pk_vrf. */
+/*  uint8_t mpk_buf[33];
+  uint8_t pk_vrf_buf[33];
+  FILE *pk_file = fopen(PK_FILE, "w");
+  EC_POINT_point2oct(Params_group(params), mpk,
+                     POINT_CONVERSION_COMPRESSED, mpk_buf, 33,
+                     Params_ctx(params));
+  EC_POINT_point2oct(Params_group(params), pk_vrf,
+                     POINT_CONVERSION_COMPRESSED, pk_vrf_buf, 33,
+                     Params_ctx(params));
+  fwrite(mpk_buf, 33, 1, pk_file);
+  fwrite(pk_vrf_buf, 33, 1, pk_file);
+  fclose(pk_file);*/
+
+  /* Write map of key handles to public keys. */
+  FILE *kh_file = fopen(KH_FILE, "w");
+  uint8_t pt[33];
+  for (map<KeyHandle, EC_POINT*>::iterator it = pk_map.begin();
+       it != pk_map.end(); it++) {
+    EC_POINT_point2oct(Params_group(params), it->second,
+                       POINT_CONVERSION_COMPRESSED, pt, 33,
+                       Params_ctx(params));
+    fwrite(it->first.data, MAX_KH_SIZE, 1, kh_file);
+    fwrite(pt, 33, 1, kh_file);
+  }
+  fclose(kh_file);
+
+}
+
+/* Read agent state from file, including root public keys and map of key handles
+ * to public keys. Should be called when destroying an old agent. */
+void Client::ReadFromStorage() {
+  /* Read mpk and pk_vrf. */
+/*  uint8_t mpk_buf[33];
+  uint8_t pk_vrf_buf[33];
+  FILE *pk_file = fopen(PK_FILE, "r");
+  if (pk_file != NULL) {
+    if (fread(mpk_buf, P256_SCALAR_SIZE + 1, 1, pk_file) != 1) {
+      fprintf(stderr, "ERROR: can't read mpk from file\n");
+    }
+    if (fread(pk_vrf_buf, P256_SCALAR_SIZE + 1, 1, pk_file) != 1) {
+      fprintf(stderr, "ERROR: can't read pk_vrf from file\n");
+    }
+    if ((EC_POINT_oct2point(Params_group(params), mpk, mpk_buf, 33,
+                           Params_ctx(params)) != OKAY) ||
+        (EC_POINT_oct2point(Params_group(params), pk_vrf, pk_vrf_buf, 33,
+                          Params_ctx(params)) != OKAY)) {
+      fprintf(stderr, "ERROR: public key in invalid format\n");
+    }
+    fclose(pk_file);
+  }*/
+
+  /* Read map of key handles to public keys. */
+  FILE *kh_file = fopen(KH_FILE, "r");
+  if (kh_file != NULL) {
+    uint8_t pt_buf[33];
+    uint8_t kh[MAX_KH_SIZE];
+    EC_POINT *pt;
+    while (fread(kh, MAX_KH_SIZE, 1, kh_file) == 1) {
+      if (fread(pt_buf, 33, 1, kh_file) != 1) {
+        fprintf(stderr, "ERROR: no corresponding pk for key handle");
+      }
+      pt = Params_point_new(params);
+      if (EC_POINT_oct2point(Params_group(params), pt, pt_buf, 33,
+                             Params_ctx(params)) != OKAY) {
+        fprintf(stderr, "ERROR: public key in invalid format\n");
+      }
+      pk_map[KeyHandle(kh)] = pt;
+    }
+    fclose(kh_file);
+  }
+
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
  * attestation certificate and batch signature. */
-int Register(const uint8_t *app_id, const uint8_t *challenge,
+int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
              uint8_t *key_handle_out, P256_POINT *pk_out, uint8_t *cert_sig_out) {
   int rv = ERROR;
   EC_POINT *pk;
@@ -170,7 +279,7 @@ cleanup:
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
-int Authenticate(const uint8_t *app_id, const uint8_t *challenge,
+int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
                  const uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool checkOnly) {
   int rv = ERROR;
@@ -199,7 +308,7 @@ int Authenticate(const uint8_t *app_id, const uint8_t *challenge,
   CHECK_C (EVP_DigestFinal_ex(mdctx, message, NULL));
 
   // TODO: Sign message and produce r,s
-  
+
   /* Output signature. */
   asn1_sigp(sig_out, r, s);
 
@@ -211,3 +320,4 @@ cleanup:
   if (mdctx) EVP_MD_CTX_destroy(mdctx);
   return rv == OKAY ? sig_len : ERROR;
 }
+
