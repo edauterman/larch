@@ -20,6 +20,7 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 #include <openssl/x509.h>
+#include <openssl/ecdsa.h>
 
 //#include "agent.h"
 #include "common.h"
@@ -52,6 +53,7 @@
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
 #define KH_FILE "~/kh_file.txt"
+#define SK_FILE "~/sk_file.txt"
 
 using namespace std;
 using namespace nlohmann;
@@ -141,6 +143,16 @@ void Client::WriteToStorage() {
   }
   fclose(kh_file);
 
+  FILE *sk_file = fopen(SK_FILE, "w");
+  uint8_t buf[32];
+  for (map<KeyHandle, BIGNUM*>::iterator it = sk_map.begin();
+       it != sk_map.end(); it++) {
+    BN_bn2bin(it->second, buf);
+    fwrite(it->first.data, MAX_KH_SIZE, 1, sk_file);
+    fwrite(buf, 32, 1, sk_file);
+  }
+  fclose(sk_file);
+
 }
 
 /* Read agent state from file, including root public keys and map of key handles
@@ -186,6 +198,22 @@ void Client::ReadFromStorage() {
     fclose(kh_file);
   }
 
+  FILE *sk_file = fopen(SK_FILE, "r");
+  if (sk_file != NULL) {
+    uint8_t buf[32];
+    uint8_t kh[MAX_KH_SIZE];
+    BIGNUM *bn;
+    while (fread(kh, MAX_KH_SIZE, 1, sk_file) == 1) {
+      if (fread(buf, 32, 1, kh_file) != 1) {
+        fprintf(stderr, "ERROR: no corresponding pk for key handle");
+      }
+      bn = BN_new();
+      BN_bin2bn(buf, 32, bn);
+      sk_map[KeyHandle(kh)] = bn;
+    }
+    fclose(sk_file);
+  }
+
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
@@ -205,6 +233,7 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
   const BIGNUM *s = NULL;
   BIGNUM *x;
   BIGNUM *y;
+  BIGNUM *exp;
   uint8_t signed_data[1 + U2F_APPID_SIZE + U2F_NONCE_SIZE + MAX_KH_SIZE +
       P256_POINT_SIZE];
   EVP_PKEY *anon_pkey;
@@ -220,6 +249,7 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
   CHECK_A(s = BN_new());
   CHECK_A(x = BN_new());
   CHECK_A(y = BN_new());
+  CHECK_A(exp = BN_new());
   CHECK_A(anon_pkey = EVP_PKEY_new());
   pk = Params_point_new(params);
 
@@ -232,7 +262,9 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
 
   /* Output result. */
   // TODO choose keypair
-  Params_rand_point(params, pk);
+  Params_rand_point_exp(params, pk, exp);
+  pk_map[KeyHandle(key_handle_out)] = pk;
+  sk_map[KeyHandle(key_handle_out)] = exp;
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
   BN_bn2bin(y, pk_out->y);
@@ -288,15 +320,17 @@ int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
   EVP_MD_CTX *mdctx;
   uint8_t message[SHA256_DIGEST_LENGTH];
   ECDSA_SIG *sig = NULL;
-  int sig_len = 0;
+  unsigned int sig_len = 0;
   uint8_t flags;
   uint8_t ctr[4];
-  Params params = Params_new(P256);
+  EC_KEY *key;
+  //uint8_t sig_out[64];
 
   CHECK_A (r = BN_new());
   CHECK_A (s = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (sig = ECDSA_SIG_new());
+  CHECK_A (key = EC_KEY_new());
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
@@ -308,9 +342,11 @@ int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
   CHECK_C (EVP_DigestFinal_ex(mdctx, message, NULL));
 
   // TODO: Sign message and produce r,s
+  EC_KEY_set_private_key(key, sk_map[KeyHandle(key_handle)]);
+  ECDSA_sign(0, message,  SHA256_DIGEST_LENGTH, sig_out, &sig_len, key);
 
   /* Output signature. */
-  asn1_sigp(sig_out, r, s);
+  //asn1_sigp(sig_out, r, s);
 
   /* Output message from device. */
   *flags_out = flags;
@@ -318,6 +354,6 @@ int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
 
 cleanup:
   if (mdctx) EVP_MD_CTX_destroy(mdctx);
-  return rv == OKAY ? sig_len : ERROR;
+  return rv == OKAY ? 1 : ERROR;
 }
 

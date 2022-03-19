@@ -38,6 +38,7 @@ class Client {
     private:
         Params params;
         map<KeyHandle, EC_POINT*> pk_map;
+        map<KeyHandle, BIGNUM*> sk_map;
 };
 
 #endif
