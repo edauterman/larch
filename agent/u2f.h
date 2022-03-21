@@ -23,7 +23,8 @@ extern "C" {
 #define P256_POINT_SIZE  ((P256_SCALAR_SIZE * 2) + 1)
 
 #define MAX_ECDSA_SIG_SIZE  72  // asn1 DER format
-#define MAX_KH_SIZE  128  // key handle
+#define MAX_KH_SIZE  32  // key handle
+//#define MAX_KH_SIZE  128  // key handle
 #define MAX_CERT_SIZE  2048  // attestation certificate
 
 #define U2F_APPID_SIZE  32

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <time.h>
 #include <map>
 
@@ -52,8 +53,8 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-#define KH_FILE "~/kh_file.txt"
-#define SK_FILE "~/sk_file.txt"
+#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
 
 using namespace std;
 using namespace nlohmann;
@@ -81,8 +82,9 @@ generate_key_handle(const uint8_t *app_id, int app_id_len, uint8_t *key_handle,
                     int key_handle_len)
 {
   int rv = ERROR;
-  memcpy(key_handle, app_id, app_id_len);
-  CHECK_C (RAND_bytes(key_handle + app_id_len, key_handle_len - app_id_len));
+  //memcpy(key_handle, app_id, app_id_len);
+  //CHECK_C (RAND_bytes(key_handle + app_id_len, key_handle_len - app_id_len));
+  CHECK_C (RAND_bytes(key_handle, key_handle_len));
 
 cleanup:
   return rv; 
@@ -133,25 +135,26 @@ void Client::WriteToStorage() {
   /* Write map of key handles to public keys. */
   FILE *kh_file = fopen(KH_FILE, "w");
   uint8_t pt[33];
-  for (map<KeyHandle, EC_POINT*>::iterator it = pk_map.begin();
+  for (map<string, EC_POINT*>::iterator it = pk_map.begin();
        it != pk_map.end(); it++) {
     EC_POINT_point2oct(Params_group(params), it->second,
                        POINT_CONVERSION_COMPRESSED, pt, 33,
                        Params_ctx(params));
-    fwrite(it->first.data, MAX_KH_SIZE, 1, kh_file);
+    fwrite(it->first.c_str(), MAX_KH_SIZE, 1, kh_file);
     fwrite(pt, 33, 1, kh_file);
   }
   fclose(kh_file);
 
   FILE *sk_file = fopen(SK_FILE, "w");
   uint8_t buf[32];
-  for (map<KeyHandle, BIGNUM*>::iterator it = sk_map.begin();
+  for (map<string, BIGNUM*>::iterator it = sk_map.begin();
        it != sk_map.end(); it++) {
     BN_bn2bin(it->second, buf);
-    fwrite(it->first.data, MAX_KH_SIZE, 1, sk_file);
+    fwrite(it->first.c_str(), MAX_KH_SIZE, 1, sk_file);
     fwrite(buf, 32, 1, sk_file);
   }
   fclose(sk_file);
+  fprintf(stderr, "det2f: WROTE TO STORAGE\n");
 
 }
 
@@ -193,7 +196,7 @@ void Client::ReadFromStorage() {
                              Params_ctx(params)) != OKAY) {
         fprintf(stderr, "ERROR: public key in invalid format\n");
       }
-      pk_map[KeyHandle(kh)] = pt;
+      pk_map[string((const char *)kh, MAX_KH_SIZE)] = pt;
     }
     fclose(kh_file);
   }
@@ -209,7 +212,7 @@ void Client::ReadFromStorage() {
       }
       bn = BN_new();
       BN_bin2bn(buf, 32, bn);
-      sk_map[KeyHandle(kh)] = bn;
+      sk_map[string((const char *)kh, MAX_KH_SIZE)] = bn;
     }
     fclose(sk_file);
   }
@@ -263,8 +266,9 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
   /* Output result. */
   // TODO choose keypair
   Params_rand_point_exp(params, pk, exp);
-  pk_map[KeyHandle(key_handle_out)] = pk;
-  sk_map[KeyHandle(key_handle_out)] = exp;
+  pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
+  sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = exp;
+  fprintf(stderr, "det2f: saving key %s\n", BN_bn2hex(exp));
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
   BN_bn2bin(y, pk_out->y);
@@ -321,9 +325,10 @@ int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
   uint8_t message[SHA256_DIGEST_LENGTH];
   ECDSA_SIG *sig = NULL;
   unsigned int sig_len = 0;
-  uint8_t flags;
+  uint8_t flags = 0x01;
   uint8_t ctr[4];
   EC_KEY *key;
+  memset(ctr, 0x1, 4 * sizeof(uint8_t));
   //uint8_t sig_out[64];
 
   CHECK_A (r = BN_new());
@@ -342,7 +347,14 @@ int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
   CHECK_C (EVP_DigestFinal_ex(mdctx, message, NULL));
 
   // TODO: Sign message and produce r,s
-  EC_KEY_set_private_key(key, sk_map[KeyHandle(key_handle)]);
+  fprintf(stderr, "det2f: before print %d\n", sk_map.size());
+  for (auto const &pair: sk_map) {
+    fprintf(stderr, "det2f: going to print in map\n");
+    if (pair.second == NULL) fprintf(stderr, "second is null\n");
+    fprintf(stderr, "det2f: key = %s, sk = %s\n", pair.first.c_str(), BN_bn2hex(pair.second));
+  }
+  fprintf(stderr, "det2f: signing with %s\n", BN_bn2hex(sk_map[string((const char *)key_handle, MAX_KH_SIZE)]));
+  EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
   ECDSA_sign(0, message,  SHA256_DIGEST_LENGTH, sig_out, &sig_len, key);
 
   /* Output signature. */

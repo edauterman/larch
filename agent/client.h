@@ -37,8 +37,8 @@ class Client {
                         uint8_t *sig_out, bool checkOnly = false);
     private:
         Params params;
-        map<KeyHandle, EC_POINT*> pk_map;
-        map<KeyHandle, BIGNUM*> sk_map;
+        map<string, EC_POINT*> pk_map;
+        map<string, BIGNUM*> sk_map;
 };
 
 #endif
