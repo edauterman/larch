@@ -369,6 +369,8 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   fprintf(stderr, "det2f: proving circuit\n");
   ProveCtCircuit(message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
   fprintf(stderr, "det2f: proved circuit\n");
+  VerifyCtCircuit(proof, iv);
+  fprintf(stderr, "det2f: verified circuit\n");
 
   // TODO: Sign message and produce r,s
   fprintf(stderr, "det2f: signing with %s\n", BN_bn2hex(sk_map[string((const char *)key_handle, MAX_KH_SIZE)]));
