@@ -149,14 +149,14 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
         RAND_bytes(seeds[i], 16);
     }
 
-    INIT_TIMER;
-    START_TIMER;
+    //INIT_TIMER;
+    //START_TIMER;
     GenViewsCtCircuit(mShares, m_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands);
-    STOP_TIMER("Gen views");
+    //STOP_TIMER("Gen views");
     CommitViews(views, proof.comms);
     
     proof.idx = oracle.GetRand(proof.comms) % 3;
-    printf("got idx = %d\n", proof.idx);
+    fprintf(stderr, "zkboo: got idx = %d\n", proof.idx);
     proof.views[0] = views[proof.idx];
     proof.views[1] = views[(proof.idx + 1) % 3];
     proof.w[0] = w_tmp[proof.idx];
@@ -177,7 +177,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
         memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[0]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
     }
     b = (shares[0] + shares[1] + shares[2]) % 2;
-    printf("OUTPUT: %d\n", b);
+    fprintf(stderr, "zkboo: OUTPUT: %d\n", b);
     //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
     /*from_bool(bs, output, out_len);
     printf("output bytes: ");
@@ -219,14 +219,14 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
         seeds[i] = (uint8_t *)malloc(16);
         RAND_bytes(seeds[i], 16);
     }
-    INIT_TIMER;
-    START_TIMER;
+    //INIT_TIMER;
+    //START_TIMER;
     GenViewsHash(*f, wShares, in_len, views, out, 8, seeds, numRands);
     //GenViews(circuitFile, wShares, in_len, views, out, 8, seeds, numRands);
-    STOP_TIMER("gen views");
-    START_TIMER;
+    //STOP_TIMER("gen views");
+    //START_TIMER;
     CommitViews(views, proof.comms);
-    STOP_TIMER("commit");
+    //STOP_TIMER("commit");
     
     proof.idx = oracle.GetRand(proof.comms) % WIRES;
     proof.views[0] = views[proof.idx];
@@ -254,10 +254,10 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
     }
     //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
     from_bool(bs, output, out_len);
-    printf("output bytes: ");
+    fprintf(stderr, "zkboo: output bytes: ");
     for (int i = 0; i < out_len / 8; i++) {
-        printf("%x", output[i]);
+        fprintf(stderr, "%x", output[i]);
     }
-    printf("\n");
+    fprintf(stderr, "\n");
 }
 

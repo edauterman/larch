@@ -66,7 +66,7 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         ~ZKBooCircExecProver() {
-            printf("Num ands: %d\n", p->numAnds);
+            fprintf(stderr, "****** Num ands: %d\n", p->numAnds);
         }
 
 

@@ -74,12 +74,12 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv) {
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
     if (memcmp(c0.digest, proof.comms[proof.idx].digest, SHA256_DIGEST_LENGTH) != 0) {
-        printf("commit for v0 failed\n");
+        fprintf(stderr, "zkboo: commit for v0 failed\n");
         return false;
     }
 
     if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES].digest, SHA256_DIGEST_LENGTH) != 0) {
-        printf("commit for v1 failed\n");
+        fprintf(stderr, "zkboo: commit for v1 failed\n");
         return false;
     }
 
@@ -149,12 +149,12 @@ bool VerifyHash(void (*f)(block[], block[], int), Proof &proof) {
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
     if (memcmp(c0.digest, proof.comms[proof.idx].digest, SHA256_DIGEST_LENGTH) != 0) {
-        printf("commit for v0 failed\n");
+        fprintf(stderr, "zkboo: commit for v0 failed\n");
         return false;
     }
 
     if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES].digest, SHA256_DIGEST_LENGTH) != 0) {
-        printf("commit for v1 failed\n");
+        fprintf(stderr, "zkboo: commit for v1 failed\n");
         return false;
     }
 
