@@ -32,7 +32,7 @@ class Client {
         * and a key handle obtained from registration. Outputs the flags, counter, and
         * sanitized signature from the device. Returns the length of the signature, or
         * 0 on failure. */
-        int Authenticate(const uint8_t *app_id, const uint8_t *challenge,
+        int Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *challenge,
                         const uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool checkOnly = false);
     private:

@@ -1,4 +1,4 @@
-// Copyright 2018 Google Inc. All rights reserved.
+
 //
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file or at
@@ -241,6 +241,7 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
       P256_POINT_SIZE];
   EVP_PKEY *anon_pkey;
   string str;
+  BN_CTX *ctx;
   fprintf(stderr, "det2f: before params\n");
   Params params = Params_new(P256);
   fprintf(stderr, "det2f: after params\n");
@@ -253,6 +254,7 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
   CHECK_A(x = BN_new());
   CHECK_A(y = BN_new());
   CHECK_A(exp = BN_new());
+  CHECK_A(ctx = BN_CTX_new());
   CHECK_A(anon_pkey = EVP_PKEY_new());
   pk = Params_point_new(params);
 
@@ -269,6 +271,7 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = exp;
   fprintf(stderr, "det2f: saving key %s\n", BN_bn2hex(exp));
+  fprintf(stderr, "det2f: PK GENERATED %s\n", EC_POINT_point2hex(Params_group(params), pk, POINT_CONVERSION_UNCOMPRESSED, ctx));
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
   BN_bn2bin(y, pk_out->y);
@@ -315,57 +318,130 @@ cleanup:
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
-int Client::Authenticate(const uint8_t *app_id, const uint8_t *challenge,
+int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *challenge,
                  const uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool checkOnly) {
   int rv = ERROR;
   BIGNUM *r = NULL;
   BIGNUM *s = NULL;
   EVP_MD_CTX *mdctx;
+  EVP_MD_CTX *mdctx2;
   uint8_t message[SHA256_DIGEST_LENGTH];
+  uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
   ECDSA_SIG *sig = NULL;
   unsigned int sig_len = 0;
+  //size_t sig_len_sizet = 0;
+  //uint8_t flags = 5;
   uint8_t flags = 0x01;
   uint8_t ctr[4];
   EC_KEY *key;
-  memset(ctr, 0x1, 4 * sizeof(uint8_t));
+  memset(ctr, 0, 4 * sizeof(uint8_t));
+  uint32_t c = 11;
+  ctr[0] = 0xFF & c >> 24;
+  ctr[1] = 0xFF & c >> 16;
+  ctr[2] = 0xFF & c >> 8;
+  ctr[3] = 0xFF & c;
+  BN_CTX *ctx;
+  int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
+  uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
+  uint8_t len_byte;
+  uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
+  EVP_PKEY *pkey;
+  //uint32_t ctr_val = 11;
+  //memcpy(ctr, (uint8_t *)&ctr_val, sizeof(uint32_t));
+  //memset(ctr, 0xa, 4 * sizeof(uint8_t));
   //uint8_t sig_out[64];
 
   CHECK_A (r = BN_new());
   CHECK_A (s = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
+  CHECK_A (mdctx2 = EVP_MD_CTX_create());
+  CHECK_A (ctx = BN_CTX_new());
   CHECK_A (sig = ECDSA_SIG_new());
   CHECK_A (key = EC_KEY_new());
+  pkey = EVP_PKEY_new();
+
+  fprintf(stderr, "det2f: going to hash app id\n");
+/*  CHECK_C (EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL));
+  CHECK_C (EVP_DigestUpdate(mdctx2, app_id, app_id_len));
+  CHECK_C (EVP_DigestFinal_ex(mdctx2, app_id_digest, NULL));*/
+  fprintf(stderr, "det2f: hashed app id\n");
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
-  CHECK_C (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL));
-  CHECK_C (EVP_DigestUpdate(mdctx, app_id, U2F_APPID_SIZE));
+/*  CHECK_C (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL));
+  CHECK_C (EVP_DigestUpdate(mdctx, app_id_digest, SHA256_DIGEST_LENGTH));
   CHECK_C (EVP_DigestUpdate(mdctx, &flags, sizeof(flags)));
-  CHECK_C (EVP_DigestUpdate(mdctx, ctr, sizeof(ctr)));
+  CHECK_C (EVP_DigestUpdate(mdctx, ctr, 4 * sizeof(uint8_t)));
   CHECK_C (EVP_DigestUpdate(mdctx, challenge, U2F_NONCE_SIZE));
-  CHECK_C (EVP_DigestFinal_ex(mdctx, message, NULL));
+  CHECK_C (EVP_DigestFinal_ex(mdctx, message, NULL));*/
+  memcpy(message_buf, app_id, SHA256_DIGEST_LENGTH);
+  //memcpy(message_buf, app_id_digest, SHA256_DIGEST_LENGTH);
+  memcpy(message_buf + SHA256_DIGEST_LENGTH, &flags, sizeof(flags));
+  memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
+  memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
+  fprintf(stderr, "det2f: AUTH DATA: ");
+  for (int i = 0; i < message_buf_len; i++) {
+    fprintf(stderr, "%d ", message_buf[i]);
+  }
+  fprintf(stderr, "\n");
 
   // TODO: Sign message and produce r,s
-  fprintf(stderr, "det2f: before print %d\n", sk_map.size());
-  for (auto const &pair: sk_map) {
-    fprintf(stderr, "det2f: going to print in map\n");
-    if (pair.second == NULL) fprintf(stderr, "second is null\n");
-    fprintf(stderr, "det2f: key = %s, sk = %s\n", pair.first.c_str(), BN_bn2hex(pair.second));
-  }
   fprintf(stderr, "det2f: signing with %s\n", BN_bn2hex(sk_map[string((const char *)key_handle, MAX_KH_SIZE)]));
+  EC_KEY_set_group(key, params->group);
+  //EC_KEY_generate_key(key);
   EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
-  ECDSA_sign(0, message,  SHA256_DIGEST_LENGTH, sig_out, &sig_len, key);
+  EC_KEY_set_public_key(key, pk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
+  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
+  fprintf(stderr, "det2f: going to sign\n");
+  EVP_PKEY_assign_EC_KEY(pkey, key);
+  EVP_MD_CTX_init(mdctx);
+  EVP_SignInit(mdctx, EVP_sha256());
+  EVP_SignUpdate(mdctx, message_buf, message_buf_len);
+  EVP_SignFinal(mdctx, sig_out, &sig_len, pkey);
+  //EVP_DigestSign(mdctx, sig_out, &sig_len_sizet, message_buf, message_buf_len);
+  fprintf(stderr, "det2f: just signed\n");
+  fprintf(stderr, "det2f: PK SIGNED WITH %s\n", EC_POINT_point2hex(Params_group(params), pk_map[string((const char *)key_handle, MAX_KH_SIZE)], POINT_CONVERSION_UNCOMPRESSED, ctx));
+  //sig_len = sig_len_sizet;
+  //sig = ECDSA_do_sign(message,  SHA256_DIGEST_LENGTH, key);
+/*  sig = ECDSA_do_sign(message_buf,  message_buf_len, key);
+  r = (BIGNUM *)ECDSA_SIG_get0_r(sig);
+  s = (BIGNUM *)ECDSA_SIG_get0_s(sig);*/
+  //ECDSA_sign(0, message_buf,  message_buf_len, sig_out2, &sig_len, key);
+  //ECDSA_sign(0, message,  SHA256_DIGEST_LENGTH, sig_out, &sig_len, key);
+  /*fprintf(stderr, "det2f: sig ");
+  for (int i = 0; i < MAX_ECDSA_SIG_SIZE; i++) {
+    fprintf(stderr, "%02x", sig_out2[i]);
+  }
+  fprintf(stderr, "\n");*/
 
   /* Output signature. */
-  //asn1_sigp(sig_out, r, s);
+  /*asn1_sigp(sig_out, r, s);
+  len_byte = sig_out[1];
+  sig_len = len_byte + 1;*/
+/*  fprintf(stderr, "det2f: ECDSA_SIG ");
+  for (int i = 0; i < sig_len; i++) {
+    fprintf(stderr, "%02x", sig_out2[i]);
+  }*/
+  fprintf(stderr, "\n");
+  fprintf(stderr, "det2f: manually encoded sig ");
+  for (int i = 0; i < MAX_ECDSA_SIG_SIZE; i++) {
+    fprintf(stderr, "%02x", sig_out[i]);
+  }
+  fprintf(stderr, "\n");
+/*  if (memcmp(sig_out, sig_out2, sig_len) != 0) {
+    fprintf(stderr, "det2f: NOT SAME\n");
+  }*/
 
   /* Output message from device. */
   *flags_out = flags;
-  memcpy(ctr_out, ctr, sizeof(uint32_t));
+  *ctr_out = c;
+  //memcpy(ctr_out, ctr, sizeof(uint32_t));
+  fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
 cleanup:
   if (mdctx) EVP_MD_CTX_destroy(mdctx);
-  return rv == OKAY ? 1 : ERROR;
+  fprintf(stderr, "det2f: sig_len = %d vs %d\n", sig_len, MAX_ECDSA_SIG_SIZE);
+  return rv == OKAY ? sig_len : ERROR;
 }
 

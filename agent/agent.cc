@@ -176,11 +176,17 @@ void handle_authentication(Client *c, json request) {
 
   /* Decode app id. */
   app_id_str = request[APP_ID];
+  const uint8_t *app_id_buf = (const uint8_t *)app_id_str.c_str();
   fprintf(stderr, "det2f: app_id %s\n", app_id_str.c_str());
   int app_id_size = decode_base64(app_id, app_id_str.c_str());
   if (app_id_size != U2F_APPID_SIZE + 1)
     fprintf(stderr, "det2f: ERROR decoded sign data that's not of length\
             U2F_APPID_SIZE: %d\n", app_id_size);
+  fprintf(stderr, "det2f: RECEIVED APP ID ");
+  for (int i = 0; i < 32; i++) {
+    fprintf(stderr, "%d ", app_id[i]);
+  }
+  fprintf(stderr, "\n");
 
   /* Decode challenge. */
   challenge_str = request[CHALLENGE];
@@ -199,7 +205,7 @@ void handle_authentication(Client *c, json request) {
             MAX_KH_SIZE: %d\n", key_handle_size);
 
   /* Authenticate with device. */
-  int sig_len = c->Authenticate(app_id, challenge, key_handle, &u2f_resp.flags,
+  int sig_len = c->Authenticate(app_id, app_id_str.size(), challenge, key_handle, &u2f_resp.flags,
                              &u2f_resp.ctr, u2f_resp.sig);
   if (sig_len > 0) {
     /* Successful authentication. */
@@ -214,12 +220,15 @@ void handle_authentication(Client *c, json request) {
     responseData[KEY_HANDLE] = request[KEY_HANDLE];
 
     /* Encode signature as websafe base64 string. */
-    int msg_len = sizeof(U2F_AUTHENTICATE_RESP) - MAX_ECDSA_SIG_SIZE + sig_len;
-    memcpy(resp_buf, &u2f_resp, msg_len);
-    char *encoded_sig = encode_base64(msg_len, resp_buf);
-    responseData[SIGNATURE] = string(encoded_sig);
+    //int msg_len = MAX_ECDSA_SIG_SIZE;
+    //int msg_len = sizeof(U2F_AUTHENTICATE_RESP) - MAX_ECDSA_SIG_SIZE + sig_len;
+    //memcpy(resp_buf, u2f_resp.sig, sig_len);
+    //memcpy(resp_buf, &u2f_resp, msg_len);
+    char *encoded_sig = encode_base64(sig_len, u2f_resp.sig);
+    fprintf(stderr, "det2f: encoded sig %s\n", encoded_sig);
+    response[SIGNATURE] = string(encoded_sig);
     response[RESPONSE_DATA] = responseData;
-    response[COUNTER] = 10; // TODO fix
+    response[COUNTER] = u2f_resp.ctr;
     free(encoded_sig);
   } else {
     /* Unsuccessful. Report error. */
