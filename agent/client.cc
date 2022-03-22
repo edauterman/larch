@@ -357,19 +357,20 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
   EVP_DigestFinal(mdctx2, hash_out, NULL);
 
+  memset(enc_key, 0, 16);
   aes_128_ctr(enc_key_raw, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
 
   memset(comm_in, 0, 512 / 8);
-  memcpy(comm_in, key, 128 / 8);
+  memcpy(comm_in, enc_key, 128 / 8);
   memcpy(comm_in + (128 / 8), r_open, 128 / 8);
   EVP_DigestInit_ex(mdctx3, EVP_sha256(), NULL);
   EVP_DigestUpdate(mdctx3, comm_in, 512/8);
   EVP_DigestFinal(mdctx3, enc_key_comm, NULL);
 
   fprintf(stderr, "det2f: proving circuit\n");
-  ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
+  ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
   fprintf(stderr, "det2f: proved circuit\n");
-  VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH, message_buf_len * 8);
+  VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH * 8, message_buf_len * 8);
   fprintf(stderr, "det2f: verified circuit\n");
 
   // TODO: Sign message and produce r,s
