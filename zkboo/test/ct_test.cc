@@ -25,6 +25,7 @@ int main() {
 
     int m_len = 256;
     int in_len = 512;
+    //int in_len = 552;
     uint8_t key[128 / 8];
     __m128i key_raw = makeBlock(0,0);
     __m128i iv = makeBlock(0,0);
@@ -37,12 +38,13 @@ int main() {
     uint8_t comm_in[512 / 8];
     
     memset(m, 0, m_len/8);
-    memset(hash_in, 0, in_len/8);
+    memset(hash_in, 0xff, in_len/8);
+    memset(hash_in, 0, m_len/8);
     memset(key, 0, 128/8);
-    //sha3_256(hash_out, m, m_len / 8);
+    //sha3_256(hash_out, hash_in, in_len / 8);
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
-    EVP_DigestUpdate(mdctx, m, m_len/8);
+    EVP_DigestUpdate(mdctx, hash_in, in_len/8);
     EVP_DigestFinal(mdctx, hash_out, NULL);
 
     memset(comm_in, 0, 512 / 8);
