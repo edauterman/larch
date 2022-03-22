@@ -25,15 +25,15 @@ class Client {
         * public key, and generates a self-signed cert and corresponding batch
         * signature (created entirely at the agent). Returns sum of length of
         * attestation certificate and batch signature, or 0 on failure.*/
-        int Register(const uint8_t *app_id, const uint8_t *challenge,
+        int Register(uint8_t *app_id, uint8_t *challenge,
                     uint8_t *key_handle_out, P256_POINT *pk_out, uint8_t *cert_sig_out);
 
         /* Authenticate at origin specified by app_id given a challenge from the origin
         * and a key handle obtained from registration. Outputs the flags, counter, and
         * sanitized signature from the device. Returns the length of the signature, or
         * 0 on failure. */
-        int Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *challenge,
-                        const uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
+        int Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
+                        uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool checkOnly = false);
     private:
         Params params;

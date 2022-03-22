@@ -69,7 +69,7 @@ void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     numAnds++;
 }
 
-bool VerifyCtCircuit(Proof &proof, __m128i iv) {
+bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
     CircuitComm c0, c1;
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
@@ -90,13 +90,14 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv) {
         return false;
     }
 
-    int m_len = (proof.wLen - 256 - 128 - 128 - 256) / 2;
+    //int m_len = (proof.wLen - 256 - 128 - 128 - 256) / 2;
     block *m = new block[m_len];
     block *hashOut = new block[256];
     block *ct = new block[m_len];
     block *key = new block[128];
     block *keyR = new block[128];
     block *keyComm = new block[256];
+    block *hashIn = new block[in_len];
     block *out = new block[1];
 
     for (int i = 0; i < m_len; i++) {
@@ -129,9 +130,14 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv) {
         memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
     }
 
+    for (int i = 0; i < in_len; i++) {
+        memcpy((uint8_t *)&hashIn[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128 + 128 + 256], sizeof(uint32_t));
+        memcpy((uint8_t *)&hashIn[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128 + 256], sizeof(uint32_t));
+    }
+
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);
     CircuitExecution::circ_exec = ex;
-    check_ciphertext_circuit(hashOut, m, m_len, ct, iv, key, keyComm, keyR, out);
+    check_ciphertext_circuit(hashOut, m, m_len, hashIn, in_len, ct, iv, key, keyComm, keyR, out);
     if (ex->verified) {
         return true;
     } else {

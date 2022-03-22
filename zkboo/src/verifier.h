@@ -30,6 +30,6 @@ class Verifier {
 };
 
 bool VerifyHash(void (*f)(block[], block[], int), Proof &proof);
-bool VerifyCtCircuit(Proof &proof, __m128i iv);
+bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len);
 
 #endif

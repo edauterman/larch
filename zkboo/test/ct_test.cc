@@ -20,10 +20,11 @@ const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 int main() {
 
     Proof pi;
-    int numRands = 116916;
+    int numRands = 117428;
     //int numRands = 89984;
 
-    int m_len = 512;
+    int m_len = 256;
+    int in_len = 512;
     uint8_t key[128 / 8];
     __m128i key_raw = makeBlock(0,0);
     __m128i iv = makeBlock(0,0);
@@ -31,10 +32,12 @@ int main() {
     uint8_t comm[256 / 8];
     uint8_t *m = (uint8_t *)malloc(m_len / 8);
     uint8_t *ct = (uint8_t *)malloc(m_len / 8);
+    uint8_t *hash_in = (uint8_t *)malloc(in_len / 8);
     uint8_t hash_out[256 / 8];
     uint8_t comm_in[512 / 8];
     
     memset(m, 0, m_len/8);
+    memset(hash_in, 0, in_len/8);
     memset(key, 0, 128/8);
     //sha3_256(hash_out, m, m_len / 8);
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
@@ -57,11 +60,11 @@ int main() {
     printf("finished setup, starting proving\n");
     INIT_TIMER;
     START_TIMER;
-    ProveCtCircuit(m, m_len, hash_out, ct, key, comm, r, iv, numRands, pi);
+    ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = VerifyCtCircuit(pi, iv);
+    bool check = VerifyCtCircuit(pi, iv, m_len, in_len);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

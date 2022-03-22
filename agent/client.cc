@@ -193,7 +193,7 @@ void Client::ReadFromStorage() {
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
  * attestation certificate and batch signature. */
-int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
+int Client::Register(uint8_t *app_id, uint8_t *challenge,
              uint8_t *key_handle_out, P256_POINT *pk_out, uint8_t *cert_sig_out) {
   int rv = ERROR;
   EC_POINT *pk;
@@ -287,8 +287,8 @@ cleanup:
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
-int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *challenge,
-                 const uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
+int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
+                 uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool checkOnly) {
   int rv = ERROR;
   BIGNUM *r = NULL;
@@ -321,7 +321,7 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   uint8_t enc_key_comm[32];
   uint8_t hash_out[32];
   uint8_t comm_in[64];
-  uint8_t ct[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
+  uint8_t ct[SHA256_DIGEST_LENGTH];
   __m128i iv = makeBlock(0,0);
   __m128i enc_key_raw = makeBlock(0,0);
   uint8_t enc_key[16];
@@ -357,7 +357,7 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
   EVP_DigestFinal(mdctx2, hash_out, NULL);
 
-  aes_128_ctr(enc_key_raw, iv, message_buf, ct, message_buf_len, 0); 
+  aes_128_ctr(enc_key_raw, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
 
   memset(comm_in, 0, 512 / 8);
   memcpy(comm_in, key, 128 / 8);
@@ -367,9 +367,9 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   EVP_DigestFinal(mdctx3, enc_key_comm, NULL);
 
   fprintf(stderr, "det2f: proving circuit\n");
-  ProveCtCircuit(message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
+  ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
   fprintf(stderr, "det2f: proved circuit\n");
-  VerifyCtCircuit(proof, iv);
+  VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH, message_buf_len * 8);
   fprintf(stderr, "det2f: verified circuit\n");
 
   // TODO: Sign message and produce r,s

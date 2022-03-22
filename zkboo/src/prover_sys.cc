@@ -69,8 +69,8 @@ void GenViewsHash(void (*f)(block[], block[], int), block *w, int wLen, vector<C
     
 }
 
-void GenViewsCtCircuit(block *mShares, int m_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t *seeds[], int numRands) {
-    int wLen = m_len + 256 + 128 + m_len + 256 + 128;
+void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t *seeds[], int numRands) {
+    int wLen = m_len + 256 + 128 + m_len + 256 + 128 + in_len;
     block *w = new block[wLen];
 
     memset(w, 0xff, wLen * sizeof(block));
@@ -80,11 +80,12 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashOutShares, block *c
     memcpy((uint8_t *)w + (m_len + 256 + m_len) * sizeof(block), keyShares, 128 * sizeof(block));
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128) * sizeof(block), keyRShares, 128 * sizeof(block));
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128) * sizeof(block), keyCommShares, 256 * sizeof(block));
+    memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128 + 256) * sizeof(block), hashInShares, in_len * sizeof(block));
 
 
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
-    check_ciphertext_circuit(hashOutShares, mShares, m_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
+    check_ciphertext_circuit(hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
     for (int i = 0; i < 3; i++) {
         views.push_back(ex->view[i]);
     }
@@ -119,11 +120,11 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
     }
 }
 
-void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof &proof) {
+void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof &proof) {
     vector<CircuitView *>views;
     RandomOracle oracle; 
 
-    proof.wLen = m_len + 256 + m_len + 128 + 128 + 256;
+    proof.wLen = m_len + 256 + m_len + 128 + 128 + 256 + in_len;
     uint32_t *w_tmp[3];
     for (int i = 0; i < 3; i++) {
         w_tmp[i] = (uint32_t *)malloc(proof.wLen * sizeof(uint32_t));
@@ -142,6 +143,8 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
     ShareInput(keyR, keyRShares, 128, w_tmp, m_len + 256 + m_len + 128);
     block *keyCommShares = new block[256];
     ShareInput(keyComm, keyCommShares, 256, w_tmp, m_len + 256 + m_len + 128 + 128);
+    block *hashInShares = new block[in_len];
+    ShareInput(hashIn, hashInShares, in_len, w_tmp, m_len + 256 + m_len + 128 + 128 + 256);
 
     uint8_t *seeds[3];
     for (int i = 0; i < 3; i++) {
@@ -151,7 +154,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashOut, uint8_t *ct, uint8_
 
     //INIT_TIMER;
     //START_TIMER;
-    GenViewsCtCircuit(mShares, m_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands);
+    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands);
     //STOP_TIMER("Gen views");
     CommitViews(views, proof.comms);
     

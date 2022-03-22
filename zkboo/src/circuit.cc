@@ -29,18 +29,19 @@ void hash_in_circuit(block output[], block input[], int len) {
 }
 
 // TODO: some of this can be out-of-circuit info
-void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block ct[], const __m128i iv, block key[], block key_comm[], block key_r[], block res[]) {
+void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block hash_in[], int in_len, block ct[], const __m128i iv, block key[], block key_comm[], block key_r[], block res[]) {
     *res = CircuitExecution::circ_exec->public_label(1);
 
-    // H(m) ?= hash_out
+    // H(hash_in) ?= hash_out
     block hash_out_calc[256];
-    /*const string fileLoc = macro_xstr(EMP_CIRCUIT_PATH);
-    string circuitFile = fileLoc + "bristol_format/sha-256.txt";
-    BristolFormat cf(circuitFile.c_str());
-    cf.compute(hash_out_calc, m, NULL);*/
-    sha256(m, hash_out_calc, m_len);
-    //SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
-    //sha3_256_calc.sha3_256(hash_out_calc, m, m_len);
+    sha256(hash_in, hash_out_calc, in_len);
+
+    // m in beginning of hash_in
+    for (int i = 0; i < m_len; i++) {
+        block out = CircuitExecution::circ_exec->xor_gate(m[i], hash_in[i]);
+        out = CircuitExecution::circ_exec->not_gate(out);
+        *res = CircuitExecution::circ_exec->and_gate(*res, out);
+    }
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
@@ -56,10 +57,7 @@ void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block ct[]
     for (int i = 0; i < 256; i++) {
         key_and_r[i + 256] = CircuitExecution::circ_exec->public_label(false);
     }
-    //SHA3_256_Calculator sha3_256_calc = SHA3_256_Calculator();
-    //sha3_256_calc.sha3_256(hash_out_calc, key_and_r, 512);
     sha256(key_and_r, hash_out_calc, 512);
-    //cf.compute(hash_out_calc, key_and_r, NULL);
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
