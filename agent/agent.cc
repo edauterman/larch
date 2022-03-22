@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <json.hpp>
+#include "json.hpp"
 #include <string>
 
 //#include "agent.h"
@@ -182,11 +182,6 @@ void handle_authentication(Client *c, json request) {
   if (app_id_size != U2F_APPID_SIZE + 1)
     fprintf(stderr, "det2f: ERROR decoded sign data that's not of length\
             U2F_APPID_SIZE: %d\n", app_id_size);
-  fprintf(stderr, "det2f: RECEIVED APP ID ");
-  for (int i = 0; i < 32; i++) {
-    fprintf(stderr, "%d ", app_id[i]);
-  }
-  fprintf(stderr, "\n");
 
   /* Decode challenge. */
   challenge_str = request[CHALLENGE];

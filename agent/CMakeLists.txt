@@ -15,16 +15,18 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 #include(emp-base.cmake)
 
-#find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
-#include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
-#set(sources
-#    /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp
-#    /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
-#    )
+find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
+include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
+set(sources
+    ../emp-tool/emp-tool/emp-tool.cpp
+    ../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    )
 
 add_library(Utils asn1.cc base64.cc sig_parse.cc x509.cc params.cc client.cc)
 
 add_executable(agent agent.cc)
 target_link_libraries(agent
+    Prover
+    Base
     Utils
     OpenSSL::SSL)

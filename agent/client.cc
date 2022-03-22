@@ -13,7 +13,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <json.hpp>
+#include "json.hpp"
 #include <string>
 
 #include <openssl/ec.h>
@@ -23,6 +23,8 @@
 #include <openssl/x509.h>
 #include <openssl/ecdsa.h>
 
+#include <emp-tool/emp-tool.h>
+
 //#include "agent.h"
 #include "common.h"
 #include "base64.h"
@@ -30,6 +32,9 @@
 #include "client.h"
 #include "x509.h"
 #include "asn1.h"
+#include "../zkboo/src/prover.h"
+#include "../zkboo/src/prover_sys.h"
+#include "../zkboo/src/verifier.h"
 
 // Used to define JSON messages.
 #define ID "agent-det2f"
@@ -58,6 +63,7 @@
 
 using namespace std;
 using namespace nlohmann;
+using namespace emp;
 
 struct message_t {
   string content;
@@ -118,20 +124,6 @@ Client::Client() {
  * to public keys. Should be called when creating a new agent. */
 // TODO: error checking
 void Client::WriteToStorage() {
-  /* Write mpk and pk_vrf. */
-/*  uint8_t mpk_buf[33];
-  uint8_t pk_vrf_buf[33];
-  FILE *pk_file = fopen(PK_FILE, "w");
-  EC_POINT_point2oct(Params_group(params), mpk,
-                     POINT_CONVERSION_COMPRESSED, mpk_buf, 33,
-                     Params_ctx(params));
-  EC_POINT_point2oct(Params_group(params), pk_vrf,
-                     POINT_CONVERSION_COMPRESSED, pk_vrf_buf, 33,
-                     Params_ctx(params));
-  fwrite(mpk_buf, 33, 1, pk_file);
-  fwrite(pk_vrf_buf, 33, 1, pk_file);
-  fclose(pk_file);*/
-
   /* Write map of key handles to public keys. */
   FILE *kh_file = fopen(KH_FILE, "w");
   uint8_t pt[33];
@@ -161,26 +153,6 @@ void Client::WriteToStorage() {
 /* Read agent state from file, including root public keys and map of key handles
  * to public keys. Should be called when destroying an old agent. */
 void Client::ReadFromStorage() {
-  /* Read mpk and pk_vrf. */
-/*  uint8_t mpk_buf[33];
-  uint8_t pk_vrf_buf[33];
-  FILE *pk_file = fopen(PK_FILE, "r");
-  if (pk_file != NULL) {
-    if (fread(mpk_buf, P256_SCALAR_SIZE + 1, 1, pk_file) != 1) {
-      fprintf(stderr, "ERROR: can't read mpk from file\n");
-    }
-    if (fread(pk_vrf_buf, P256_SCALAR_SIZE + 1, 1, pk_file) != 1) {
-      fprintf(stderr, "ERROR: can't read pk_vrf from file\n");
-    }
-    if ((EC_POINT_oct2point(Params_group(params), mpk, mpk_buf, 33,
-                           Params_ctx(params)) != OKAY) ||
-        (EC_POINT_oct2point(Params_group(params), pk_vrf, pk_vrf_buf, 33,
-                          Params_ctx(params)) != OKAY)) {
-      fprintf(stderr, "ERROR: public key in invalid format\n");
-    }
-    fclose(pk_file);
-  }*/
-
   /* Read map of key handles to public keys. */
   FILE *kh_file = fopen(KH_FILE, "r");
   if (kh_file != NULL) {
@@ -266,12 +238,9 @@ int Client::Register(const uint8_t *app_id, const uint8_t *challenge,
   fprintf(stderr, "det2f: generated key handle\n");
 
   /* Output result. */
-  // TODO choose keypair
   Params_rand_point_exp(params, pk, exp);
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = exp;
-  fprintf(stderr, "det2f: saving key %s\n", BN_bn2hex(exp));
-  fprintf(stderr, "det2f: PK GENERATED %s\n", EC_POINT_point2hex(Params_group(params), pk, POINT_CONVERSION_UNCOMPRESSED, ctx));
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
   BN_bn2bin(y, pk_out->y);
@@ -326,6 +295,7 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   BIGNUM *s = NULL;
   EVP_MD_CTX *mdctx;
   EVP_MD_CTX *mdctx2;
+  EVP_MD_CTX *mdctx3;
   uint8_t message[SHA256_DIGEST_LENGTH];
   uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
   ECDSA_SIG *sig = NULL;
@@ -347,36 +317,33 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   uint8_t len_byte;
   uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
   EVP_PKEY *pkey;
-  //uint32_t ctr_val = 11;
-  //memcpy(ctr, (uint8_t *)&ctr_val, sizeof(uint32_t));
-  //memset(ctr, 0xa, 4 * sizeof(uint8_t));
-  //uint8_t sig_out[64];
+  uint8_t r_open[16];
+  uint8_t enc_key_comm[32];
+  uint8_t hash_out[32];
+  uint8_t comm_in[64];
+  uint8_t ct[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
+  __m128i iv = makeBlock(0,0);
+  __m128i enc_key_raw = makeBlock(0,0);
+  uint8_t enc_key[16];
+  Proof proof;
+  int numRands = 116916;
 
   CHECK_A (r = BN_new());
   CHECK_A (s = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (mdctx2 = EVP_MD_CTX_create());
+  CHECK_A (mdctx3 = EVP_MD_CTX_create());
   CHECK_A (ctx = BN_CTX_new());
   CHECK_A (sig = ECDSA_SIG_new());
   CHECK_A (key = EC_KEY_new());
   pkey = EVP_PKEY_new();
 
   fprintf(stderr, "det2f: going to hash app id\n");
-/*  CHECK_C (EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL));
-  CHECK_C (EVP_DigestUpdate(mdctx2, app_id, app_id_len));
-  CHECK_C (EVP_DigestFinal_ex(mdctx2, app_id_digest, NULL));*/
   fprintf(stderr, "det2f: hashed app id\n");
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
-/*  CHECK_C (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL));
-  CHECK_C (EVP_DigestUpdate(mdctx, app_id_digest, SHA256_DIGEST_LENGTH));
-  CHECK_C (EVP_DigestUpdate(mdctx, &flags, sizeof(flags)));
-  CHECK_C (EVP_DigestUpdate(mdctx, ctr, 4 * sizeof(uint8_t)));
-  CHECK_C (EVP_DigestUpdate(mdctx, challenge, U2F_NONCE_SIZE));
-  CHECK_C (EVP_DigestFinal_ex(mdctx, message, NULL));*/
   memcpy(message_buf, app_id, SHA256_DIGEST_LENGTH);
-  //memcpy(message_buf, app_id_digest, SHA256_DIGEST_LENGTH);
   memcpy(message_buf + SHA256_DIGEST_LENGTH, &flags, sizeof(flags));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
@@ -386,10 +353,24 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   }
   fprintf(stderr, "\n");
 
+  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
+  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
+  EVP_DigestFinal(mdctx2, hash_out, NULL);
+
+  aes_128_ctr(enc_key_raw, iv, message_buf, ct, message_buf_len, 0); 
+
+  memset(comm_in, 0, 512 / 8);
+  memcpy(comm_in, key, 128 / 8);
+  memcpy(comm_in + (128 / 8), r_open, 128 / 8);
+  EVP_DigestInit_ex(mdctx3, EVP_sha256(), NULL);
+  EVP_DigestUpdate(mdctx3, comm_in, 512/8);
+  EVP_DigestFinal(mdctx3, enc_key_comm, NULL);
+
+  ProveCtCircuit(message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
+
   // TODO: Sign message and produce r,s
   fprintf(stderr, "det2f: signing with %s\n", BN_bn2hex(sk_map[string((const char *)key_handle, MAX_KH_SIZE)]));
   EC_KEY_set_group(key, params->group);
-  //EC_KEY_generate_key(key);
   EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
   EC_KEY_set_public_key(key, pk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
@@ -399,7 +380,6 @@ int Client::Authenticate(const uint8_t *app_id, int app_id_len, const uint8_t *c
   EVP_SignInit(mdctx, EVP_sha256());
   EVP_SignUpdate(mdctx, message_buf, message_buf_len);
   EVP_SignFinal(mdctx, sig_out, &sig_len, pkey);
-  //EVP_DigestSign(mdctx, sig_out, &sig_len_sizet, message_buf, message_buf_len);
   fprintf(stderr, "det2f: just signed\n");
   fprintf(stderr, "det2f: PK SIGNED WITH %s\n", EC_POINT_point2hex(Params_group(params), pk_map[string((const char *)key_handle, MAX_KH_SIZE)], POINT_CONVERSION_UNCOMPRESSED, ctx));
   //sig_len = sig_len_sizet;
