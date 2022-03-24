@@ -5,6 +5,7 @@
 
 #include "verifier.h"
 #include "prover.h"
+#include "proof.h"
 #include "common.h"
 #include "view.h"
 #include "circuit.h"

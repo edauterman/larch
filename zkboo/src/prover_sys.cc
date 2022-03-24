@@ -9,6 +9,7 @@
 #include <openssl/rand.h>
 
 #include "prover.h"
+#include "proof.h"
 #include "emp_prover.h"
 #include "common.h"
 #include "prover_sys.h"

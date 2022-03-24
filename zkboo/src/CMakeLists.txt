@@ -21,4 +21,4 @@ set(sources
     ../../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )
 
-add_library(Prover prover.cc prover_sys.cc view.cc common.cc verifier.cc circuit.cc circuit_utils.cc)
+add_library(Prover prover.cc proof.cc prover_sys.cc view.cc common.cc verifier.cc circuit.cc circuit_utils.cc)

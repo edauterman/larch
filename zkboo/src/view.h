@@ -9,12 +9,6 @@
 
 using namespace std;
 
-class WireVal {
-    public:
-        uint8_t shares[WIRES];
-
-        void Copy(WireVal &from);
-};
 
 class CircuitComm {
     public:
