@@ -173,6 +173,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
 
     proof.outShares[0] = (uint32_t *)malloc(sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(sizeof(uint32_t));
+    proof.outLen = 1;
     bool b;
     memcpy(((uint8_t *)&proof.outShares[0][0]), ((uint8_t *)&out[0]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
     memcpy(((uint8_t *)&proof.outShares[1][0]), ((uint8_t *)&out[0]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
@@ -181,6 +182,8 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[0]) + (sizeof(uint32_t) * j), sizeof(uint32_t));
     }
     b = (shares[0] + shares[1] + shares[2]) % 2;
+    proof.out = (uint8_t *)malloc(1);
+    proof.out[0] = b;
     fprintf(stderr, "zkboo: OUTPUT: %d\n", b);
     //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
     /*from_bool(bs, output, out_len);
@@ -256,8 +259,11 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
         }
         bs[i] = (shares[0] + shares[1] + shares[2]) % 2;
     }
+    proof.outLen = out_len;
     //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
+    proof.out = (uint8_t *)malloc(out_len / 8);
     from_bool(bs, output, out_len);
+    from_bool(bs, proof.out, out_len);
     fprintf(stderr, "zkboo: output bytes: ");
     for (int i = 0; i < out_len / 8; i++) {
         fprintf(stderr, "%x", output[i]);

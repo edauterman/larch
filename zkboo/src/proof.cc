@@ -73,13 +73,14 @@ uint32_t Proof::DeserializeInt32(uint8_t **buf) {
 }
 
 uint8_t *Proof::Serialize(int *out_len) {
+   int bytesOutLen = outLen < 8 ? 1 : outLen / 8; 
    int len = (sizeof(uint32_t) * 4) +                       // wLen and outLen and idx and numWires
        (SHA256_DIGEST_LENGTH * 3) +                         // CircuitComm
        (sizeof(uint32_t) * views[0]->wires.size() * 2) +     // views
        (16 * 2) +                                           // seeds for RandomSource
        (sizeof(uint32_t) * wLen * 2) +                      // shares of witness
        (sizeof(uint32_t) * outLen * 2) +                    // shares of output
-       (outLen / 8);                                        // output raw values
+       (bytesOutLen);                                       // output raw values
     uint8_t *out = (uint8_t *)malloc(len);
     uint8_t *ptr = out;
     uint32_t numWires = views[0]->wires.size();
@@ -116,8 +117,8 @@ uint8_t *Proof::Serialize(int *out_len) {
         }
     }
     // output
-    memcpy(ptr, out, outLen / 8);
-    ptr += outLen / 8;
+    memcpy(ptr, out, bytesOutLen);
+    ptr += bytesOutLen;
 
     *out_len = len;
     return out;
@@ -129,6 +130,7 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     outLen = DeserializeInt32(&ptr);
     idx = DeserializeInt32(&ptr);
     uint32_t numWires = DeserializeInt32(&ptr);
+    int bytesOutLen = outLen < 8 ? 1 : outLen / 8; 
     // commitments
     for (int i = 0; i < 3; i++) {
         memcpy(comms[i].digest, ptr, 32);
@@ -162,6 +164,6 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
         }
     }
     // output
-    out = (uint8_t *)malloc(outLen / 8);
-    memcpy(out, ptr, outLen / 8);
+    out = (uint8_t *)malloc(bytesOutLen);
+    memcpy(out, ptr, bytesOutLen);
 }

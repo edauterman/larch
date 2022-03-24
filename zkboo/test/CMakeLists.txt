@@ -38,3 +38,9 @@ target_link_libraries(ct_test
 	Prover
     Base
     OpenSSL::SSL)
+
+add_executable(serialize_test serialize_test.cc)
+target_link_libraries(serialize_test
+	Prover
+    Base
+    OpenSSL::SSL)
