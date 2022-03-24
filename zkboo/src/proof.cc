@@ -60,15 +60,15 @@ uint8_t RandomOracle::GetRand(CircuitComm *in) {
 }
 
 void Proof::SerializeInt32(uint32_t x, uint8_t **buf) {
-    *buf[0] = x & 0xFF;
-    *buf[1] = (x >> 8) & 0xFF;
-    *buf[2] = (x >> 16) & 0xFF;
-    *buf[3] = (x >> 24) & 0xFF;
+    (*buf)[0] = x & 0xFF;
+    (*buf)[1] = (x >> 8) & 0xFF;
+    (*buf)[2] = (x >> 16) & 0xFF;
+    (*buf)[3] = (x >> 24) & 0xFF;
     *buf += 4;
 }
 
 uint32_t Proof::DeserializeInt32(uint8_t **buf) {
-    uint32_t out = *buf[0] | (*buf[1] << 8) | (*buf[2] << 16) | (*buf[3] << 24);
+    uint32_t out = (*buf)[0] | ((*buf)[1] << 8) | ((*buf)[2] << 16) | ((*buf)[3] << 24);
     *buf += 4;
     return out;
 }
@@ -82,7 +82,9 @@ uint8_t *Proof::Serialize(int *out_len) {
        (sizeof(uint32_t) * wLen * 2) +                      // shares of witness
        (sizeof(uint32_t) * outLen * 2) +                    // shares of output
        (bytesOutLen);                                       // output raw values
+    printf("allocating %d bytes\n", len);
     uint8_t *out = (uint8_t *)malloc(len);
+    if (out == NULL) printf("NULL alloc\n");
     uint8_t *ptr = out;
     uint32_t numWires = views[0]->wires.size();
     SerializeInt32(wLen, &ptr);
