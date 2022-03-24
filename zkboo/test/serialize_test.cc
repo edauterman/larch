@@ -47,6 +47,7 @@ int main() {
     EVP_DigestUpdate(mdctx, hash_in, in_len/8);
     EVP_DigestFinal(mdctx, hash_out, NULL);
 
+    memset(r, 0xff, 128/8);
     memset(comm_in, 0, 512 / 8);
     memcpy(comm_in, key, 128 / 8);
     memcpy(comm_in + (128 / 8), r, 128 / 8);
@@ -55,7 +56,6 @@ int main() {
     EVP_DigestUpdate(mdctx2, comm_in, 512/8);
     EVP_DigestFinal(mdctx2, comm, NULL);
 
-    memset(key, 0, 128/8);
     aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);
 
     printf("finished setup, starting proving\n");
@@ -68,6 +68,7 @@ int main() {
     uint8_t *buf = pi.Serialize(&buf_len);
     pi2.Deserialize(buf, numRands);
     START_TIMER;
+    //bool check = VerifyCtCircuit(pi, iv, m_len, in_len);
     bool check = VerifyCtCircuit(pi2, iv, m_len, in_len);
     STOP_TIMER("Verifier time");
     if (check) {

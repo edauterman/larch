@@ -47,6 +47,7 @@ int main() {
     EVP_DigestUpdate(mdctx, hash_in, in_len/8);
     EVP_DigestFinal(mdctx, hash_out, NULL);
 
+    memset(r, 0xff, 128/8);
     memset(comm_in, 0, 512 / 8);
     memcpy(comm_in, key, 128 / 8);
     memcpy(comm_in + (128 / 8), r, 128 / 8);
