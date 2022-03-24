@@ -32,6 +32,7 @@
 #include "client.h"
 #include "x509.h"
 #include "asn1.h"
+#include "../zkboo/src/proof.h"
 #include "../zkboo/src/prover.h"
 #include "../zkboo/src/prover_sys.h"
 #include "../zkboo/src/verifier.h"

@@ -22,7 +22,7 @@ set(sources
     ../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )
 
-add_library(Utils asn1.cc base64.cc sig_parse.cc x509.cc params.cc client.cc)
+add_library(Utils asn1.cc base64.cc sig_parse.cc x509.cc params.cc client.cc ../zkboo/src/prover.cc ../zkboo/src/proof.cc ../zkboo/src/prover.cc ../zkboo/src/prover_sys.cc ../zkboo/src/view.cc ../zkboo/src/common.cc ../zkboo/src/verifier.cc ../zkboo/src/circuit.cc ../zkboo/src/circuit_utils.cc)
 
 add_executable(agent agent.cc)
 target_link_libraries(agent
