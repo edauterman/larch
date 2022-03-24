@@ -124,6 +124,8 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 
 Client::Client() {
     params = Params_new(P256);
+    logAddr = "127.0.0.1:12345";
+    //logAddr = "3.134.86.85:12345";
 }
 
 /* Write agent state to file, including root public keys and map of key handles
@@ -245,8 +247,8 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   fprintf(stderr, "det2f: generated key handle\n");
 
   /* Output result. */
-  /*
-  Params_rand_point_exp(params, pk, exp);
+  
+/*  Params_rand_point_exp(params, pk, exp);
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = exp;
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
@@ -257,6 +259,16 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   stub->SendReg(&client_ctx, req, &resp);
   memcpy(pk_out->x, resp.pk_x().c_str(), P256_SCALAR_SIZE);
   memcpy(pk_out->y, resp.pk_y().c_str(), P256_SCALAR_SIZE);
+  fprintf(stderr, "det2f: x = ");
+  for (int i = 0; i < P256_SCALAR_SIZE; i++) {
+    fprintf(stderr, "%x", pk_out->x[i]);
+  }
+  fprintf(stderr, "\n");
+  fprintf(stderr, "det2f: y = ");
+  for (int i = 0; i < P256_SCALAR_SIZE; i++) {
+    fprintf(stderr, "%x", pk_out->y[i]);
+  }
+  fprintf(stderr, "\n");
   pk_out->format = UNCOMPRESSED_POINT;
 
   fprintf(stderr, "det2f: chose pub key\n");
@@ -393,17 +405,20 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   proof_buf = proof.Serialize(&proof_buf_len);
   req.set_proof(proof_buf, proof_buf_len);
+  fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
   req.set_challenge(message_buf, message_buf_len);
-  req.set_ct(ct, message_buf_len);
+  req.set_ct(ct, SHA256_DIGEST_LENGTH);
   // TODO real IV
   memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
   stub->SendAuth(&client_ctx, req, &resp);
+  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   sig_len = resp.sig().size();
+  fprintf(stderr, "sig_len = %d\n", sig_len);
   memcpy(sig_out, resp.sig().c_str(), sig_len);
 
 /*  fprintf(stderr, "det2f: proved circuit\n");
-  VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH * 8, message_buf_len * 8);
+  //VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH * 8, message_buf_len * 8);
   fprintf(stderr, "det2f: verified circuit\n");
 
   // TODO: Sign message and produce r,s

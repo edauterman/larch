@@ -18,6 +18,7 @@ class LogServer {
         const int m_len = 256;
         const int challenge_len = 552;
         EVP_PKEY *pkey;
+        EC_KEY *key;
         Params params;
         int port;
 

@@ -82,7 +82,7 @@ uint8_t *Proof::Serialize(int *out_len) {
        (sizeof(uint32_t) * wLen * 2) +                      // shares of witness
        (sizeof(uint32_t) * outLen * 2) +                    // shares of output
        (bytesOutLen);                                       // output raw values
-    printf("allocating %d bytes\n", len);
+    fprintf(stderr, "zkboo: allocating %d bytes\n", len);
     uint8_t *out = (uint8_t *)malloc(len);
     if (out == NULL) printf("NULL alloc\n");
     uint8_t *ptr = out;

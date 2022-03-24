@@ -35,9 +35,28 @@ LogServer::LogServer() {
 };
 
 void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
-    EC_KEY *key = EC_KEY_new();
+    key = EC_KEY_new();
     pkey = EVP_PKEY_new();
+/*    BIGNUM *sk = BN_new();
+    EC_POINT *pk_pt = Params_point_new(params);
 
+    Params_rand_point_exp(params, pk_pt, sk);
+
+    EC_KEY_set_group(key, params->group);
+    EC_KEY_set_public_key(key, pk_pt);
+    EC_KEY_set_private_key(key, sk);
+    //EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
+    EVP_PKEY_assign_EC_KEY(pkey, key);
+
+    BIGNUM *x = BN_new();
+    BIGNUM *y = BN_new();
+    EC_POINT_get_affine_coordinates_GFp(params->group, pk_pt, x, y, NULL);
+
+    memset(x_out, 0, P256_SCALAR_SIZE);
+    memset(y_out, 0, P256_SCALAR_SIZE);
+    BN_bn2bin(x, x_out);
+    BN_bn2bin(y, y_out);*/
+  
     EC_KEY_set_group(key, params->group);
     EC_KEY_generate_key(key);
     //EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
@@ -47,8 +66,20 @@ void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     BIGNUM *x = BN_new();
     BIGNUM *y = BN_new();
     EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
+    memset(x_out, 0, P256_SCALAR_SIZE);
+    memset(y_out, 0, P256_SCALAR_SIZE);
     BN_bn2bin(x, x_out);
     BN_bn2bin(y, y_out);
+    printf("x = ");
+    for (int i = 0; i < P256_SCALAR_SIZE; i++) {
+        printf("%x", x_out[i]);
+    }
+    printf("\n");
+    printf("y = ");
+    for (int i = 0; i < P256_SCALAR_SIZE; i++) {
+        printf("%x", y_out[i]);
+    }
+    printf("\n");
 };
 
 void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *sig_out, unsigned int *sig_len) {
@@ -61,27 +92,41 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
            
     // TODO somehow need to check key_comm matches things? and that ct is correctly in the witness? 
     bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len);
+    if (check) {
+        printf("VERIFIED\n");
+    } else {
+        printf("PROOF FAILED TO VERIFY\n");
+        return;
+    }
+    
+    printf("challenge to sign: ");
+    for (int i = 0; i < challenge_len / 8; i++) {
+        printf("%d ", challenge[i]);
+    }
+    printf("\n");
 
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     EVP_MD_CTX_init(mdctx);
     EVP_SignInit(mdctx, EVP_sha256());
-    EVP_SignUpdate(mdctx, challenge, challenge_len);
+    printf("challenge len = %d\n", challenge_len / 8);
+    EVP_SignUpdate(mdctx, challenge, challenge_len / 8);
     EVP_SignFinal(mdctx, sig_out, sig_len, pkey);
 };
 
 class LogServiceImpl final : public Log::Service {
     public:
-        LogServer &server;
+        LogServer *server;
 
-        LogServiceImpl(LogServer &server) : server(server) {}
+        LogServiceImpl(LogServer *server) : server(server) {}
 
         Status SendReg(ServerContext *context, const RegRequest *req, RegResponse *resp) override {
             printf("Received registration request\n");
             uint8_t x[P256_SCALAR_SIZE];
             uint8_t y[P256_SCALAR_SIZE];
-            server.GenerateKeyPair(x, y);
+            server->GenerateKeyPair(x, y);
             resp->set_pk_x(x, P256_SCALAR_SIZE);
-            resp->set_pk_y(x, P256_SCALAR_SIZE);
+            resp->set_pk_y(y, P256_SCALAR_SIZE);
+            printf("Sending registration response\n");
             return Status::OK;
         }
 
@@ -93,14 +138,15 @@ class LogServiceImpl final : public Log::Service {
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server.VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), sig, &sig_len);
+            server->VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), sig, &sig_len);
             resp->set_sig(sig, sig_len);
+            printf("Sending auth response\n");
             return Status::OK;
         }
 };
 
 void runServer(string bindAddr) {
-    LogServer s;
+    LogServer *s = new LogServer();
     LogServiceImpl logService(s);
 
     grpc::EnableDefaultHealthCheckService(true);
@@ -111,6 +157,7 @@ void runServer(string bindAddr) {
     logBuilder.AddListeningPort(bindAddr, grpc::InsecureServerCredentials());
     logBuilder.RegisterService(&logService);
     unique_ptr<Server> logServer(logBuilder.BuildAndStart());
+    logServer->Wait();
 }
 
 int main(int argc, char *argv[]) {
@@ -118,9 +165,11 @@ int main(int argc, char *argv[]) {
     json config;
     config_stream >> config;*/
 
-    string bindAddr = "0.0.0.0:"; // + string(config[PORT]);
+    string bindAddr = "0.0.0.0:12345"; // + string(config[PORT]);
 
+    cout << "going to bind to " << bindAddr << endl;
     runServer(bindAddr);
+    cout << "after run server?" << endl;
 
 	printf("Hello world\n");
 }
