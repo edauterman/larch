@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_package = "ex.grpc";
+
+// Defines the service
+service Log {
+    // Function invoked to send the request
+    rpc SendPublishScores (PublishScoresRequest) returns (PublishScoresResponse) {}
+}
+
+message PublishScoresRequest {
+    repeated uint64 score_shares = 1;
+}
+
+message PublishScoresResponse {
+    repeated uint64 score_shares = 1;
+}

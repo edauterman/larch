@@ -10,6 +10,10 @@ include_directories(
 find_package(OpenSSL REQUIRED)
 find_package(emp-tool REQUIRED)
 
+set(CMAKE_C_FLAGS "-Wall")
+#set(CMAKE_C_FLAGS "-Wall -lpthread -lssl -lcrypto")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -g")
+
 include_directories(${EMP-TOOL_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
 set(sources
@@ -19,4 +23,6 @@ find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 
 add_subdirectory(zkboo)
+add_subdirectory(network)
 add_subdirectory(agent)
+add_subdirectory(log)
