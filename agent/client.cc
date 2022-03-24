@@ -16,6 +16,8 @@
 #include "json.hpp"
 #include <string>
 
+#include <grpcpp/grpcpp.h>
+
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
@@ -36,6 +38,8 @@
 #include "../zkboo/src/prover.h"
 #include "../zkboo/src/prover_sys.h"
 #include "../zkboo/src/verifier.h"
+#include "../network/log.grpc.pb.h"
+#include "../network/log.pb.h"
 
 // Used to define JSON messages.
 #define ID "agent-det2f"
@@ -65,6 +69,7 @@
 using namespace std;
 using namespace nlohmann;
 using namespace emp;
+using namespace grpc;
 
 struct message_t {
   string content;
@@ -328,6 +333,14 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t enc_key[16];
   Proof proof;
   int numRands = 116916;
+  uint8_t *proof_buf;
+  int proof_buf_len;
+  uint8_t iv_raw[16];
+
+  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  AuthRequest req;
+  AuthResponse resp;
+  ClientContext client_ctx;
 
   CHECK_A (r = BN_new());
   CHECK_A (s = BN_new());
@@ -370,7 +383,19 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   fprintf(stderr, "det2f: proving circuit\n");
   ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
-  fprintf(stderr, "det2f: proved circuit\n");
+
+  proof_buf = proof.Serialize(&proof_buf_len);
+  req.set_proof(proof_buf, proof_buf_len);
+  req.set_challenge(message_buf, message_buf_len);
+  req.set_ct(ct, message_buf_len);
+  // TODO real IV
+  memset(iv_raw, 0, 16);
+  req.set_iv(iv_raw, 16);
+  stub->SendAuth(&client_ctx, req, &resp);
+  sig_len = resp.sig().size();
+  memcpy(sig_out, resp.sig().c_str(), sig_len);
+
+/*  fprintf(stderr, "det2f: proved circuit\n");
   VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH * 8, message_buf_len * 8);
   fprintf(stderr, "det2f: verified circuit\n");
 
@@ -387,7 +412,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_SignUpdate(mdctx, message_buf, message_buf_len);
   EVP_SignFinal(mdctx, sig_out, &sig_len, pkey);
   fprintf(stderr, "det2f: just signed\n");
-  fprintf(stderr, "det2f: PK SIGNED WITH %s\n", EC_POINT_point2hex(Params_group(params), pk_map[string((const char *)key_handle, MAX_KH_SIZE)], POINT_CONVERSION_UNCOMPRESSED, ctx));
+  fprintf(stderr, "det2f: PK SIGNED WITH %s\n", EC_POINT_point2hex(Params_group(params), pk_map[string((const char *)key_handle, MAX_KH_SIZE)], POINT_CONVERSION_UNCOMPRESSED, ctx));*/
   //sig_len = sig_len_sizet;
   //sig = ECDSA_do_sign(message,  SHA256_DIGEST_LENGTH, key);
 /*  sig = ECDSA_do_sign(message_buf,  message_buf_len, key);

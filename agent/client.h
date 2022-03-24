@@ -39,6 +39,7 @@ class Client {
         Params params;
         map<string, EC_POINT*> pk_map;
         map<string, BIGNUM*> sk_map;
+        string logAddr;
 };
 
 #endif
