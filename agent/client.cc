@@ -220,9 +220,10 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   EVP_PKEY *anon_pkey;
   string str;
   BN_CTX *ctx;
-  fprintf(stderr, "det2f: before params\n");
-  Params params = Params_new(P256);
-  fprintf(stderr, "det2f: after params\n");
+  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  RegRequest req;
+  RegResponse resp;
+  ClientContext client_ctx;
 
   CHECK_A(cert = X509_new());
   CHECK_A(anon_key = EC_KEY_new());
@@ -244,12 +245,18 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   fprintf(stderr, "det2f: generated key handle\n");
 
   /* Output result. */
+  /*
   Params_rand_point_exp(params, pk, exp);
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = exp;
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
   BN_bn2bin(y, pk_out->y);
+  pk_out->format = UNCOMPRESSED_POINT;*/
+
+  stub->SendReg(&client_ctx, req, &resp);
+  memcpy(pk_out->x, resp.pk_x().c_str(), P256_SCALAR_SIZE);
+  memcpy(pk_out->y, resp.pk_y().c_str(), P256_SCALAR_SIZE);
   pk_out->format = UNCOMPRESSED_POINT;
 
   fprintf(stderr, "det2f: chose pub key\n");

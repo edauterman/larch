@@ -34,7 +34,7 @@ LogServer::LogServer() {
     params = Params_new(P256);
 };
 
-void LogServer::GenerateKeyPair() {
+void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     EC_KEY *key = EC_KEY_new();
     pkey = EVP_PKEY_new();
 
@@ -42,6 +42,13 @@ void LogServer::GenerateKeyPair() {
     EC_KEY_generate_key(key);
     //EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
     EVP_PKEY_assign_EC_KEY(pkey, key);
+
+    const EC_POINT *pk = EC_KEY_get0_public_key(key);
+    BIGNUM *x = BN_new();
+    BIGNUM *y = BN_new();
+    EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
+    BN_bn2bin(x, x_out);
+    BN_bn2bin(y, y_out);
 };
 
 void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *sig_out, unsigned int *sig_len) {
@@ -70,6 +77,11 @@ class LogServiceImpl final : public Log::Service {
 
         Status SendReg(ServerContext *context, const RegRequest *req, RegResponse *resp) override {
             printf("Received registration request\n");
+            uint8_t x[P256_SCALAR_SIZE];
+            uint8_t y[P256_SCALAR_SIZE];
+            server.GenerateKeyPair(x, y);
+            resp->set_pk_x(x, P256_SCALAR_SIZE);
+            resp->set_pk_y(x, P256_SCALAR_SIZE);
             return Status::OK;
         }
 

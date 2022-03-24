@@ -10,7 +10,7 @@
 class LogServer {
     public:
         LogServer();
-        void GenerateKeyPair();
+        void GenerateKeyPair(uint8_t *x_out, uint8_t *y_out);
         void VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *sig_out, unsigned int *sig_len);
 
     private:

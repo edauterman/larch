@@ -10,11 +10,12 @@ service Log {
 }
 
 message RegRequest {
-    bytes key_comm = 1;
+    //bytes key_comm = 1;
 }
 
 message RegResponse {
-
+    bytes pk_x = 1;
+    bytes pk_y = 2;
 }
 
 message AuthRequest {
