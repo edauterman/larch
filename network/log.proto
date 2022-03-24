@@ -5,13 +5,25 @@ option java_package = "ex.grpc";
 // Defines the service
 service Log {
     // Function invoked to send the request
-    rpc SendPublishScores (PublishScoresRequest) returns (PublishScoresResponse) {}
+    rpc SendReg (RegRequest) returns (RegResponse) {}
+    rpc SendAuth (AuthRequest) returns (AuthResponse) {}
 }
 
-message PublishScoresRequest {
-    repeated uint64 score_shares = 1;
+message RegRequest {
+    bytes key_comm = 1;
 }
 
-message PublishScoresResponse {
-    repeated uint64 score_shares = 1;
+message RegResponse {
+
+}
+
+message AuthRequest {
+    bytes proof = 1;
+    bytes challenge = 2;
+    bytes ct = 3;
+    bytes iv = 4;
+}
+
+message AuthResponse {
+    bytes sig = 1;
 }
