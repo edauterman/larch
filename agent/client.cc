@@ -29,6 +29,7 @@
 
 //#include "agent.h"
 #include "../crypto/common.h"
+#include "../crypto/sigs.h"
 #include "base64.h"
 #include "u2f.h"
 #include "client.h"
@@ -197,6 +198,51 @@ void Client::ReadFromStorage() {
     fclose(sk_file);
   }
 
+}
+
+// TODO compress r1 or r2 with PRG
+void Preprocess(Params &p, int n, vector<Hint> &clientHints, vector<Hint> &logHints, vector<Triple> &triples) {
+    BIGNUM *r = NULL;
+    BIGNUM *r1 = NULL;
+    BIGNUM *r2 = NULL;
+    BIGNUM *a = NULL;
+    BIGNUM *b = NULL;
+    BIGNUM *c = NULL;
+    EC_POINT *R = NULL;
+    BN_CTX *ctx = NULL;
+    int rv;
+
+    CHECK_A (r = BN_new());
+    CHECK_A (r1 = BN_new());
+    CHECK_A (r2 = BN_new());
+    CHECK_A (a = BN_new());
+    CHECK_A (b = BN_new());
+    CHECK_A (c = BN_new());
+    CHECK_A (R = EC_POINT_new(Params_group(p)));
+    CHECK_A (ctx = BN_CTX_new());
+
+    for (int i = 0; i < n; i++) {
+        CHECK_C (Params_rand_point_exp(p, R, r));
+        CHECK_C (Params_rand_exponent(p, r1));
+        CHECK_C (BN_mod_sub(r1, r, r1, Params_order(p), ctx));
+        clientHints.push_back(Hint(r1, R));
+        logHints.push_back(Hint(r2, R));
+
+        CHECK_C (Params_rand_exponent(p, a));
+        CHECK_C (Params_rand_exponent(p, b));
+        CHECK_C (BN_mod_mul(c, a, b, Params_order(p), ctx));
+        triples.push_back(Triple(a, b, c));
+    }
+
+cleanup:
+    if (r) BN_free(r);
+    if (r1) BN_free(r1);
+    if (r2) BN_free(r2);
+    if (a) BN_free(a);
+    if (b) BN_free(b);
+    if (c) BN_free(c);
+    if (R) EC_POINT_free(R);
+    if (ctx) BN_CTX_free(ctx);
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of

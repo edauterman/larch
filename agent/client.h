@@ -3,6 +3,7 @@
 
 #include <map>
 #include "../crypto/params.h"
+#include "../crypto/sigs.h"
 
 using namespace std;
 
@@ -20,6 +21,8 @@ class Client {
         Client();
         void ReadFromStorage();
         void WriteToStorage();
+
+        void Preprocess(Params &p, int n, vector<Hint> &clientHints, vector<Hint> &logHints, vector<Triple> &triples);
 
         /* Run registration with origin specified by app_id. Outputs the key handle and
         * public key, and generates a self-signed cert and corresponding batch

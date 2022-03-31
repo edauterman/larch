@@ -45,7 +45,7 @@ set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.pb.cc")
 set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.grpc.pb.h")
 set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.grpc.pb.cc")
 
-add_library(Utils asn1.cc base64.cc sig_parse.cc x509.cc ../crypto/params.cc client.cc ../zkboo/src/prover.cc ../zkboo/src/proof.cc ../zkboo/src/prover.cc ../zkboo/src/prover_sys.cc ../zkboo/src/view.cc ../zkboo/src/verifier.cc ../zkboo/src/circuit.cc ../zkboo/src/circuit_utils.cc ${hw_proto_srcs} ${hw_grpc_srcs})
+add_library(Utils asn1.cc base64.cc sig_parse.cc x509.cc ../crypto/params.cc ../crypto/sigs.cc client.cc ../zkboo/src/prover.cc ../zkboo/src/proof.cc ../zkboo/src/prover.cc ../zkboo/src/prover_sys.cc ../zkboo/src/view.cc ../zkboo/src/verifier.cc ../zkboo/src/circuit.cc ../zkboo/src/circuit_utils.cc ${hw_proto_srcs} ${hw_grpc_srcs})
 
 add_executable(agent agent.cc)
 target_link_libraries(agent
