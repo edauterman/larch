@@ -8,19 +8,19 @@
 
 #include <vector>
 
+class ShortHint {
+    public:
+        ShortHint(EC_POINT *R_in);
+
+        EC_POINT *R;
+};
 
 class Hint {
     public:
-        Hint(BIGNUM *r_in, EC_POINT *R_in);
+        Hint(BIGNUM *r_in, EC_POINT *R_in, BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in);
 
         EC_POINT *R;
         BIGNUM *r;
-};
-
-class Triple {
-    public:
-        Triple(BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in);
-
         BIGNUM *a;
         BIGNUM *b;
         BIGNUM *c;

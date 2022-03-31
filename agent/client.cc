@@ -200,38 +200,98 @@ void Client::ReadFromStorage() {
 
 }
 
+// TODO rejection sampling
+void Client::GetPreprocessValue(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret) {
+    uint8_t pt[16];
+    uint8_t out[16];
+    int len;
+    memset(pt, 0, 16);
+    memcpy(pt, (uint8_t *)&ctr, sizeof(uint64_t));
+    EVP_EncryptUpdate(ctx, out, &len, pt, 16);
+    BN_bin2bn(out, len, ret);
+    BN_mod(ret, ret, Params_order(p), bn_ctx);
+}
+
+void Client::GetPreprocessValue(Params &p, uint8_t *seed, uint64_t ctr, BIGNUM *ret) {
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    BN_CTX *bn_ctx = BN_CTX_new();
+    EVP_CIPHER_CTX_init(ctx);
+    uint8_t iv[16];
+    memset(iv, 0, 16);
+    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
+    GetPreprocessValue(p, ctx, bn_ctx, ctr, ret);
+}
+
+void Client::GetPreprocessValueSet(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
+    uint64_t ctr = i * 4;
+    GetPreprocessValue(p, ctx, bn_ctx, ctr, r);
+    GetPreprocessValue(p, ctx, bn_ctx, ctr + 1, a);
+    GetPreprocessValue(p, ctx, bn_ctx, ctr + 2, b);
+    GetPreprocessValue(p, ctx, bn_ctx, ctr + 3, c);
+}
+
+void Client::GetPreprocessValueSet(Params &p, uint8_t *seed, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
+    uint64_t ctr = i * 4;
+    GetPreprocessValue(p, seed, ctr, r);
+    GetPreprocessValue(p, seed, ctr + 1, a);
+    GetPreprocessValue(p, seed, ctr + 2, b);
+    GetPreprocessValue(p, seed, ctr + 3, c);
+}
+
 // TODO compress r1 or r2 with PRG
-void Preprocess(Params &p, int n, vector<Hint> &clientHints, vector<Hint> &logHints, vector<Triple> &triples) {
+void Client::Preprocess(Params &p, int n, uint8_t *seed, vector<ShortHint> &clientHints, vector<Hint> &logHints) {
     BIGNUM *r = NULL;
     BIGNUM *r1 = NULL;
     BIGNUM *r2 = NULL;
+    BIGNUM *a1 = NULL;
+    BIGNUM *b1 = NULL;
+    BIGNUM *c1 = NULL;
+    BIGNUM *a2 = NULL;
+    BIGNUM *b2 = NULL;
+    BIGNUM *c2 = NULL;
     BIGNUM *a = NULL;
     BIGNUM *b = NULL;
     BIGNUM *c = NULL;
     EC_POINT *R = NULL;
     BN_CTX *ctx = NULL;
+    EVP_CIPHER_CTX *evp_ctx = NULL;
     int rv;
+    uint8_t iv[16];
 
     CHECK_A (r = BN_new());
     CHECK_A (r1 = BN_new());
     CHECK_A (r2 = BN_new());
+    CHECK_A (a1 = BN_new());
+    CHECK_A (b1 = BN_new());
+    CHECK_A (c1 = BN_new());
+    CHECK_A (a2 = BN_new());
+    CHECK_A (b2 = BN_new());
+    CHECK_A (c2 = BN_new());
     CHECK_A (a = BN_new());
     CHECK_A (b = BN_new());
     CHECK_A (c = BN_new());
     CHECK_A (R = EC_POINT_new(Params_group(p)));
     CHECK_A (ctx = BN_CTX_new());
+    CHECK_A (evp_ctx = EVP_CIPHER_CTX_new());
+
+    memset(iv, 0, 16);
+    EVP_EncryptInit_ex(evp_ctx, EVP_aes_128_ctr(), NULL, seed, iv);
 
     for (int i = 0; i < n; i++) {
-        CHECK_C (Params_rand_point_exp(p, R, r));
-        CHECK_C (Params_rand_exponent(p, r1));
-        CHECK_C (BN_mod_sub(r1, r, r1, Params_order(p), ctx));
-        clientHints.push_back(Hint(r1, R));
-        logHints.push_back(Hint(r2, R));
+        GetPreprocessValueSet(p, evp_ctx, ctx, i, r1, a1, b1, c1);
+        CHECK_C (Params_rand_exponent(p, r2));
+        CHECK_C (BN_mod_add(r, r1, r2, Params_order(p), ctx));
+        CHECK_C (Params_exp(p, R, r));
 
-        CHECK_C (Params_rand_exponent(p, a));
-        CHECK_C (Params_rand_exponent(p, b));
+        CHECK_C (Params_rand_exponent(p, a2));
+        CHECK_C (Params_rand_exponent(p, b2));
+        CHECK_C (BN_mod_add(a, a1, a2, Params_order(p), ctx));
+        CHECK_C (BN_mod_add(b, b1, b2, Params_order(p), ctx));
         CHECK_C (BN_mod_mul(c, a, b, Params_order(p), ctx));
-        triples.push_back(Triple(a, b, c));
+        CHECK_C (BN_mod_sub(c2, c, c1, Params_order(p), ctx));
+
+        clientHints.push_back(ShortHint(R));
+        logHints.push_back(Hint(r2, R, a2, b2, c2));
     }
 
 cleanup:

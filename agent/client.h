@@ -2,6 +2,11 @@
 #define _CLIENT_H_
 
 #include <map>
+
+#include <openssl/bn.h>
+#include <openssl/ec.h>
+#include <openssl/evp.h>
+
 #include "../crypto/params.h"
 #include "../crypto/sigs.h"
 
@@ -22,7 +27,7 @@ class Client {
         void ReadFromStorage();
         void WriteToStorage();
 
-        void Preprocess(Params &p, int n, vector<Hint> &clientHints, vector<Hint> &logHints, vector<Triple> &triples);
+        void Preprocess(Params &p, int n, uint8_t *seed, vector<ShortHint> &clientHints, vector<Hint> &logHints);
 
         /* Run registration with origin specified by app_id. Outputs the key handle and
         * public key, and generates a self-signed cert and corresponding batch
@@ -43,6 +48,12 @@ class Client {
         map<string, EC_POINT*> pk_map;
         map<string, BIGNUM*> sk_map;
         string logAddr;
+
+        void GetPreprocessValue(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret);
+        void GetPreprocessValue(Params &p, uint8_t *seed, uint64_t ctr, BIGNUM *ret);
+        void GetPreprocessValueSet(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c);
+        void GetPreprocessValueSet(Params &p, uint8_t *seed, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c);
+
 };
 
 #endif
