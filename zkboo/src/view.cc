@@ -8,7 +8,7 @@
 #include <openssl/sha.h>
 
 #include "view.h"
-#include "common.h"
+#include "../../crypto/params.h"
 
 using namespace std;
 

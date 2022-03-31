@@ -2,7 +2,7 @@
 #define _CLIENT_H_
 
 #include <map>
-#include "params.h"
+#include "../crypto/params.h"
 
 using namespace std;
 

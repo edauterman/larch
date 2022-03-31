@@ -11,37 +11,20 @@
 #include "prover.h"
 #include "proof.h"
 #include "emp_prover.h"
-#include "common.h"
+//#include "common.h"
 #include "prover_sys.h"
 #include "../utils/timer.h"
+#include "../../crypto/params.h"
 #include "circuit.h"
 
 using namespace std;
 using namespace emp;
 
+
 static inline bool GetBit(uint32_t x, int bit) {
     return (bool)((x & (1 << bit)) >> bit);
 }
 
-static inline void SetBit(uint32_t *x, int bit, bool val) {
-    if (val == 0) {
-        *x = *x & (val << bit);
-    } else {
-        *x = *x | (val << bit);
-    }
-}
-/*
-static inline void SetWireNum(uint32_t *x, uint32_t wireNum) {
-    *x = *x | (wireNum << 1);
-}
-
-static inline uint32_t GetWireNum(uint32_t x) {
-    return x >> 1;
-}*/
-/*
-static inline void SetBit(uint32_t *x, int bit, bool val) {
-    *x = *x || (val << bit);
-}*/
 
 //template<typename IO>
 void GenViewsHash(void (*f)(block[], block[], int), block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[], int numRands) {
@@ -112,7 +95,7 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[0][i] = indivShares[0][i] % 2;
         indivShares[1][i] = indivShares[1][i] % 2;
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit(input[i/8], i%8);
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit((uint32_t)input[i/8], i%8);
         for (int j = 0; j < 3; j++) {
             SetWireNum(&indivShares[j][i], i + offset);
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
@@ -213,7 +196,7 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[0][i] = indivShares[0][i] % 2;
         indivShares[1][i] = indivShares[1][i] % 2;
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit(w[i/8], i%8);
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit((uint32_t)w[i/8], i%8);
         for (int j = 0; j < 3; j++) {
             SetWireNum(&indivShares[j][i], i);
             memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));

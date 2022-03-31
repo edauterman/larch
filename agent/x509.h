@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <openssl/ec.h>
 #include <openssl/bn.h>
-#include "params.h"
+#include "../crypto/params.h"
 
 /**
  * Top-level construction of the fob attestation certificate. Certificate is

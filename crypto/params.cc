@@ -417,66 +417,14 @@ cleanup:
   return rv;
 }
 
-int
-Params_fill_roots (const_Params p, uint8_t *str, int strlen, uint8_t roots[][32], int rootslen)
-{
-  int rv = ERROR;
-  int i;
-  BIGNUM *b = NULL;
-  BIGNUM *x = NULL;
-  BIGNUM *z = NULL;
-  BIGNUM *res = NULL;
-  BIGNUM *n = NULL;
-  int legendre;
+static inline bool GetBit(uint32_t x, int bit) {
+    return (bool)((x & (1 << bit)) >> bit);
+}
 
-  CHECK_A (b = BN_new());
-  CHECK_A (x = BN_new());
-  CHECK_A (z = BN_new());
-  CHECK_A (n = BN_new());
-  CHECK_A (res = BN_new());
-
-  BN_bin2bn(b_buf, sizeof(b_buf), b);
-  CHECK_C (BN_zero(n));
-  CHECK_C (BN_add_word(n, 3));
-
-  // Hash string into an x coordinate
-  CHECK_C (hash_to_int_max (p, x, p->base_prime, str, strlen));
-
-  for (i = 0; i < rootslen; i++) {
-    // x^3
-    CHECK_C (BN_mod_mul(z, x, x, p->base_prime, p->ctx));
-    CHECK_C (BN_mod_mul(z, z, x, p->base_prime, p->ctx));
-    // x^3 - 3x
-    CHECK_C (BN_mod_sub(z, z, x, p->base_prime, p->ctx));
-    CHECK_C (BN_mod_sub(z, z, x, p->base_prime, p->ctx));
-    CHECK_C (BN_mod_sub(z, z, x, p->base_prime, p->ctx));
-    // x^3 - 3x + b
-    CHECK_C (BN_mod_add(z, z, b, p->base_prime, p->ctx));
-    // Legendre symbol to check if z is sqr mod p
-    legendre = BN_kronecker(z, p->base_prime, p->ctx);
-    if (legendre == -1) {
-      /* z is not a square. */
-      /* Return sqrt(n.z) */
-      CHECK_C (BN_mod_mul(z, z, n, p->base_prime, p->ctx));
-      BN_mod_sqrt(res, z, p->base_prime, p->ctx);
-      memset(roots[i], 0, 32);
-      BN_bn2bin(res, roots[i]);
-    } else {      // legendre == 1
-      /* z is a square */
-      BN_mod_sqrt(res, z, p->base_prime, p->ctx);
-      memset(roots[i], 0, 32);
-      BN_bn2bin(res, roots[i]);
-      return i + 1;
+static inline void SetBit(uint32_t *x, int bit, bool val) {
+    if (val == 0) {
+        *x = *x & (val << bit);
+    } else {
+        *x = *x | (val << bit);
     }
-    CHECK_C (BN_mod_add(x, x, BN_value_one(), p->base_prime, p->ctx));
-  }
-  return rootslen;
-
-cleanup:
-  if (b) BN_clear_free(b);
-  if (x) BN_clear_free(x);
-  if (z) BN_clear_free(z);
-  if (n) BN_clear_free(n);
-  if (res) BN_clear_free(res);
-  return rv;
 }

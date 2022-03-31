@@ -6,13 +6,14 @@
 #include "verifier.h"
 #include "prover.h"
 #include "proof.h"
-#include "common.h"
 #include "view.h"
 #include "circuit.h"
 #include "emp_verifier.h"
+#include "../../crypto/params.h"
 
 using namespace std;
 using namespace emp;
+
 
 static inline bool GetBit(uint32_t x, int bit) {
     return (bool)((x & (1 << bit)) >> bit);

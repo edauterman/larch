@@ -19,10 +19,6 @@
 
 #include <openssl/ec.h>
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 struct params {
   EC_GROUP *group;
   BIGNUM *order;
@@ -84,11 +80,8 @@ int Params_hash_point(const_Params p, EVP_MD_CTX *mdctx, const uint8_t *tag,
                int taglen, const EC_POINT *pt);
 int Params_hash_to_point (const_Params p, EC_POINT *point,
     const uint8_t *str, int strlen);
-int Params_fill_roots (const_Params p, uint8_t *str, int strlen, uint8_t roots[][32],
-                       int rootslen);
 
+static inline bool GetBit(uint32_t x, int bit);
+static inline void SetBit(uint32_t *x, int bit, bool val);
 
-#ifdef __cplusplus
-}
-#endif
 #endif

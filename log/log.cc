@@ -12,7 +12,7 @@
 
 #include "../network/log.grpc.pb.h"
 #include "../network/log.pb.h"
-#include "../agent/params.cc"
+#include "../crypto/params.cc"
 #include "../agent/u2f.h"
 #include "../zkboo/src/proof.h"
 #include "../zkboo/src/verifier.h"

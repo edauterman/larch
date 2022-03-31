@@ -6,19 +6,12 @@
 
 #include "proof.h"
 #include "prover.h"
-#include "common.h"
+#include "../../crypto/params.h"
 #include "view.h"
+
 
 static inline bool GetBit(uint32_t x, int bit) {
     return (bool)((x & (1 << bit)) >> bit);
-}
-
-static inline void SetBit(uint32_t *x, int bit, bool val) {
-    if (val == 0) {    
-        *x = *x & (val << bit);
-    } else {
-        *x = *x | (val << bit);
-    }   
 }
 
 RandomSource::RandomSource(uint8_t *in_seed, int numRands) {
@@ -42,7 +35,7 @@ RandomSource::RandomSource(uint8_t *in_seed, int numRands) {
 }
 
 uint8_t RandomSource::GetRand(int gate) {
-    return GetBit(randomness[gate/8], gate%8);
+    return GetBit((uint32_t)randomness[gate/8], gate%8);
     /*return 1;
     int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
     buf[0] = gate;

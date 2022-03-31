@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <openssl/bn.h>
 #include <openssl/ec.h>
-#include "params.h"
+#include "../crypto/params.h"
 
 // Tags we care about
 enum {

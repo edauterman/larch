@@ -5,7 +5,7 @@
 #include <openssl/evp.h>
 #include <emp-tool/emp-tool.h>
 
-#include "../agent/params.h"
+#include "../crypto/params.h"
 
 class LogServer {
     public:
