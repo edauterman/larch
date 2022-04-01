@@ -239,7 +239,7 @@ void Client::GetPreprocessValueSet(Params &p, uint8_t *seed, uint64_t i, BIGNUM 
 }
 
 // TODO compress r1 or r2 with PRG
-void Client::Preprocess(Params &p, int n, uint8_t *seed, vector<ShortHint> &clientHints, vector<Hint> &logHints) {
+void Client::Preprocess(vector<Hint> &logHints) {
     BIGNUM *r = NULL;
     BIGNUM *r1 = NULL;
     BIGNUM *r2 = NULL;
@@ -270,25 +270,26 @@ void Client::Preprocess(Params &p, int n, uint8_t *seed, vector<ShortHint> &clie
     CHECK_A (a = BN_new());
     CHECK_A (b = BN_new());
     CHECK_A (c = BN_new());
-    CHECK_A (R = EC_POINT_new(Params_group(p)));
+    CHECK_A (R = EC_POINT_new(Params_group(params)));
     CHECK_A (ctx = BN_CTX_new());
     CHECK_A (evp_ctx = EVP_CIPHER_CTX_new());
 
     memset(iv, 0, 16);
+    RAND_bytes(seed, 16);
     EVP_EncryptInit_ex(evp_ctx, EVP_aes_128_ctr(), NULL, seed, iv);
 
-    for (int i = 0; i < n; i++) {
-        GetPreprocessValueSet(p, evp_ctx, ctx, i, r1, a1, b1, c1);
-        CHECK_C (Params_rand_exponent(p, r2));
-        CHECK_C (BN_mod_add(r, r1, r2, Params_order(p), ctx));
-        CHECK_C (Params_exp(p, R, r));
+    for (int i = 0; i < NUM_AUTHS; i++) {
+        GetPreprocessValueSet(params, evp_ctx, ctx, i, r1, a1, b1, c1);
+        CHECK_C (Params_rand_exponent(params, r2));
+        CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
+        CHECK_C (Params_exp(params, R, r));
 
-        CHECK_C (Params_rand_exponent(p, a2));
-        CHECK_C (Params_rand_exponent(p, b2));
-        CHECK_C (BN_mod_add(a, a1, a2, Params_order(p), ctx));
-        CHECK_C (BN_mod_add(b, b1, b2, Params_order(p), ctx));
-        CHECK_C (BN_mod_mul(c, a, b, Params_order(p), ctx));
-        CHECK_C (BN_mod_sub(c2, c, c1, Params_order(p), ctx));
+        CHECK_C (Params_rand_exponent(params, a2));
+        CHECK_C (Params_rand_exponent(params, b2));
+        CHECK_C (BN_mod_add(a, a1, a2, Params_order(params), ctx));
+        CHECK_C (BN_mod_add(b, b1, b2, Params_order(params), ctx));
+        CHECK_C (BN_mod_mul(c, a, b, Params_order(params), ctx));
+        CHECK_C (BN_mod_sub(c2, c, c1, Params_order(params), ctx));
 
         clientHints.push_back(ShortHint(R));
         logHints.push_back(Hint(r2, R, a2, b2, c2));
@@ -303,6 +304,53 @@ cleanup:
     if (c) BN_free(c);
     if (R) EC_POINT_free(R);
     if (ctx) BN_CTX_free(ctx);
+}
+
+int Client::Initialize() {
+    InitRequest req;
+    InitResponse resp;
+    ClientContext client_ctx;
+    unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+    uint8_t comm_in[64];
+    vector<Hint> logHints;
+    
+    uint8_t *buf = (uint8_t *)malloc(33);
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+
+    RAND_bytes(enc_key, 16);
+    RAND_bytes(r_open, 16);
+
+    memset(comm_in, 0, 64);
+    memcpy(comm_in, enc_key, 16);
+    memcpy(comm_in + 16, r_open, 16);
+    EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+    EVP_DigestUpdate(mdctx, comm_in, 32);
+    EVP_DigestFinal(mdctx, enc_key_comm, NULL);
+
+    Preprocess(logHints);
+
+    for (int i = 0; i < NUM_AUTHS; i++) {
+        HintMsg *h = req.add_hints();
+        BN_bn2bin(logHints[i].r, buf);
+        h->set_r(buf, BN_num_bytes(logHints[i].r));
+        BN_bn2bin(logHints[i].a, buf);
+        h->set_a(buf, BN_num_bytes(logHints[i].a));
+        BN_bn2bin(logHints[i].b, buf);
+        h->set_b(buf, BN_num_bytes(logHints[i].b));
+        BN_bn2bin(logHints[i].c, buf);
+        h->set_c(buf, BN_num_bytes(logHints[i].c));
+        EC_POINT_point2oct(Params_group(params), logHints[i].R,
+                       POINT_CONVERSION_COMPRESSED, buf, 33,
+                       Params_ctx(params));
+        h->set_g_r(buf, 33);
+    }
+
+    req.set_key_comm(enc_key_comm, 32);
+    stub->SendInit(&client_ctx, req, &resp);
+    logPk = Params_point_new(params);
+    EC_POINT_oct2point(Params_group(params), logPk, (uint8_t *)resp.pk().c_str(), 33,
+                           Params_ctx(params));
+ 
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
@@ -332,6 +380,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   RegRequest req;
   RegResponse resp;
   ClientContext client_ctx;
+  vector<Hint> logHints;
 
   CHECK_A(cert = X509_new());
   CHECK_A(anon_key = EC_KEY_new());
@@ -448,14 +497,14 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t len_byte;
   uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
   EVP_PKEY *pkey;
-  uint8_t r_open[16];
-  uint8_t enc_key_comm[32];
+  //uint8_t r_open[16];
+  //uint8_t enc_key_comm[32];
   uint8_t hash_out[32];
   uint8_t comm_in[64];
   uint8_t ct[SHA256_DIGEST_LENGTH];
   __m128i iv = makeBlock(0,0);
   __m128i enc_key_raw = makeBlock(0,0);
-  uint8_t enc_key[16];
+  //uint8_t enc_key[16];
   Proof proof;
   int numRands = 116916;
   uint8_t *proof_buf;

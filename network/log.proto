@@ -5,12 +5,29 @@ option java_package = "ex.grpc";
 // Defines the service
 service Log {
     // Function invoked to send the request
+    rpc SendInit (InitRequest) returns (InitResponse) {}
     rpc SendReg (RegRequest) returns (RegResponse) {}
     rpc SendAuth (AuthRequest) returns (AuthResponse) {}
 }
 
+message HintMsg {
+    bytes r = 1;
+    bytes g_r = 2;
+    bytes a = 3;
+    bytes b = 4;
+    bytes c = 5;
+}
+
+message InitRequest {
+    bytes key_comm = 1;
+    repeated HintMsg hints = 2;
+}
+
+message InitResponse {
+    bytes pk = 1;
+}
+
 message RegRequest {
-    //bytes key_comm = 1;
 }
 
 message RegResponse {
