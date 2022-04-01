@@ -66,6 +66,8 @@
 #define U2F_V2 "U2F_V2"
 #define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
 #define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 using namespace std;
 using namespace nlohmann;
@@ -155,6 +157,26 @@ void Client::WriteToStorage() {
     fwrite(buf, 32, 1, sk_file);
   }
   fclose(sk_file);
+
+  FILE *hint_file = fopen(HINT_FILE, "w");
+  for (int i = 0; i < clientHints.size(); i++) {
+     EC_POINT_point2oct(Params_group(params), clientHints[i].R,
+                       POINT_CONVERSION_COMPRESSED, pt, 33,
+                       Params_ctx(params));
+     fwrite(pt, 33, 1, hint_file);
+  }
+  fclose(hint_file);
+
+  FILE *master_file = fopen(MASTER_FILE, "w");
+  EC_POINT_point2oct(Params_group(params), logPk,
+                       POINT_CONVERSION_COMPRESSED, pt, 33,
+                       Params_ctx(params));
+  fwrite(pt, 33, 1, hint_file);
+  fwrite(enc_key, 16, 1, master_file);
+  fwrite(r_open, 16, 1, master_file);
+  fwrite(enc_key_comm, 16, 1, master_file);
+  fclose(master_file);
+  
   fprintf(stderr, "det2f: WROTE TO STORAGE\n");
 
 }
@@ -198,6 +220,41 @@ void Client::ReadFromStorage() {
     fclose(sk_file);
   }
 
+  FILE *hint_file = fopen(HINT_FILE, "r");
+  uint8_t pt_buf[33];
+  if (hint_file != NULL) {
+    EC_POINT *pt;
+    while (fread(pt_buf, 33, 1, hint_file) == 1) {
+      pt = Params_point_new(params);
+      if (EC_POINT_oct2point(Params_group(params), pt, pt_buf, 33,
+                             Params_ctx(params)) != OKAY) {
+        fprintf(stderr, "ERROR: public key in invalid format\n");
+      }
+      clientHints.push_back(ShortHint(pt));
+    }
+    fclose(kh_file);
+  }
+
+  FILE *master_file = fopen(MASTER_FILE, "r");
+  logPk = Params_point_new(params);
+  if (fread(pt_buf, 33, 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: public key not in file\n");
+  }
+  if (EC_POINT_oct2point(Params_group(params), logPk, pt_buf, 33,
+                         Params_ctx(params)) != OKAY) {
+       fprintf(stderr, "ERROR: public key in invalid format\n");
+  }
+  if (fread(enc_key, 16, 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: enc_key not in file\n");
+  }
+  if (fread(r_open, 16, 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: r_open not in file\n");
+  }
+  if (fread(enc_key_comm, 32, 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: commitment not in file\n");
+  }
+  fclose(master_file);
+ 
 }
 
 // TODO rejection sampling
