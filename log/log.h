@@ -10,6 +10,7 @@
 class LogServer {
     public:
         LogServer();
+        void Initialize(const InitRequest *req, uint8_t *pkBuf);
         void GenerateKeyPair(uint8_t *x_out, uint8_t *y_out);
         void VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *sig_out, unsigned int *sig_len);
 
@@ -17,6 +18,12 @@ class LogServer {
         const int numRands = 104116;
         const int m_len = 256;
         const int challenge_len = 552;
+
+        BIGNUM *sk;
+        EC_POINT *pk;
+        vector<Hint> hints;
+        uint8_t enc_key_comm[32];
+
         EVP_PKEY *pkey;
         EC_KEY *key;
         Params params;

@@ -17,6 +17,7 @@ class ShortHint {
 
 class Hint {
     public:
+        Hint();
         Hint(BIGNUM *r_in, EC_POINT *R_in, BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in);
 
         EC_POINT *R;
