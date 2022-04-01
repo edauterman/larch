@@ -56,3 +56,13 @@ target_link_libraries(agent
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(init init.cc)
+target_link_libraries(init
+    Prover
+    Base
+    Utils
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})

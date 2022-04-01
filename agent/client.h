@@ -2,11 +2,13 @@
 #define _CLIENT_H_
 
 #include <map>
+#include <string>
 
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 
+#include "u2f.h"
 #include "../crypto/params.h"
 #include "../crypto/sigs.h"
 

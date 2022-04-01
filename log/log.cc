@@ -38,6 +38,7 @@ LogServer::LogServer() {
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     memcpy(enc_key_comm, req->key_comm().c_str(), 32);
 
+    printf("copying in hints\n");
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
         h.r = BN_bin2bn((uint8_t *)req->hints(i).r().c_str(), req->hints(i).r().size(), NULL);
@@ -47,9 +48,14 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
         h.R = Params_point_new(params);
         EC_POINT_oct2point(Params_group(params), h.R, (uint8_t *)req->hints(i).g_r().c_str(), 33, Params_ctx(params));
     }
+    printf("done copying in hints\n");
 
+    pk = EC_POINT_new(Params_group(params));
+    sk = BN_new();
     Params_rand_point_exp(params, pk, sk);
+    printf("chose key\n");
     EC_POINT_point2oct(Params_group(params), pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
+    printf("done choosing log key\n");
 }
 
 void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
@@ -143,6 +149,7 @@ class LogServiceImpl final : public Log::Service {
             server->Initialize(req, pkBuf);
             resp->set_pk(pkBuf, 33);
             printf("Sending initialization response\n");
+            return Status::OK;
         }
 
         Status SendReg(ServerContext *context, const RegRequest *req, RegResponse *resp) override {

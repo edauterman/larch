@@ -315,7 +315,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
     int rv;
     uint8_t iv[16];
 
-    CHECK_A (r = BN_new());
+   /* CHECK_A (r = BN_new());
     CHECK_A (r1 = BN_new());
     CHECK_A (r2 = BN_new());
     CHECK_A (a1 = BN_new());
@@ -327,7 +327,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
     CHECK_A (a = BN_new());
     CHECK_A (b = BN_new());
     CHECK_A (c = BN_new());
-    CHECK_A (R = EC_POINT_new(Params_group(params)));
+    CHECK_A (R = EC_POINT_new(Params_group(params)));*/
     CHECK_A (ctx = BN_CTX_new());
     CHECK_A (evp_ctx = EVP_CIPHER_CTX_new());
 
@@ -336,6 +336,21 @@ void Client::Preprocess(vector<Hint> &logHints) {
     EVP_EncryptInit_ex(evp_ctx, EVP_aes_128_ctr(), NULL, seed, iv);
 
     for (int i = 0; i < NUM_AUTHS; i++) {
+
+        CHECK_A (r = BN_new());
+        CHECK_A (r1 = BN_new());
+        CHECK_A (r2 = BN_new());
+        CHECK_A (a1 = BN_new());
+        CHECK_A (b1 = BN_new());
+        CHECK_A (c1 = BN_new());
+        CHECK_A (a2 = BN_new());
+        CHECK_A (b2 = BN_new());
+        CHECK_A (c2 = BN_new());
+        CHECK_A (a = BN_new());
+        CHECK_A (b = BN_new());
+        CHECK_A (c = BN_new());
+        CHECK_A (R = EC_POINT_new(Params_group(params)));
+ 
         GetPreprocessValueSet(params, evp_ctx, ctx, i, r1, a1, b1, c1);
         CHECK_C (Params_rand_exponent(params, r2));
         CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
@@ -350,16 +365,29 @@ void Client::Preprocess(vector<Hint> &logHints) {
 
         clientHints.push_back(ShortHint(R));
         logHints.push_back(Hint(r2, R, a2, b2, c2));
+        
+        printf("1\n");
+        BN_free(r);
+        BN_free(r1);
+        BN_free(a1);
+        BN_free(a);
+        printf("2\n");
+        BN_free(b1);
+        BN_free(b);
+        BN_free(c1);
+        BN_free(c);
+        printf("3\n");
     }
 
 cleanup:
+    /*
     if (r) BN_free(r);
     if (r1) BN_free(r1);
     if (r2) BN_free(r2);
     if (a) BN_free(a);
     if (b) BN_free(b);
     if (c) BN_free(c);
-    if (R) EC_POINT_free(R);
+    if (R) EC_POINT_free(R);*/
     if (ctx) BN_CTX_free(ctx);
 }
 
@@ -384,10 +412,14 @@ int Client::Initialize() {
     EVP_DigestUpdate(mdctx, comm_in, 32);
     EVP_DigestFinal(mdctx, enc_key_comm, NULL);
 
+    fprintf(stderr, "det2f: going to do preprocessing\n");
     Preprocess(logHints);
+    fprintf(stderr, "det2f: done with preprocessing\n");
 
     for (int i = 0; i < NUM_AUTHS; i++) {
+        fprintf(stderr, "%d/%d\n", i, NUM_AUTHS);
         HintMsg *h = req.add_hints();
+        printf("r = %s, %d\n", BN_bn2hex(logHints[i].r), BN_num_bytes(logHints[i].r));
         BN_bn2bin(logHints[i].r, buf);
         h->set_r(buf, BN_num_bytes(logHints[i].r));
         BN_bn2bin(logHints[i].a, buf);
