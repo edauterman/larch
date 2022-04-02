@@ -33,6 +33,7 @@ using namespace emp;
 
 LogServer::LogServer() {
     params = Params_new(P256);
+    auth_ctr = 0;
 };
 
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
@@ -106,8 +107,21 @@ void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     printf("\n");
 };
 
-void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *sig_out, unsigned int *sig_len) {
+void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *sig_out, unsigned int *sig_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len) {
     Proof proof;
+    BIGNUM *d_client = BN_new();
+    BIGNUM *e_client = BN_new();
+    BIGNUM *d_log = BN_new();
+    BIGNUM *e_log = BN_new();
+    BIGNUM *d = BN_new();
+    BIGNUM *e = BN_new();
+    BIGNUM *hash_bn = BN_new();
+    BIGNUM *x_coord = BN_new();
+    BIGNUM *y_coord = BN_new();
+    BIGNUM *val = BN_new();
+    BIGNUM *out = BN_new();
+    BIGNUM *prod = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
     proof.Deserialize(proof_bytes, numRands);
 
     uint64_t low = *((uint64_t *)iv_bytes);
@@ -129,12 +143,42 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     }
     printf("\n");
 
-    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
+    BN_bin2bn(d_in, d_in_len, d_client); 
+    BN_bin2bn(e_in, e_in_len, e_client);
+
+    BN_bin2bn(challenge, 32, hash_bn);
+    BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+
+    EC_POINT_get_affine_coordinates_GFp(Params_group(params), hints[auth_ctr].R, x_coord, y_coord, NULL);
+    BN_mod(x_coord, x_coord, Params_order(params), ctx);
+    BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
+    BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
+
+    BN_mod_add(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
+    BN_mod_add(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
+
+    BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
+    BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
+
+    // de + d[b] + e[a] + [c]
+    BN_mod_mul(out, d, e, Params_order(params), ctx);
+    BN_mod_mul(prod, d, hints[auth_ctr].b, Params_order(params), ctx);
+    BN_mod_add(out, out, prod, Params_order(params), ctx);
+    BN_mod_mul(prod, e, hints[auth_ctr].a, Params_order(params), ctx);
+    BN_mod_add(out, out, prod, Params_order(params), ctx);
+    BN_mod_add(out, out, hints[auth_ctr].c, Params_order(params), ctx);
+
+    BN_bn2bin(out, sig_out);
+    *sig_len = BN_num_bytes(out);
+
+    auth_ctr++;
+
+/*    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     EVP_MD_CTX_init(mdctx);
     EVP_SignInit(mdctx, EVP_sha256());
     printf("challenge len = %d\n", challenge_len / 8);
     EVP_SignUpdate(mdctx, challenge, challenge_len / 8);
-    EVP_SignFinal(mdctx, sig_out, sig_len, pkey);
+    EVP_SignFinal(mdctx, sig_out, sig_len, pkey);*/
 };
 
 class LogServiceImpl final : public Log::Service {
@@ -165,14 +209,20 @@ class LogServiceImpl final : public Log::Service {
 
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
             printf("Received auth request\n");
-            uint8_t sig[MAX_ECDSA_SIG_SIZE];
-            unsigned int sig_len = 0;
+            uint8_t prod[32];
+            unsigned int prod_len = 0;
+            unsigned int d_len = 0;
+            unsigned int e_len = 0;
+            uint8_t d[32];
+            uint8_t e[32];
             string proofStr = req->proof();
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server->VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), sig, &sig_len);
-            resp->set_sig(sig, sig_len);
+            server->VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), prod, &prod_len, d, &d_len, e, &e_len);
+            resp->set_prod(prod, prod_len);
+            resp->set_d(d, d_len);
+            resp->set_e(e, e_len);
             printf("Sending auth response\n");
             return Status::OK;
         }

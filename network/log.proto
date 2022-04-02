@@ -45,5 +45,7 @@ message AuthRequest {
 }
 
 message AuthResponse {
-    bytes sig = 1;
+    bytes prod = 1;
+    bytes d = 2;
+    bytes e = 3;
 }
