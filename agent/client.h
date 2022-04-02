@@ -56,14 +56,17 @@ class Client {
         uint8_t enc_key[16];
         uint8_t r_open[16];
         uint8_t enc_key_comm[32];
+        uint32_t auth_ctr;
 
         const int NUM_AUTHS = 10000;
 
         void Preprocess(vector<Hint> &logHints);
-        void GetPreprocessValue(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret);
-        void GetPreprocessValue(Params &p, uint8_t *seed, uint64_t ctr, BIGNUM *ret);
-        void GetPreprocessValueSet(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c);
-        void GetPreprocessValueSet(Params &p, uint8_t *seed, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c);
+        void GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret);
+        void GetPreprocessValue(uint64_t ctr, BIGNUM *ret);
+        void GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c);
+        void GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c);
+
+        int StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *x_coord, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e);
 
 };
 

@@ -40,6 +40,8 @@ message AuthRequest {
     bytes challenge = 2;
     bytes ct = 3;
     bytes iv = 4;
+    bytes d = 5;
+    bytes e = 6;
 }
 
 message AuthResponse {

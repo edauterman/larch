@@ -175,6 +175,7 @@ void Client::WriteToStorage() {
   fwrite(enc_key, 16, 1, master_file);
   fwrite(r_open, 16, 1, master_file);
   fwrite(enc_key_comm, 16, 1, master_file);
+  fwrite((uint8_t *)&auth_ctr, sizeof(uint32_t), 1, master_file);
   fclose(master_file);
   
   fprintf(stderr, "det2f: WROTE TO STORAGE\n");
@@ -253,12 +254,15 @@ void Client::ReadFromStorage() {
   if (fread(enc_key_comm, 32, 1, master_file) != 1) {
     fprintf(stderr, "ERROR: commitment not in file\n");
   }
+  if (fread((uint8_t *)&auth_ctr, 4, 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: commitment not in file\n");
+  }
   fclose(master_file);
  
 }
 
 // TODO rejection sampling
-void Client::GetPreprocessValue(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret) {
+void Client::GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret) {
     uint8_t pt[16];
     uint8_t out[16];
     int len;
@@ -266,33 +270,33 @@ void Client::GetPreprocessValue(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, 
     memcpy(pt, (uint8_t *)&ctr, sizeof(uint64_t));
     EVP_EncryptUpdate(ctx, out, &len, pt, 16);
     BN_bin2bn(out, len, ret);
-    BN_mod(ret, ret, Params_order(p), bn_ctx);
+    BN_mod(ret, ret, Params_order(params), bn_ctx);
 }
 
-void Client::GetPreprocessValue(Params &p, uint8_t *seed, uint64_t ctr, BIGNUM *ret) {
+void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret) {
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     BN_CTX *bn_ctx = BN_CTX_new();
     EVP_CIPHER_CTX_init(ctx);
     uint8_t iv[16];
     memset(iv, 0, 16);
     EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
-    GetPreprocessValue(p, ctx, bn_ctx, ctr, ret);
+    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
 }
 
-void Client::GetPreprocessValueSet(Params &p, EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
+void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
     uint64_t ctr = i * 4;
-    GetPreprocessValue(p, ctx, bn_ctx, ctr, r);
-    GetPreprocessValue(p, ctx, bn_ctx, ctr + 1, a);
-    GetPreprocessValue(p, ctx, bn_ctx, ctr + 2, b);
-    GetPreprocessValue(p, ctx, bn_ctx, ctr + 3, c);
+    GetPreprocessValue(ctx, bn_ctx, ctr, r);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 1, a);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 2, b);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 3, c);
 }
 
-void Client::GetPreprocessValueSet(Params &p, uint8_t *seed, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
+void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
     uint64_t ctr = i * 4;
-    GetPreprocessValue(p, seed, ctr, r);
-    GetPreprocessValue(p, seed, ctr + 1, a);
-    GetPreprocessValue(p, seed, ctr + 2, b);
-    GetPreprocessValue(p, seed, ctr + 3, c);
+    GetPreprocessValue(ctr, r);
+    GetPreprocessValue(ctr + 1, a);
+    GetPreprocessValue(ctr + 2, b);
+    GetPreprocessValue(ctr + 3, c);
 }
 
 // TODO compress r1 or r2 with PRG
@@ -315,19 +319,6 @@ void Client::Preprocess(vector<Hint> &logHints) {
     int rv;
     uint8_t iv[16];
 
-   /* CHECK_A (r = BN_new());
-    CHECK_A (r1 = BN_new());
-    CHECK_A (r2 = BN_new());
-    CHECK_A (a1 = BN_new());
-    CHECK_A (b1 = BN_new());
-    CHECK_A (c1 = BN_new());
-    CHECK_A (a2 = BN_new());
-    CHECK_A (b2 = BN_new());
-    CHECK_A (c2 = BN_new());
-    CHECK_A (a = BN_new());
-    CHECK_A (b = BN_new());
-    CHECK_A (c = BN_new());
-    CHECK_A (R = EC_POINT_new(Params_group(params)));*/
     CHECK_A (ctx = BN_CTX_new());
     CHECK_A (evp_ctx = EVP_CIPHER_CTX_new());
 
@@ -351,7 +342,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_A (c = BN_new());
         CHECK_A (R = EC_POINT_new(Params_group(params)));
  
-        GetPreprocessValueSet(params, evp_ctx, ctx, i, r1, a1, b1, c1);
+        GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
         CHECK_C (Params_rand_exponent(params, r2));
         CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
         CHECK_C (Params_exp(params, R, r));
@@ -366,28 +357,17 @@ void Client::Preprocess(vector<Hint> &logHints) {
         clientHints.push_back(ShortHint(R));
         logHints.push_back(Hint(r2, R, a2, b2, c2));
         
-        printf("1\n");
         BN_free(r);
         BN_free(r1);
         BN_free(a1);
         BN_free(a);
-        printf("2\n");
         BN_free(b1);
         BN_free(b);
         BN_free(c1);
         BN_free(c);
-        printf("3\n");
     }
 
 cleanup:
-    /*
-    if (r) BN_free(r);
-    if (r1) BN_free(r1);
-    if (r2) BN_free(r2);
-    if (a) BN_free(a);
-    if (b) BN_free(b);
-    if (c) BN_free(c);
-    if (R) EC_POINT_free(R);*/
     if (ctx) BN_CTX_free(ctx);
 }
 
@@ -417,9 +397,7 @@ int Client::Initialize() {
     fprintf(stderr, "det2f: done with preprocessing\n");
 
     for (int i = 0; i < NUM_AUTHS; i++) {
-        fprintf(stderr, "%d/%d\n", i, NUM_AUTHS);
         HintMsg *h = req.add_hints();
-        printf("r = %s, %d\n", BN_bn2hex(logHints[i].r), BN_num_bytes(logHints[i].r));
         BN_bn2bin(logHints[i].r, buf);
         h->set_r(buf, BN_num_bytes(logHints[i].r));
         BN_bn2bin(logHints[i].a, buf);
@@ -439,6 +417,8 @@ int Client::Initialize() {
     logPk = Params_point_new(params);
     EC_POINT_oct2point(Params_group(params), logPk, (uint8_t *)resp.pk().c_str(), 33,
                            Params_ctx(params));
+
+    auth_ctr = 0;
  
 }
 
@@ -457,6 +437,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   uint8_t reg_id = U2F_REGISTER_HASH_ID;
   const BIGNUM *r = NULL;
   const BIGNUM *s = NULL;
+  BIGNUM *sk;
   BIGNUM *x;
   BIGNUM *y;
   BIGNUM *exp;
@@ -474,6 +455,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   CHECK_A(cert = X509_new());
   CHECK_A(anon_key = EC_KEY_new());
   CHECK_A(evpctx = EVP_MD_CTX_create());
+  CHECK_A(sk = BN_new());
   CHECK_A(r = BN_new());
   CHECK_A(s = BN_new());
   CHECK_A(x = BN_new());
@@ -487,10 +469,21 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
 
   /* Generate key handle. */
   generate_key_handle(app_id, U2F_APPID_SIZE, key_handle_out, MAX_KH_SIZE);
+  // NEW 2PC SIGS
+  CHECK_C (Params_rand_exponent(params, sk));
+  sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = sk;
+  CHECK_C (Params_exp_base(params, pk, logPk, sk));
+  pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
+  EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
+  BN_bn2bin(x, pk_out->x);
+  BN_bn2bin(y, pk_out->y);
+  pk_out->format = UNCOMPRESSED_POINT;
+
 
   fprintf(stderr, "det2f: generated key handle\n");
 
   /* Output result. */
+
   
 /*  Params_rand_point_exp(params, pk, exp);
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
@@ -500,7 +493,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   BN_bn2bin(y, pk_out->y);
   pk_out->format = UNCOMPRESSED_POINT;*/
 
-  stub->SendReg(&client_ctx, req, &resp);
+/*  stub->SendReg(&client_ctx, req, &resp);
   memcpy(pk_out->x, resp.pk_x().c_str(), P256_SCALAR_SIZE);
   memcpy(pk_out->y, resp.pk_y().c_str(), P256_SCALAR_SIZE);
   fprintf(stderr, "det2f: x = ");
@@ -513,7 +506,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
     fprintf(stderr, "%x", pk_out->y[i]);
   }
   fprintf(stderr, "\n");
-  pk_out->format = UNCOMPRESSED_POINT;
+  pk_out->format = UNCOMPRESSED_POINT;*/
 
   fprintf(stderr, "det2f: chose pub key\n");
 
@@ -554,14 +547,45 @@ cleanup:
   return cert_len + sig_len;
 }
 
+int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *x_coord, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e) {
+  BIGNUM *y_coord;
+  BIGNUM *val;
+  BN_CTX *ctx;
+  int rv = OKAY;
+
+  y_coord = BN_new();
+  val = BN_new();
+  ctx = BN_CTX_new();
+
+  EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
+  BN_mod(x_coord, x_coord, Params_order(params), ctx);
+  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
+  BN_mod_add(val, val, msg_hash, Params_order(params), ctx);
+
+  BN_mod_add(d, r, a, Params_order(params), ctx);
+  BN_mod_add(e, val, b, Params_order(params), ctx);
+
+cleanup:
+  return rv;
+}
+
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
 int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool checkOnly) {
   int rv = ERROR;
-  BIGNUM *r = NULL;
   BIGNUM *s = NULL;
+  BIGNUM *x_coord = NULL;
+  BIGNUM *y_coord = NULL;
+  BIGNUM *r = NULL;
+  BIGNUM *a = NULL;
+  BIGNUM *b = NULL;
+  BIGNUM *c = NULL;
+  BIGNUM *d = NULL;
+  BIGNUM *e = NULL;
+  BIGNUM *val = NULL;
+  BIGNUM *hash_bn = NULL;
   EVP_MD_CTX *mdctx;
   EVP_MD_CTX *mdctx2;
   EVP_MD_CTX *mdctx3;
@@ -575,11 +599,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t ctr[4];
   EC_KEY *key;
   memset(ctr, 0, 4 * sizeof(uint8_t));
-  uint32_t c = 11;
-  ctr[0] = 0xFF & c >> 24;
-  ctr[1] = 0xFF & c >> 16;
-  ctr[2] = 0xFF & c >> 8;
-  ctr[3] = 0xFF & c;
+  uint32_t ctr32 = 11;
+  ctr[0] = 0xFF & ctr32 >> 24;
+  ctr[1] = 0xFF & ctr32 >> 16;
+  ctr[2] = 0xFF & ctr32 >> 8;
+  ctr[3] = 0xFF & ctr32;
   BN_CTX *ctx;
   int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
   uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
@@ -599,6 +623,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t *proof_buf;
   int proof_buf_len;
   uint8_t iv_raw[16];
+  uint8_t *d_buf;
+  uint8_t *e_buf;
 
   unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
@@ -607,6 +633,15 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   CHECK_A (r = BN_new());
   CHECK_A (s = BN_new());
+  CHECK_A (x_coord = BN_new());
+  CHECK_A (y_coord = BN_new());
+  CHECK_A (a = BN_new());
+  CHECK_A (b = BN_new());
+  CHECK_A (c = BN_new());
+  CHECK_A (d = BN_new());
+  CHECK_A (e = BN_new());
+  CHECK_A (val = BN_new());
+  CHECK_A (hash_bn = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (mdctx2 = EVP_MD_CTX_create());
   CHECK_A (mdctx3 = EVP_MD_CTX_create());
@@ -634,15 +669,16 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
   EVP_DigestFinal(mdctx2, hash_out, NULL);
 
-  memset(enc_key, 0, 16);
+//  memset(enc_key, 0, 16);
+  memcpy((uint8_t *)&enc_key_raw, enc_key, 16);
   aes_128_ctr(enc_key_raw, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
 
-  memset(comm_in, 0, 512 / 8);
+/*  memset(comm_in, 0, 512 / 8);
   memcpy(comm_in, enc_key, 128 / 8);
   memcpy(comm_in + (128 / 8), r_open, 128 / 8);
   EVP_DigestInit_ex(mdctx3, EVP_sha256(), NULL);
   EVP_DigestUpdate(mdctx3, comm_in, 512/8);
-  EVP_DigestFinal(mdctx3, enc_key_comm, NULL);
+  EVP_DigestFinal(mdctx3, enc_key_comm, NULL);*/
 
   fprintf(stderr, "det2f: proving circuit\n");
   ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
@@ -655,7 +691,20 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
+
+  GetPreprocessValueSet(auth_ctr, r, a, b, c);
+  BN_bin2bn(hash_out, 32, hash_bn);
+  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+  StartSigning(hash_bn, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], x_coord, r, a, b, c, d, e);
+  d_buf = (uint8_t *)malloc(BN_num_bytes(d));
+  e_buf = (uint8_t *)malloc(BN_num_bytes(e));
+  BN_bn2bin(d, d_buf);
+  BN_bn2bin(e, e_buf);
+  req.set_d(d_buf, BN_num_bytes(d));
+  req.set_e(e_buf, BN_num_bytes(e));
+
   stub->SendAuth(&client_ctx, req, &resp);
+
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   sig_len = resp.sig().size();
   fprintf(stderr, "sig_len = %d\n", sig_len);
@@ -712,7 +761,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   /* Output message from device. */
   *flags_out = flags;
-  *ctr_out = c;
+  *ctr_out = ctr32;
   //memcpy(ctr_out, ctr, sizeof(uint32_t));
   fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
