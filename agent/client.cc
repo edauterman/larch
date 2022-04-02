@@ -591,7 +591,9 @@ int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *
     d = BN_new();
     e = BN_new();
     prod = BN_new();
+    ctx = BN_CTX_new();
 
+    fprintf(stderr, "det2f: going to combine d, e\n");
     BN_mod_add(d, d_client, d_log, Params_order(params), ctx);
     BN_mod_add(e, e_client, e_log, Params_order(params), ctx);
 
@@ -753,11 +755,14 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   stub->SendAuth(&client_ctx, req, &resp);
 
+  fprintf(stderr, "det2f: unpack d, e, prod\n");
   BN_bin2bn((uint8_t *)resp.d().c_str(), resp.d().size(), d_log);
   BN_bin2bn((uint8_t *)resp.e().c_str(), resp.e().size(), e_log);
   BN_bin2bn((uint8_t *)resp.prod().c_str(), resp.prod().size(), out_log);
 
+  fprintf(stderr, "det2f: going to finish signing\n");
   FinishSigning(val, r, a, b, c, d_client, d_log, e_client, e_log, out_client);
+  fprintf(stderr, "det2f: finished signing\n");
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
 
@@ -798,6 +803,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   fprintf(stderr, "\n");*/
 
   /* Output signature. */
+  fprintf(stderr, "encoding sig\n");
+  //EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
   asn1_sigp(sig_out, x_coord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 1;
@@ -820,6 +827,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   *ctr_out = ctr32;
   //memcpy(ctr_out, ctr, sizeof(uint32_t));
   fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
+
+  auth_ctr++;
 
 cleanup:
   if (mdctx) EVP_MD_CTX_destroy(mdctx);

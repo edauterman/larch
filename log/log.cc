@@ -48,6 +48,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
         h.c = BN_bin2bn((uint8_t *)req->hints(i).c().c_str(), req->hints(i).c().size(), NULL);
         h.R = Params_point_new(params);
         EC_POINT_oct2point(Params_group(params), h.R, (uint8_t *)req->hints(i).g_r().c_str(), 33, Params_ctx(params));
+        hints.push_back(h);
     }
     printf("done copying in hints\n");
 
@@ -148,17 +149,24 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
 
     BN_bin2bn(challenge, 32, hash_bn);
     BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+    printf("converted hash to bn\n");
 
+    printf("auth ctr = %d\n", auth_ctr);
+    printf("R = %s\n", EC_POINT_point2hex(Params_group(params), hints[auth_ctr].R, POINT_CONVERSION_UNCOMPRESSED, ctx));
     EC_POINT_get_affine_coordinates_GFp(Params_group(params), hints[auth_ctr].R, x_coord, y_coord, NULL);
+    printf("got affine\n");
     BN_mod(x_coord, x_coord, Params_order(params), ctx);
     BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
     BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
+    printf("got sig mul value\n");
 
     BN_mod_add(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_add(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
+    printf("computed d and e\n");
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
+    printf("combined d and e\n");
 
     // de + d[b] + e[a] + [c]
     BN_mod_mul(out, d, e, Params_order(params), ctx);
@@ -167,6 +175,7 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BN_mod_mul(prod, e, hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, hints[auth_ctr].c, Params_order(params), ctx);
+    printf("computed s\n");
 
     BN_bn2bin(out, sig_out);
     *sig_len = BN_num_bytes(out);
