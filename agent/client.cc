@@ -485,7 +485,9 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   // NEW 2PC SIGS
   CHECK_C (Params_rand_exponent(params, sk));
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = sk;
-  CHECK_C (Params_exp_base(params, pk, logPk, sk));
+  CHECK_C (Params_exp(params, pk, sk));
+  fprintf(stderr, "det2f: sk = %s\n", BN_bn2hex(sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)]));
+  //CHECK_C (Params_exp_base(params, pk, logPk, sk));
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
@@ -631,6 +633,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   BIGNUM *out_client = NULL;
   BIGNUM *out_log = NULL;
   BIGNUM *out = NULL;
+  BIGNUM *zero;
+  BIGNUM *r_inv;
+  BIGNUM *neg_one;
+  EC_POINT *R;
   EVP_MD_CTX *mdctx;
   EVP_MD_CTX *mdctx2;
   EVP_MD_CTX *mdctx3;
@@ -699,6 +705,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   CHECK_A (sig = ECDSA_SIG_new());
   CHECK_A (key = EC_KEY_new());
   pkey = EVP_PKEY_new();
+  R = EC_POINT_new(Params_group(params));
 
   fprintf(stderr, "det2f: going to hash app id\n");
   fprintf(stderr, "det2f: hashed app id\n");
@@ -741,10 +748,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
-
+/*
   GetPreprocessValueSet(auth_ctr, r, a, b, c);
   BN_bin2bn(hash_out, 32, hash_bn);
-  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+  BN_mod(hash_bn, hash_bn, params->base_prime, ctx);
   StartSigning(hash_bn, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], x_coord, val, r, a, b, c, d_client, e_client);
   d_buf = (uint8_t *)malloc(BN_num_bytes(d_client));
   e_buf = (uint8_t *)malloc(BN_num_bytes(e_client));
@@ -764,7 +771,32 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   FinishSigning(val, r, a, b, c, d_client, d_log, e_client, e_log, out_client);
   fprintf(stderr, "det2f: finished signing\n");
 
-  BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
+  BN_mod_add(out, out_client, out_log, Params_order(params), ctx);*/
+
+  // -------------------
+  fprintf(stderr, "det2f: about to auth\n");
+  BN_bin2bn(hash_out, 32, hash_bn);
+  //Params_hash_to_exponent(params, hash_bn, message_buf, message_buf_len);
+  Params_rand_point_exp(params, R, r);
+  EC_POINT_get_affine_coordinates_GFp(params->group, R, x_coord, y_coord, NULL);
+  //BN_mod(x_coord, x_coord, Params_order(params), ctx);
+  //BN_mod(x_coord, x_coord, params->base_prime, ctx);
+  //zero = BN_new();
+  //neg_one = BN_new();
+  r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
+  //BN_zero(zero);
+  //CHECK_C (BN_mod_sub(neg_one, zero, BN_value_one(), Params_order(params), ctx));
+  //CHECK_C (BN_mod_exp(r_inv, r, neg_one, Params_order(params), ctx));
+  fprintf(stderr, "det2f: computed r_inv\n");
+
+  BN_mod_mul(val, x_coord, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], Params_order(params), ctx);
+  fprintf(stderr, "det2f: about to print\n");
+  fprintf(stderr, "det2f: sk = %s\n", BN_bn2hex(sk_map[string((const char *)key_handle, MAX_KH_SIZE)]));
+  BN_mod_add(val, hash_bn, val, Params_order(params), ctx);
+  BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
+  //EC_POINT_get_affine_coordinates_GFp(params->group, R, x_coord, y_coord, NULL);
+  fprintf(stderr, "det2f: have output\n");
+  // TODO check if verifies with just ECDSA signature thing
 
 /*  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   sig_len = resp.sig().size();
@@ -773,7 +805,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
 /*  fprintf(stderr, "det2f: proved circuit\n");
   //VerifyCtCircuit(proof, iv, SHA256_DIGEST_LENGTH * 8, message_buf_len * 8);
-  fprintf(stderr, "det2f: verified circuit\n");
+  fprintf(stderr, "det2f: verified circuit\n");*/
 
   // TODO: Sign message and produce r,s
   fprintf(stderr, "det2f: signing with %s\n", BN_bn2hex(sk_map[string((const char *)key_handle, MAX_KH_SIZE)]));
@@ -788,12 +820,14 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_SignUpdate(mdctx, message_buf, message_buf_len);
   EVP_SignFinal(mdctx, sig_out, &sig_len, pkey);
   fprintf(stderr, "det2f: just signed\n");
-  fprintf(stderr, "det2f: PK SIGNED WITH %s\n", EC_POINT_point2hex(Params_group(params), pk_map[string((const char *)key_handle, MAX_KH_SIZE)], POINT_CONVERSION_UNCOMPRESSED, ctx));*/
+  fprintf(stderr, "det2f: PK SIGNED WITH %s\n", EC_POINT_point2hex(Params_group(params), pk_map[string((const char *)key_handle, MAX_KH_SIZE)], POINT_CONVERSION_UNCOMPRESSED, ctx));
   //sig_len = sig_len_sizet;
   //sig = ECDSA_do_sign(message,  SHA256_DIGEST_LENGTH, key);
-/*  sig = ECDSA_do_sign(message_buf,  message_buf_len, key);
+ /* sig = ECDSA_do_sign(message_buf,  message_buf_len, key);
   r = (BIGNUM *)ECDSA_SIG_get0_r(sig);
   s = (BIGNUM *)ECDSA_SIG_get0_s(sig);*/
+  //ECDSA_SIG_to_bytes(&sig_out2, &sig_len, sig);
+  //memcpy(sig_out, sig_out2, sig_len);
   //ECDSA_sign(0, message_buf,  message_buf_len, sig_out2, &sig_len, key);
   //ECDSA_sign(0, message,  SHA256_DIGEST_LENGTH, sig_out, &sig_len, key);
   /*fprintf(stderr, "det2f: sig ");
@@ -805,9 +839,14 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   /* Output signature. */
   fprintf(stderr, "encoding sig\n");
   //EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
+  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
+  //asn1_sigp(sig_out, r, s);
+  fprintf(stderr, "r=%s\n", BN_bn2hex(x_coord));
+  fprintf(stderr, "s=%s\n", BN_bn2hex(out));
   asn1_sigp(sig_out, x_coord, out);
   len_byte = sig_out[1];
-  sig_len = len_byte + 1;
+  sig_len = len_byte + 2;
+  fprintf(stderr, "det2f: sig len = %d\n", sig_len);
 /*  fprintf(stderr, "det2f: ECDSA_SIG ");
   for (int i = 0; i < sig_len; i++) {
     fprintf(stderr, "%02x", sig_out2[i]);
@@ -816,6 +855,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   fprintf(stderr, "det2f: manually encoded sig ");
   for (int i = 0; i < MAX_ECDSA_SIG_SIZE; i++) {
     fprintf(stderr, "%02x", sig_out[i]);
+  }
+  fprintf(stderr, "\n det2f: CORRECT SIG ");
+  for (int i = 0; i < MAX_ECDSA_SIG_SIZE; i++) {
+    fprintf(stderr, "%02x", sig_out2[i]);
   }
   fprintf(stderr, "\n");
 /*  if (memcmp(sig_out, sig_out2, sig_len) != 0) {
