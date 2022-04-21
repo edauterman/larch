@@ -54,7 +54,10 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
 
     pk = EC_POINT_new(Params_group(params));
     sk = BN_new();
-    Params_rand_point_exp(params, pk, sk);
+    BN_one(sk);
+    pk = EC_POINT_dup(Params_gen(params), Params_group(params));
+    //Params_rand_point_exp(params, pk, sk);
+    //Params_rand_point_exp(params, pk, sk);
     printf("chose key\n");
     EC_POINT_point2oct(Params_group(params), pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
     printf("done choosing log key\n");
@@ -155,7 +158,9 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     printf("R = %s\n", EC_POINT_point2hex(Params_group(params), hints[auth_ctr].R, POINT_CONVERSION_UNCOMPRESSED, ctx));
     EC_POINT_get_affine_coordinates_GFp(Params_group(params), hints[auth_ctr].R, x_coord, y_coord, NULL);
     printf("got affine\n");
+    printf("x_coord = %s\n", BN_bn2hex(x_coord));
     BN_mod(x_coord, x_coord, Params_order(params), ctx);
+    printf("x_coord = %s\n", BN_bn2hex(x_coord));
     BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
     BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
     printf("got sig mul value\n");

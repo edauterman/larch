@@ -58,7 +58,8 @@ class Client {
         uint8_t enc_key_comm[32];
         uint32_t auth_ctr;
 
-        const int NUM_AUTHS = 10000;
+        const int NUM_AUTHS = 10;
+        //const int NUM_AUTHS = 10000;
 
         void Preprocess(vector<Hint> &logHints);
         void GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret);
