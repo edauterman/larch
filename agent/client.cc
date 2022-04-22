@@ -357,7 +357,8 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_A (c = BN_new());
         CHECK_A (R = EC_POINT_new(Params_group(params)));
  
-        GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
+        GetPreprocessValueSet(i, r1, a1, b1, c1);
+        //GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
 /*        //CHECK_C (Params_rand_exponent(params, r2));
         //CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
         CHECK_C (Params_rand_exponent(params, r));
@@ -383,6 +384,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
         Params_exp(params, R, r);
         printf("r = %s\n", BN_bn2hex(r));
         printf("r1 = %s\n", BN_bn2hex(r1));
+        printf("c2 = %s\n", BN_bn2hex(c2));
 
         clientHints.push_back(ShortHint(R));
         logHints.push_back(Hint(r2, R, a2, b2, c2));
@@ -503,9 +505,10 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   // NEW 2PC SIGS
   CHECK_C (Params_rand_exponent(params, sk));
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = sk;
-  //CHECK_C (Params_exp(params, pk, sk));
+  CHECK_C (Params_exp(params, pk, sk));
+  //EC_POINT_add(Params_group(params), pk, pk, logPk, ctx);
   fprintf(stderr, "det2f: sk = %s\n", BN_bn2hex(sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)]));
-  CHECK_C (Params_exp_base(params, pk, logPk, sk));
+  //CHECK_C (Params_exp_base(params, pk, logPk, sk));
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
@@ -586,7 +589,6 @@ int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *x_coord, BIGNUM *
   int rv = OKAY;
 
   y_coord = BN_new();
-  val = BN_new();
   ctx = BN_CTX_new();
 
   EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
@@ -595,9 +597,11 @@ int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *x_coord, BIGNUM *
   fprintf(stderr, "det2f: x_coord = %s\n", BN_bn2hex(x_coord));
   BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
   BN_mod_add(val, val, msg_hash, Params_order(params), ctx);
+  fprintf(stderr, "det2f: COMPUTED VAL = %s\n", BN_bn2hex(val));
+  fprintf(stderr, "det2f: multiplying by r^-1 = %s\n", BN_bn2hex(r));
 
-  BN_mod_add(d, r, a, Params_order(params), ctx);
-  BN_mod_add(e, val, b, Params_order(params), ctx);
+  BN_mod_sub(d, r, a, Params_order(params), ctx);
+  BN_mod_sub(e, val, b, Params_order(params), ctx);
 
 cleanup:
   return rv;
@@ -618,6 +622,8 @@ int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *
     fprintf(stderr, "det2f: going to combine d, e\n");
     BN_mod_add(d, d_client, d_log, Params_order(params), ctx);
     BN_mod_add(e, e_client, e_log, Params_order(params), ctx);
+    fprintf(stderr, "det2f: d_client = %s, e_client = %s\n", BN_bn2hex(d_client), BN_bn2hex(e_client));
+    fprintf(stderr, "det2f: d = %s, e = %s\n", BN_bn2hex(d), BN_bn2hex(e));
 
     // de + d[b] + e[a] + [c]
     BN_mod_mul(out, d, e, Params_order(params), ctx);
@@ -626,6 +632,7 @@ int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *
     BN_mod_mul(prod, e, a, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, c, Params_order(params), ctx);
+    fprintf(stderr, "det2f: * share of s = %s\n", BN_bn2hex(out));
 
 cleanup:
     return rv;
@@ -771,7 +778,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   fprintf(stderr, "det2f: auth_ctr = %d\n", auth_ctr);
   GetPreprocessValueSet(auth_ctr, r, a, b, c);
+  /*BN_zero(a);
+  BN_zero(b);
+  BN_zero(c);*/
   BN_bin2bn(hash_out, 32, hash_bn);
+  fprintf(stderr, "det2f: message hash bn = %s\n", BN_bn2hex(hash_bn));
   BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
   //BN_mod(hash_bn, hash_bn, params->base_prime, ctx);
   StartSigning(hash_bn, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], x_coord, val, r, a, b, c, d_client, e_client);
@@ -781,6 +792,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   BN_bn2bin(e_client, e_buf);
   req.set_d(d_buf, BN_num_bytes(d_client));
   req.set_e(e_buf, BN_num_bytes(e_client));
+  req.set_digest(hash_out, 32);
 
   stub->SendAuth(&client_ctx, req, &resp);
 
@@ -795,6 +807,9 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
   fprintf(stderr, "det2f: COMPUTED OUT = %s\n", BN_bn2hex(out));
+  BN_mod_mul(out, val, r, Params_order(params), ctx);
+  fprintf(stderr, "det2f: val = %s, r = %s\n", BN_bn2hex(val), BN_bn2hex(r));
+  fprintf(stderr, "det2f: SHOULD BE OUT = %s\n", BN_bn2hex(out));
 
   // -------------------
   fprintf(stderr, "det2f: about to auth\n");
@@ -825,6 +840,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   BN_mod_mul(val, x_coord, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], Params_order(params), ctx);
   BN_mod_add(val, hash_bn, val, Params_order(params), ctx);
+  fprintf(stderr, "det2f: ACTUAL VAL = %s\n", BN_bn2hex(val));
   BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
   fprintf(stderr, "det2f: CORRECT OUT = %s\n", BN_bn2hex(out));
 

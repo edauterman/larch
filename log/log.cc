@@ -54,7 +54,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
 
     pk = EC_POINT_new(Params_group(params));
     sk = BN_new();
-    BN_one(sk);
+    BN_zero(sk);
     pk = EC_POINT_dup(Params_gen(params), Params_group(params));
     //Params_rand_point_exp(params, pk, sk);
     //Params_rand_point_exp(params, pk, sk);
@@ -111,7 +111,7 @@ void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     printf("\n");
 };
 
-void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *sig_out, unsigned int *sig_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len) {
+void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *sig_out, unsigned int *sig_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len) {
     Proof proof;
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
@@ -150,9 +150,11 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BN_bin2bn(d_in, d_in_len, d_client); 
     BN_bin2bn(e_in, e_in_len, e_client);
 
-    BN_bin2bn(challenge, 32, hash_bn);
+    // TODO make sure that digest lines up with value in serialized proof
+    BN_bin2bn(digest, 32, hash_bn);
     BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
     printf("converted hash to bn\n");
+    printf("message hash bn = %s\n", BN_bn2hex(hash_bn));
 
     printf("auth ctr = %d\n", auth_ctr);
     printf("R = %s\n", EC_POINT_point2hex(Params_group(params), hints[auth_ctr].R, POINT_CONVERSION_UNCOMPRESSED, ctx));
@@ -162,25 +164,36 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BN_mod(x_coord, x_coord, Params_order(params), ctx);
     printf("x_coord = %s\n", BN_bn2hex(x_coord));
     BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
-    BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
+    //BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
     printf("got sig mul value\n");
+    printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
+    printf("val = %s\n", BN_bn2hex(val));
 
-    BN_mod_add(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
-    BN_mod_add(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
+    BN_mod_sub(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
+    BN_mod_sub(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
     printf("computed d and e\n");
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
+    printf("d = %s, e = %s\n", BN_bn2hex(d), BN_bn2hex(e));
     printf("combined d and e\n");
 
     // de + d[b] + e[a] + [c]
-    BN_mod_mul(out, d, e, Params_order(params), ctx);
-    BN_mod_mul(prod, d, hints[auth_ctr].b, Params_order(params), ctx);
+    //BN_mod_mul(out, d, e, Params_order(params), ctx);
+    //BN_mod_mul(prod, d, hints[auth_ctr].b, Params_order(params), ctx);
+    BN_mod_mul(out, d, hints[auth_ctr].b, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_mul(prod, e, hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, hints[auth_ctr].c, Params_order(params), ctx);
     printf("computed s\n");
+    printf("share of s = %s\n", BN_bn2hex(out));
+
+    BN_bn2bin(d_log, d_out);
+    *d_len = BN_num_bytes(d_log);
+
+    BN_bn2bin(e_log, e_out);
+    *e_len = BN_num_bytes(e_log);
 
     BN_bn2bin(out, sig_out);
     *sig_len = BN_num_bytes(out);
@@ -233,7 +246,7 @@ class LogServiceImpl final : public Log::Service {
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server->VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), prod, &prod_len, d, &d_len, e, &e_len);
+            server->VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), prod, &prod_len, d, &d_len, e, &e_len);
             resp->set_prod(prod, prod_len);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
