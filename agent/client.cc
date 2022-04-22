@@ -359,7 +359,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
  
         GetPreprocessValueSet(i, r1, a1, b1, c1);
         //GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
-/*        //CHECK_C (Params_rand_exponent(params, r2));
+        //CHECK_C (Params_rand_exponent(params, r2));
         //CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
         CHECK_C (Params_rand_exponent(params, r));
         r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
@@ -372,10 +372,10 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_C (BN_mod_add(a, a1, a2, Params_order(params), ctx));
         CHECK_C (BN_mod_add(b, b1, b2, Params_order(params), ctx));
         CHECK_C (BN_mod_mul(c, a, b, Params_order(params), ctx));
-        CHECK_C (BN_mod_sub(c2, c, c1, Params_order(params), ctx));*/
+        CHECK_C (BN_mod_sub(c2, c, c1, Params_order(params), ctx));
 
         
-        BN_zero(a2);
+ /*       BN_zero(a2);
         BN_zero(b2);
         BN_zero(r2);
         r = BN_mod_inverse(NULL ,r1, Params_order(params), ctx);
@@ -384,7 +384,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
         Params_exp(params, R, r);
         printf("r = %s\n", BN_bn2hex(r));
         printf("r1 = %s\n", BN_bn2hex(r1));
-        printf("c2 = %s\n", BN_bn2hex(c2));
+        printf("c2 = %s\n", BN_bn2hex(c2));*/
 
         clientHints.push_back(ShortHint(R));
         logHints.push_back(Hint(r2, R, a2, b2, c2));
@@ -506,7 +506,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   CHECK_C (Params_rand_exponent(params, sk));
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = sk;
   CHECK_C (Params_exp(params, pk, sk));
-  //EC_POINT_add(Params_group(params), pk, pk, logPk, ctx);
+  EC_POINT_add(Params_group(params), pk, pk, logPk, ctx);
   fprintf(stderr, "det2f: sk = %s\n", BN_bn2hex(sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)]));
   //CHECK_C (Params_exp_base(params, pk, logPk, sk));
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
@@ -807,12 +807,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
   fprintf(stderr, "det2f: COMPUTED OUT = %s\n", BN_bn2hex(out));
-  BN_mod_mul(out, val, r, Params_order(params), ctx);
-  fprintf(stderr, "det2f: val = %s, r = %s\n", BN_bn2hex(val), BN_bn2hex(r));
-  fprintf(stderr, "det2f: SHOULD BE OUT = %s\n", BN_bn2hex(out));
+  //BN_mod_mul(out, val, r, Params_order(params), ctx);
 
   // -------------------
-  fprintf(stderr, "det2f: about to auth\n");
+/*  fprintf(stderr, "det2f: about to auth\n");
   BN_bin2bn(hash_out, 32, hash_bn);
   
   r_inv = r;
@@ -820,12 +818,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   R = clientHints[auth_ctr].R;
   fprintf(stderr, "det2f: should be R = %s\n", EC_POINT_point2hex(Params_group(params), R, POINT_CONVERSION_UNCOMPRESSED, ctx));
 
-  /*Params_exp(params, R, r_inv);
-  //Params_rand_point_exp(params, R, r);
-  fprintf(stderr, "det2f: R with r_inv = %s\n", EC_POINT_point2hex(Params_group(params), R, POINT_CONVERSION_UNCOMPRESSED, ctx));
-  Params_exp(params, R, r);
-  fprintf(stderr, "det2f: actual R = %s\n", EC_POINT_point2hex(Params_group(params), R, POINT_CONVERSION_UNCOMPRESSED, ctx));
-  R = clientHints[auth_ctr].R;*/
   fprintf(stderr, "det2f: should be R = %s\n", EC_POINT_point2hex(Params_group(params), clientHints[auth_ctr].R, POINT_CONVERSION_UNCOMPRESSED, ctx));
 
   EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
@@ -843,7 +835,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   fprintf(stderr, "det2f: ACTUAL VAL = %s\n", BN_bn2hex(val));
   BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
   fprintf(stderr, "det2f: CORRECT OUT = %s\n", BN_bn2hex(out));
-
+*/
 /*  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   sig_len = resp.sig().size();
   fprintf(stderr, "sig_len = %d\n", sig_len);
@@ -870,7 +862,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 */
   /* Output signature. */
   fprintf(stderr, "encoding sig\n");
-  //EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
+  EC_POINT_get_affine_coordinates_GFp(params->group, clientHints[auth_ctr].R, x_coord, y_coord, NULL);
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   //asn1_sigp(sig_out, r, s);
   fprintf(stderr, "r=%s\n", BN_bn2hex(x_coord));

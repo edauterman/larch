@@ -54,9 +54,9 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
 
     pk = EC_POINT_new(Params_group(params));
     sk = BN_new();
-    BN_zero(sk);
-    pk = EC_POINT_dup(Params_gen(params), Params_group(params));
-    //Params_rand_point_exp(params, pk, sk);
+    //BN_zero(sk);
+    //pk = EC_POINT_dup(Params_gen(params), Params_group(params));
+    Params_rand_point_exp(params, pk, sk);
     //Params_rand_point_exp(params, pk, sk);
     printf("chose key\n");
     EC_POINT_point2oct(Params_group(params), pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
