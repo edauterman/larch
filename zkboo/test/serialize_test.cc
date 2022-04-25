@@ -36,7 +36,7 @@ int main() {
     uint8_t *ct = (uint8_t *)malloc(m_len / 8);
     uint8_t *hash_in = (uint8_t *)malloc(in_len / 8);
     uint8_t hash_out[256 / 8];
-    uint8_t comm_in[512 / 8];
+    uint8_t comm_in[256 / 8];
     
     memset(m, 0, m_len/8);
     memset(hash_in, 0xff, in_len/8);
@@ -48,12 +48,12 @@ int main() {
     EVP_DigestFinal(mdctx, hash_out, NULL);
 
     memset(r, 0xff, 128/8);
-    memset(comm_in, 0, 512 / 8);
+    memset(comm_in, 0, 256 / 8);
     memcpy(comm_in, key, 128 / 8);
     memcpy(comm_in + (128 / 8), r, 128 / 8);
     EVP_MD_CTX *mdctx2 = EVP_MD_CTX_create();
     EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
-    EVP_DigestUpdate(mdctx2, comm_in, 512/8);
+    EVP_DigestUpdate(mdctx2, comm_in, 256/8);
     EVP_DigestFinal(mdctx2, comm, NULL);
 
     aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);

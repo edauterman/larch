@@ -51,13 +51,13 @@ void check_ciphertext_circuit(block hash_out[], block m[], int m_len, block hash
     }
 
     // H(key, key_r) ?= key_comm
-    block key_and_r[512];
+    block key_and_r[256];
     memcpy((uint8_t *)key_and_r, (uint8_t *)key, 128 * sizeof(block));
     memcpy((uint8_t *)key_and_r + 128 * sizeof(block), (uint8_t *)key_r, 128 * sizeof(block));
     for (int i = 0; i < 256; i++) {
         key_and_r[i + 256] = CircuitExecution::circ_exec->public_label(false);
     }
-    sha256(key_and_r, hash_out_calc, 512);
+    sha256(key_and_r, hash_out_calc, 256);
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
