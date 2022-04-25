@@ -132,7 +132,23 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     uint64_t high = *(((uint64_t *)iv_bytes) + 1);
     __m128i iv = makeBlock(low, high);
            
-    // TODO somehow need to check key_comm matches things? and that ct is correctly in the witness? 
+    // TODO somehow need to check key_comm matches things? and that ct is correctly in the witness?
+    // TODO digest is different?????
+    printf("digest: ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02x", digest[i]);
+    } 
+    printf("\n");
+    printf("enc_key_comm: ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02x", enc_key_comm[i]);
+    } 
+    printf("\n");
+    printf("ct: ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02x", ct[i]);
+    } 
+    printf("\n");
     bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
     if (check) {
         printf("VERIFIED\n");

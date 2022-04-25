@@ -68,13 +68,15 @@ uint32_t Proof::DeserializeInt32(uint8_t **buf) {
 
 uint8_t *Proof::Serialize(int *out_len) {
    int bytesOutLen = outLen < 8 ? 1 : outLen / 8; 
+   int mLen = (wLen - 256 - 128 - 128 - 256) / 2;
    int len = (sizeof(uint32_t) * 4) +                       // wLen and outLen and idx and numWires
        (SHA256_DIGEST_LENGTH * 3) +                         // CircuitComm
        (sizeof(uint32_t) * views[0]->wires.size() * 2) +     // views
        (16 * 2) +                                           // seeds for RandomSource
        (sizeof(uint32_t) * wLen * 2) +                      // shares of witness
-       (sizeof(uint32_t) * outLen * 2) +                    // shares of output
-       (bytesOutLen);                                       // output raw values
+       (sizeof(uint32_t) * outLen * 3) +                    // shares of output
+       (bytesOutLen) +                                      // output raw values
+       (sizeof(uint32_t) * (mLen + 256 + 256) * 3);        // shares of public input
     fprintf(stderr, "zkboo: allocating %d bytes\n", len);
     uint8_t *out = (uint8_t *)malloc(len);
     if (out == NULL) printf("NULL alloc\n");
@@ -107,7 +109,7 @@ uint8_t *Proof::Serialize(int *out_len) {
         }
     }
     // output shares
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
         for (int j = 0; j < outLen; j++) {
             SerializeInt32(outShares[i][j], &ptr);
         }
@@ -115,6 +117,12 @@ uint8_t *Proof::Serialize(int *out_len) {
     // output
     memcpy(ptr, out, bytesOutLen);
     ptr += bytesOutLen;
+    // pubInShares
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < mLen + 256 + 256; j++) {
+            SerializeInt32(pubInShares[i][j], &ptr);
+        }
+    }
 
     *out_len = len;
     return out;
@@ -123,6 +131,7 @@ uint8_t *Proof::Serialize(int *out_len) {
 void Proof::Deserialize(uint8_t *buf, int numRands) {
     uint8_t *ptr = buf;
     wLen = DeserializeInt32(&ptr);
+    int mLen = (wLen - 256 - 128 - 128 - 256) / 2;
     outLen = DeserializeInt32(&ptr);
     idx = DeserializeInt32(&ptr);
     uint32_t numWires = DeserializeInt32(&ptr);
@@ -153,7 +162,7 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
         }
     }
     // output shares
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
         outShares[i] = (uint32_t *)malloc(sizeof(uint32_t) * outLen);
         for (int j = 0; j < outLen; j++) {
             outShares[i][j] = DeserializeInt32(&ptr);
@@ -162,4 +171,12 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     // output
     out = (uint8_t *)malloc(bytesOutLen);
     memcpy(out, ptr, bytesOutLen);
+    ptr += bytesOutLen;
+    // pubInShares
+    for (int i = 0; i < 3; i++) {
+        pubInShares[i] = (uint32_t *)malloc((mLen + 256 + 256) * sizeof(uint32_t));
+        for (int j = 0; j < mLen + 256 + 256; j++) {
+            pubInShares[i][j] = DeserializeInt32(&ptr);
+        }
+    }
 }

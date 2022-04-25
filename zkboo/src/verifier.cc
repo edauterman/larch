@@ -125,6 +125,7 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     for (int i = 0; i < 256; i++) {
         memcpy((uint8_t *)&hashOut[i], (uint8_t *)&proof.w[0][i + m_len], sizeof(uint32_t));
         memcpy((uint8_t *)&hashOut[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len], sizeof(uint32_t));
+        printf("hash out %d/256\n", i);
         for (int j = 0; j < 2; j++) {
             if (memcmp(((uint8_t *)&hashOut[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i], sizeof(uint32_t)) != 0) return false;
         }
@@ -133,6 +134,7 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     for (int i = 0; i < m_len; i++) {
         memcpy((uint8_t *)&ct[i], (uint8_t *)&proof.w[0][i + m_len + 256], sizeof(uint32_t));
         memcpy((uint8_t *)&ct[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256], sizeof(uint32_t));
+        printf("ct %d/32\n", i);
         for (int j = 0; j < 2; j++) {
             if (memcmp(((uint8_t *)&ct[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256 + 256], sizeof(uint32_t)) != 0) return false;
         }
@@ -151,6 +153,7 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     for (int i = 0; i < 256; i++) {
         memcpy((uint8_t *)&keyComm[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
         memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
+        printf("keyComm %d/256\n", i);
         for (int j = 0; j < 2; j++) {
             if (memcmp(((uint8_t *)&keyComm[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256], sizeof(uint32_t)) != 0) return false;
         }
@@ -164,24 +167,33 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     memcpy((uint8_t *)&out[0], (uint8_t *)&proof.outShares[proof.idx][0], sizeof(uint32_t));
     memcpy((uint8_t *)&out[0] + sizeof(uint32_t), (uint8_t *)&proof.outShares[(proof.idx + 1) % 3][0], sizeof(uint32_t));
 
+    printf("going to assemble\n");
     uint8_t *hashOutTest = (uint8_t *)malloc(256 / 8);
     uint8_t *keyCommTest = (uint8_t *)malloc(256 / 8);
     uint8_t *ctTest = (uint8_t *)malloc(m_len / 8);
     AssembleShares(proof.pubInShares[0], proof.pubInShares[1], proof.pubInShares[2], hashOutTest, 256);
     AssembleShares(proof.pubInShares[0] + 256, proof.pubInShares[1] + 256, proof.pubInShares[2] + 256, keyCommTest, 256);
     AssembleShares(proof.pubInShares[0] + 512, proof.pubInShares[1] + 512, proof.pubInShares[2] + 512, ctTest, m_len);
+    printf("going to check\n");
     if (memcmp(hashOutTest, hashOutRaw, 256 / 8) != 0) {
         return false;
     }
+    printf("past hash out\n");
     if (memcmp(keyCommTest, keyCommRaw, 256 / 8) != 0) {
         return false;
     }
+    printf("past key comm\n");
     if (memcmp(ctTest, ctRaw, m_len / 8) != 0) {
         return false;
     }
+    printf("past ct\n");
+    uint32_t outTest = (proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2;
+    printf("outTest = %d\n", outTest);
     if (((proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2) != 1) {
         return false;
     }
+    printf("output good\n");
+    printf("did all input and output checks, about to run verifier\n");
 
 
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);

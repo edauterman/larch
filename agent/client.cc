@@ -764,7 +764,24 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_DigestUpdate(mdctx3, comm_in, 512/8);
   EVP_DigestFinal(mdctx3, enc_key_comm, NULL);*/
 
+    fprintf(stderr, "digest: ");
+    for (int i = 0; i < 32; i++) {
+        fprintf(stderr, "%02x", hash_out[i]);
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "enc_key_comm: ");
+    for (int i = 0; i < 32; i++) {
+        fprintf(stderr, "%02x", enc_key_comm[i]);
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "ct: ");
+    for (int i = 0; i < 32; i++) {
+        fprintf(stderr, "%02x", ct[i]);
+    }
+    fprintf(stderr, "\n");
+
   fprintf(stderr, "det2f: proving circuit\n");
+  req.set_digest(hash_out, 32);
   ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
 
   proof_buf = proof.Serialize(&proof_buf_len);
@@ -772,6 +789,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
+  //req.set_digest(hash_out, 32);
   // TODO real IV
   memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
@@ -792,7 +810,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   BN_bn2bin(e_client, e_buf);
   req.set_d(d_buf, BN_num_bytes(d_client));
   req.set_e(e_buf, BN_num_bytes(e_client));
-  req.set_digest(hash_out, 32);
+  //req.set_digest(hash_out, 32);
 
   stub->SendAuth(&client_ctx, req, &resp);
 
