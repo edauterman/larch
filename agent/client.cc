@@ -694,7 +694,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t comm_in[64];
   uint8_t ct[SHA256_DIGEST_LENGTH];
   __m128i iv = makeBlock(0,0);
-  __m128i enc_key_raw = makeBlock(0,0);
+  __m128i enc_key_128 = makeBlock(0,0);
   //uint8_t enc_key[16];
   Proof proof;
   int numRands = 116916;
@@ -753,9 +753,12 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
   EVP_DigestFinal(mdctx2, hash_out, NULL);
 
+  RAND_bytes(iv_raw, 16);
+  memcpy((uint8_t *)&iv, iv_raw, 16);
+
 //  memset(enc_key, 0, 16);
-  memcpy((uint8_t *)&enc_key_raw, enc_key, 16);
-  aes_128_ctr(enc_key_raw, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
+  memcpy((uint8_t *)&enc_key_128, enc_key, 16);
+  aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
 
 /*  memset(comm_in, 0, 512 / 8);
   memcpy(comm_in, enc_key, 128 / 8);
@@ -791,7 +794,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
   //req.set_digest(hash_out, 32);
   // TODO real IV
-  memset(iv_raw, 0, 16);
+  //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
 
   fprintf(stderr, "det2f: auth_ctr = %d\n", auth_ctr);

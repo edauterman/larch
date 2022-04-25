@@ -131,6 +131,7 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     uint64_t low = *((uint64_t *)iv_bytes);
     uint64_t high = *(((uint64_t *)iv_bytes) + 1);
     __m128i iv = makeBlock(low, high);
+    memcpy((uint8_t *)&iv, iv_bytes, 16);
            
     // TODO somehow need to check key_comm matches things? and that ct is correctly in the witness?
     // TODO digest is different?????
