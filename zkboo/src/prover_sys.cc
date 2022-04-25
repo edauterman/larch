@@ -148,18 +148,32 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     proof.views[1] = views[(proof.idx + 1) % 3];
     proof.w[0] = w_tmp[proof.idx];
     proof.w[1] = w_tmp[(proof.idx + 1) % 3];
+    
+    for (int i = 0; i < 3; i++) {
+        proof.pubInShares[i] = (uint32_t *)malloc((m_len + 256 + 256) * sizeof(uint32_t));
+        for (int j = 0; j < 256; j++) {
+            memcpy((uint8_t *)&proof.pubInShares[i][j], ((uint8_t *)&hashOutShares[j]) + (i * sizeof(uint32_t)), sizeof(uint32_t));
+        }
+        for (int j = 0; j < 256; j++) {
+            memcpy((uint8_t *)&proof.pubInShares[i][j + 256], ((uint8_t *)&keyCommShares[j]) + (i * sizeof(uint32_t)), sizeof(uint32_t));
+        }
+        for (int j = 0; j < m_len; j++) {
+            memcpy((uint8_t *)&proof.pubInShares[i][j + 256 + 256], ((uint8_t *)&ctShares[j]) + (i * sizeof(uint32_t)), sizeof(uint32_t));
+        }
+    }
+
     // TODO run randomness tape on verifier
     proof.rands[0] = new RandomSource(seeds[proof.idx], numRands);
     proof.rands[1] = new RandomSource(seeds[(proof.idx+1)%3], numRands);
     //memcpy(proof.rands[0].seed, seeds[proof.idx], SHA256_DIGEST_LENGTH);
     //memcpy(proof.rands[1].seed, seeds[(proof.idx + 1) % 3], SHA256_DIGEST_LENGTH);
 
-    proof.outShares[0] = (uint32_t *)malloc(sizeof(uint32_t));
-    proof.outShares[1] = (uint32_t *)malloc(sizeof(uint32_t));
     proof.outLen = 1;
     bool b;
-    memcpy(((uint8_t *)&proof.outShares[0][0]), ((uint8_t *)&out[0]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
-    memcpy(((uint8_t *)&proof.outShares[1][0]), ((uint8_t *)&out[0]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+    for (int i = 0; i < 3; i++) {
+        proof.outShares[i] = (uint32_t *)malloc(sizeof(uint32_t));
+        memcpy(((uint8_t *)&proof.outShares[i][0]), ((uint8_t *)&out[0]) + i * sizeof(uint32_t), sizeof(uint32_t));
+    }
     uint32_t shares[3];
     for (int j = 0; j < 3; j++) {
         memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[0]) + (sizeof(uint32_t) * j), sizeof(uint32_t));

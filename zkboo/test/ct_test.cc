@@ -67,7 +67,7 @@ int main() {
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = VerifyCtCircuit(pi, iv, m_len, in_len);
+    bool check = VerifyCtCircuit(pi, iv, m_len, in_len, hash_out, comm, ct);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

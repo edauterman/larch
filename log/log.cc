@@ -133,7 +133,7 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     __m128i iv = makeBlock(low, high);
            
     // TODO somehow need to check key_comm matches things? and that ct is correctly in the witness? 
-    bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len);
+    bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
     if (check) {
         printf("VERIFIED\n");
     } else {

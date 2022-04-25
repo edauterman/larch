@@ -71,7 +71,20 @@ void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     numAnds++;
 }
 
-bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
+void AssembleShares(uint32_t *in0, uint32_t *in1, uint32_t *in2, uint8_t *out, int num_blocks) {
+    bool *bs = new bool[num_blocks];
+    for (int i = 0; i < num_blocks; i++) {
+        /*for (int j = 0; j < 3; j++) {
+            memcpy((uint8_t *)&shares[j], ((uint8_t *)&in[i]) + (j * sizeof(uint32_t)), sizeof(uint32_t));
+            //memcpy((uint8_t *)&shares[j], ((uint8_t *)&in[i]) + (j * sizeof(uint32_t)), sizeof(uint32_t));
+        }*/
+        bs[i] = (in0[i] + in1[i] + in2[i]) % 2;
+    }
+    from_bool(bs, out, num_blocks);
+}
+
+//bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
+bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw) {
     CircuitComm c0, c1;
     proof.views[0]->Commit(c0);
     proof.views[1]->Commit(c1);
@@ -102,6 +115,8 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
     block *hashIn = new block[in_len];
     block *out = new block[1];
 
+    // TODO: check hashOut, keyComm, and ct
+
     for (int i = 0; i < m_len; i++) {
         memcpy((uint8_t *)&m[i], (uint8_t *)&proof.w[0][i], sizeof(uint32_t));
         memcpy((uint8_t *)&m[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
@@ -110,11 +125,17 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
     for (int i = 0; i < 256; i++) {
         memcpy((uint8_t *)&hashOut[i], (uint8_t *)&proof.w[0][i + m_len], sizeof(uint32_t));
         memcpy((uint8_t *)&hashOut[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len], sizeof(uint32_t));
+        for (int j = 0; j < 2; j++) {
+            if (memcmp(((uint8_t *)&hashOut[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i], sizeof(uint32_t)) != 0) return false;
+        }
     }
 
     for (int i = 0; i < m_len; i++) {
         memcpy((uint8_t *)&ct[i], (uint8_t *)&proof.w[0][i + m_len + 256], sizeof(uint32_t));
         memcpy((uint8_t *)&ct[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256], sizeof(uint32_t));
+        for (int j = 0; j < 2; j++) {
+            if (memcmp(((uint8_t *)&ct[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256 + 256], sizeof(uint32_t)) != 0) return false;
+        }
     }
 
     for (int i = 0; i < 128; i++) {
@@ -130,12 +151,38 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
     for (int i = 0; i < 256; i++) {
         memcpy((uint8_t *)&keyComm[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
         memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
+        for (int j = 0; j < 2; j++) {
+            if (memcmp(((uint8_t *)&keyComm[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256], sizeof(uint32_t)) != 0) return false;
+        }
     }
 
     for (int i = 0; i < in_len; i++) {
         memcpy((uint8_t *)&hashIn[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128 + 128 + 256], sizeof(uint32_t));
         memcpy((uint8_t *)&hashIn[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128 + 256], sizeof(uint32_t));
     }
+    
+    memcpy((uint8_t *)&out[0], (uint8_t *)&proof.outShares[proof.idx][0], sizeof(uint32_t));
+    memcpy((uint8_t *)&out[0] + sizeof(uint32_t), (uint8_t *)&proof.outShares[(proof.idx + 1) % 3][0], sizeof(uint32_t));
+
+    uint8_t *hashOutTest = (uint8_t *)malloc(256 / 8);
+    uint8_t *keyCommTest = (uint8_t *)malloc(256 / 8);
+    uint8_t *ctTest = (uint8_t *)malloc(m_len / 8);
+    AssembleShares(proof.pubInShares[0], proof.pubInShares[1], proof.pubInShares[2], hashOutTest, 256);
+    AssembleShares(proof.pubInShares[0] + 256, proof.pubInShares[1] + 256, proof.pubInShares[2] + 256, keyCommTest, 256);
+    AssembleShares(proof.pubInShares[0] + 512, proof.pubInShares[1] + 512, proof.pubInShares[2] + 512, ctTest, m_len);
+    if (memcmp(hashOutTest, hashOutRaw, 256 / 8) != 0) {
+        return false;
+    }
+    if (memcmp(keyCommTest, keyCommRaw, 256 / 8) != 0) {
+        return false;
+    }
+    if (memcmp(ctTest, ctRaw, m_len / 8) != 0) {
+        return false;
+    }
+    if (((proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2) != 1) {
+        return false;
+    }
+
 
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);
     CircuitExecution::circ_exec = ex;

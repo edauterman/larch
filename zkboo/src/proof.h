@@ -25,7 +25,8 @@ class Proof {
         RandomSource *rands[2];
         uint32_t *w[2];
         uint32_t wLen;
-        uint32_t *outShares[2];
+        uint32_t *pubInShares[3];
+        uint32_t *outShares[3];
         uint8_t *out;
         uint32_t outLen;
         uint32_t idx;
