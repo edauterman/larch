@@ -42,12 +42,17 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     printf("copying in hints\n");
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
+        h.xcoord = BN_bin2bn((uint8_t *)req->hints(i).xcoord().c_str(), req->hints(i).xcoord().size(), NULL);
+        h.auth_xcoord = BN_bin2bn((uint8_t *)req->hints(i).auth_xcoord().c_str(), req->hints(i).auth_xcoord().size(), NULL);
         h.r = BN_bin2bn((uint8_t *)req->hints(i).r().c_str(), req->hints(i).r().size(), NULL);
+        h.auth_r = BN_bin2bn((uint8_t *)req->hints(i).auth_r().c_str(), req->hints(i).auth_r().size(), NULL);
         h.a = BN_bin2bn((uint8_t *)req->hints(i).a().c_str(), req->hints(i).a().size(), NULL);
         h.b = BN_bin2bn((uint8_t *)req->hints(i).b().c_str(), req->hints(i).b().size(), NULL);
         h.c = BN_bin2bn((uint8_t *)req->hints(i).c().c_str(), req->hints(i).c().size(), NULL);
-        h.R = Params_point_new(params);
-        EC_POINT_oct2point(Params_group(params), h.R, (uint8_t *)req->hints(i).g_r().c_str(), 33, Params_ctx(params));
+        h.f = BN_bin2bn((uint8_t *)req->hints(i).f().c_str(), req->hints(i).f().size(), NULL);
+        h.g = BN_bin2bn((uint8_t *)req->hints(i).g().c_str(), req->hints(i).g().size(), NULL);
+        h.h = BN_bin2bn((uint8_t *)req->hints(i).h().c_str(), req->hints(i).h().size(), NULL);
+        h.alpha = BN_bin2bn((uint8_t *)req->hints(i).alpha().c_str(), req->hints(i).alpha().size(), NULL);
         hints.push_back(h);
     }
     printf("done copying in hints\n");
@@ -117,13 +122,16 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BIGNUM *e_client = BN_new();
     BIGNUM *d_log = BN_new();
     BIGNUM *e_log = BN_new();
+    BIGNUM *auth_d_log = BN_new();
+    BIGNUM *auth_e_log = BN_new();
     BIGNUM *d = BN_new();
     BIGNUM *e = BN_new();
     BIGNUM *hash_bn = BN_new();
-    BIGNUM *x_coord = BN_new();
-    BIGNUM *y_coord = BN_new();
+    BIGNUM *auth_hash_bn = BN_new();
     BIGNUM *val = BN_new();
+    BIGNUM *auth_val = BN_new();
     BIGNUM *out = BN_new();
+    BIGNUM *auth_out = BN_new();
     BIGNUM *prod = BN_new();
     BN_CTX *ctx = BN_CTX_new();
     proof.Deserialize(proof_bytes, numRands);
@@ -174,21 +182,23 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     printf("message hash bn = %s\n", BN_bn2hex(hash_bn));
 
     printf("auth ctr = %d\n", auth_ctr);
-    printf("R = %s\n", EC_POINT_point2hex(Params_group(params), hints[auth_ctr].R, POINT_CONVERSION_UNCOMPRESSED, ctx));
-    EC_POINT_get_affine_coordinates_GFp(Params_group(params), hints[auth_ctr].R, x_coord, y_coord, NULL);
-    printf("got affine\n");
-    printf("x_coord = %s\n", BN_bn2hex(x_coord));
-    BN_mod(x_coord, x_coord, Params_order(params), ctx);
-    printf("x_coord = %s\n", BN_bn2hex(x_coord));
-    BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
+    printf("x_coord = %s\n", BN_bn2hex(hints[auth_ctr].xcoord));
+    BN_mod_mul(val, hints[auth_ctr].xcoord, sk, Params_order(params), ctx);
     //BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
     printf("got sig mul value\n");
     printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
     printf("val = %s\n", BN_bn2hex(val));
+    
+    BN_mod_mul(auth_hash_bn, hash_bn, hints[auth_ctr].alpha, Params_order(params), ctx);
+    BN_mod_mul(auth_val, hints[auth_ctr].auth_xcoord, sk, Params_order(params), ctx);
+    BN_mod_add(auth_val, auth_val, auth_hash_bn, Params_order(params), ctx);
 
     BN_mod_sub(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_sub(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
     printf("computed d and e\n");
+
+    BN_mod_sub(auth_d_log, hints[auth_ctr].auth_r, hints[auth_ctr].f, Params_order(params), ctx);
+    BN_mod_sub(auth_e_log, auth_val, hints[auth_ctr].g, Params_order(params), ctx);
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
@@ -205,6 +215,16 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BN_mod_add(out, out, hints[auth_ctr].c, Params_order(params), ctx);
     printf("computed s\n");
     printf("share of s = %s\n", BN_bn2hex(out));
+
+    // authenticated value
+    // de.\alpha + d[g] + e[f] + [h]
+    BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
+    BN_mod_mul(auth_out, auth_out, hints[auth_ctr].alpha, Params_order(params), ctx);
+    BN_mod_mul(prod, d, hints[auth_ctr].g, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
+    BN_mod_mul(prod, e, hints[auth_ctr].f, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, hints[auth_ctr].h, Params_order(params), ctx);
 
     BN_bn2bin(d_log, d_out);
     *d_len = BN_num_bytes(d_log);
