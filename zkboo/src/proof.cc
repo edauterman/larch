@@ -102,12 +102,13 @@ uint8_t *Proof::Serialize(int *out_len) {
    //int mLen = (wLen - 256 - 128 - 128 - 256) / 2;
    int len = (sizeof(uint32_t) * 4) +                       // wLen and outLen and idx and numWires
        (SHA256_DIGEST_LENGTH * 3) +                         // CircuitComm
-       (sizeof(uint32_t) * views[0]->wires.size() * 2) +     // views
+       ((views[0]->wires.size() * 2) / 8) +                 // views
        (16 * 2) +                                           // seeds for RandomSource
-       (sizeof(uint32_t) * wLen * 2) +                      // shares of witness
-       (sizeof(uint32_t) * outLen * 3) +                    // shares of output
+       ((wLen * 2) / 8) +                                   // shares of witness
+       ((outLen * 3) / 8) +                                 // shares of output
        (bytesOutLen) +                                      // output raw values
-       (sizeof(uint32_t) * (mLen + 256 + 256) * 3);        // shares of public input
+       (((mLen + 256 + 256) * 3) / 8) +                     // shares of public input
+       5;                                                   
     fprintf(stderr, "zkboo: allocating %d bytes\n", len);
     uint8_t *out = (uint8_t *)malloc(len);
     memset(out, 0, len);
