@@ -36,6 +36,8 @@ class Proof {
     private:
         void SerializeInt32(uint32_t x, uint8_t **buf);
         uint32_t DeserializeInt32(uint8_t **buf);
+        void SerializeBit(uint32_t x, uint8_t **buf, int *idx);
+        uint32_t DeserializeBit(uint8_t **buf, int *idx);
 };
 
 #endif

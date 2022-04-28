@@ -56,3 +56,15 @@ message AuthResponse {
     bytes d = 2;
     bytes e = 3;
 }
+
+message Auth2Request {
+    bytes comm_check_d = 1;
+    bytes comm_check_e = 2;
+    bytes comm_check_out = 3;
+}
+
+message Auth2Response {
+    bytes check_d = 1;
+    bytes check_e = 2;
+    bytes check_out = 3;
+}
