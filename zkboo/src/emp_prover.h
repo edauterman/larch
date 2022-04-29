@@ -82,10 +82,6 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
             p->MultShares(a_shares, b_shares, out_shares);
             block out;
-/*            if (nextWireNum == 193513) {
-                cout << b << endl;
-                printf("a (%d) = %d %d %d, b (%d) = %d %d %d, out = %d %d %d\n", GetWireNum(a_shares[0]), a_shares[0], a_shares[1], a_shares[2],GetWireNum(b_shares[0]), b_shares[0], b_shares[1], b_shares[2], out_shares[0], out_shares[1], out_shares[2]);
-            } */
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
                 SetWireNum(&out_shares[i], nextWireNum);
@@ -106,16 +102,8 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
             p->AddShares(a_shares, b_shares, out_shares);
             block out;
-            if (nextWireNum == 1084) {
-                cout << b << endl;
-                printf("a (%d) = %d %d %d, b (%d) = %d %d %d, out = %d %d %d\n", GetWireNum(a_shares[0]), a_shares[0], a_shares[1], a_shares[2],GetWireNum(b_shares[0]), b_shares[0], b_shares[1], b_shares[2], out_shares[0], out_shares[1], out_shares[2]);
-            }
-            for (int i = 0; i < 3; i++) {
-                view[i]->wires.push_back(out_shares[i]);
-                SetWireNum(&out_shares[i], nextWireNum);
-            }
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            nextWireNum++;
+            //nextWireNum++;
             //printf("XOR %d %d -> %d\n", (a_shares[0] + a_shares[1] + a_shares[2]) % 2, (b_shares[0] + b_shares[1] + b_shares[2]) % 2, (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
         }
@@ -128,15 +116,10 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
             p->AddConst(a_shares, 1, out_shares);
             block out;
-            for (int i = 0; i < 3; i++) {
-                view[i]->wires.push_back(out_shares[i]);
-                SetWireNum(&out_shares[i], nextWireNum);
-            }
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            nextWireNum++;
+            //nextWireNum++;
             //printf("NOT (%d, %d, %d) %d -> (%d, %d, %d) %d\n", a_shares[0], a_shares[1], a_shares[2], (a_shares[0] + a_shares[1] + a_shares[2]) % 2,  out_shares[0], out_shares[1], out_shares[2], (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
-            //return a;
         }
 
         uint64_t num_and() override {

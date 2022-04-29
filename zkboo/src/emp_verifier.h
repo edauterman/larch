@@ -68,34 +68,8 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t a_shares[2];
             uint32_t b_shares[2];
             uint32_t out_shares[2];
-            for (int i = 0; i < 2; i++) {
-                if (IsZeroWireNum(a)) {
-                    a_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
-                } else if (IsOneWireNum(a)) {
-                    a_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
-                } else {
-                    a_shares[i] = views[i]->wires[GetWireNum(a)];
-                }
-                if (IsZeroWireNum(b)) {
-                    b_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
-                } else if (IsOneWireNum(b)) {
-                    b_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
-                } else {
-                    b_shares[i] = views[i]->wires[GetWireNum(b)];
-                }
-            }
-            //memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
-            //memcpy(b_shares, (uint8_t *)&b, 2 * sizeof(uint32_t));
-/*            if (gateNum != -1) {
-            if (views[0]->wireShares[gateNum] != a_shares[0]) {
-                if (verified) printf("and gate input (v0) failed\n");
-                verified = false;
-            }
-            if (views[1]->wireShares[gateNum] != b_shares[0]) {
-                if (verified) printf("and gate input (v1) failed\n");
-                verified = false;
-            }
-            }*/
+            memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
+            memcpy(b_shares, (uint8_t *)&b, 2 * sizeof(uint32_t));
             v->MultShares(a_shares, b_shares, out_shares);
             block out;
             //printf("AND compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
@@ -103,6 +77,8 @@ class ZKBooCircExecVerifier : public CircuitExecution {
                 //printf("and gate output failed (%d) -- wanted %d got %d (%d - %d, %d - %d)\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
                 verified = false;
             }
+            out_shares[0] = views[0]->wires[nextWireNum];
+            out_shares[1] = views[1]->wires[nextWireNum];
             SetWireNum(&out_shares[0], nextWireNum);
             SetWireNum(&out_shares[1], nextWireNum);
             nextWireNum++;
@@ -118,82 +94,21 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t a_shares[2];
             uint32_t b_shares[2];
             uint32_t out_shares[2];
-            for (int i = 0; i < 2; i++) {
-                if (IsZeroWireNum(a)) {
-                    a_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
-                } else if (IsOneWireNum(a)) {
-                    a_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
-                } else {
-                    a_shares[i] = views[i]->wires[GetWireNum(a)];
-                }
-                if (IsZeroWireNum(b)) {
-                    b_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
-                } else if (IsOneWireNum(b)) {
-                    b_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
-                } else {
-                    b_shares[i] = views[i]->wires[GetWireNum(b)];
-                }
-            }
- 
-/*            if (gateNum != -1) {
-            if (views[0]->wireShares[gateNum] != a_shares[0]) {
-                if (verified) printf("xor gate input (v0) failed %d %d\n", views[0]->wireShares[gateNum], a_shares[0]);
-                verified = false;
-            }
-            if (views[1]->wireShares[gateNum] != b_shares[0]) {
-                if (verified) printf("xor gate input (v1) failed %d %d\n", views[1]->wireShares[gateNum], b_shares[0]);
-                verified = false;
-            }
-            }*/
+            memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
+            memcpy(b_shares, (uint8_t *)&b, 2 * sizeof(uint32_t));
             v->AddShares(a_shares, b_shares, out_shares);
             block out;
-            //printf("XOR compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
-            if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("xor gate failed -- LSBs are %d %d -> %d (wanted %d)\n", getLSB(a), getLSB(b), out_shares[0], views[0]->wires[nextWireNum]);
-                printf("xor gate output failed %d -- wanted %d got %d (%d - %d, %d - %d), len is %d\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b), views[0]->wires.size());
-                verified = false;
-            }
-            if (nextWireNum >= 1075) {
-                //printf("xor gate detail %d -- wanted %d got %d (%d - %d, %d - %d), len is %d\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b), views[0]->wires.size());
-            }
-            SetWireNum(&out_shares[0], nextWireNum);
-            SetWireNum(&out_shares[1], nextWireNum);
-            nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
             return out;
         }
 
         block not_gate(const block &a) override {
-            //printf("not\n");
             uint32_t a_shares[2];
             uint32_t out_shares[2];
-            for (int i = 0; i < 2; i++) {
-                if (IsZeroWireNum(a)) {
-                    a_shares[i] = 0; //(v->idx + i) % 3 == 0 ? 0 : 1;
-                } else if (IsOneWireNum(a)) {
-                    a_shares[i] = 1; //(v->idx + i) % 3 == 0 ? 1 : 0;
-                } else {
-                    a_shares[i] = views[i]->wires[GetWireNum(a)];
-                }
- 
-            }
-/*            if (gateNum != -1) {
-            if (views[0]->wireShares[gateNum] != a_shares[0]) {
-                if (verified) printf("not gate input failed\n");
-                verified = false;
-            } 
-            }*/
+            memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
             v->AddConst(a_shares, 1, out_shares);
             block out;
-            //printf("NOT compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
-           if (views[0]->wires[nextWireNum] != out_shares[0]) {
-                printf("not gate output failed %d %d\n", views[0]->wires[nextWireNum], out_shares[0]);
-                verified = false;
-            }
-            SetWireNum(&out_shares[0], nextWireNum);
-            SetWireNum(&out_shares[1], nextWireNum);
-            nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
             return out;

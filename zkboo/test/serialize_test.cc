@@ -21,7 +21,7 @@ int main() {
 
     Proof pi;
     Proof pi2;
-    int numRands = 104116;
+    int numRands = 81543;
     //int numRands = 89984;
 
     int m_len = 256;

@@ -37,10 +37,10 @@ Verifier::Verifier(RandomSource *in_rands[], int in_idx) {
     numAnds = 0;
 }
 
-void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
+inline void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 2; i++) {
         out[i] = 0;
         bool aBit = a[i] & 1;
         bool res = idx + i == 0 ? (aBit + alpha) % 2 : aBit;
@@ -48,15 +48,15 @@ void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     }
 }
 
-void Verifier::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
+inline void Verifier::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 2; i++) {
         out[i] = 0;
         SetBit(&out[i], 0, ((a[i] & 1) + (b[i] & 1)) % 2);
     }
 }
 
-void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
+inline void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     for (int i = 0; i < 1; i++) {
         out[i] = 0;

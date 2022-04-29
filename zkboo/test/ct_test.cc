@@ -20,7 +20,7 @@ const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 int main() {
 
     Proof pi;
-    int numRands = 104116;
+    int numRands = 81543;
     //int numRands = 89984;
 
     int m_len = 256;

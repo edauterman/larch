@@ -17,9 +17,9 @@ class Verifier {
     public:
         Verifier(RandomSource *rands[], int idx);
 
-        void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
-        void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
-        void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
+        inline void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
+        inline void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
+        inline void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
         int idx;
 
