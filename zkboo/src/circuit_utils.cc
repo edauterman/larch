@@ -169,7 +169,7 @@ void sha256(block *input, block *output, int input_len) {
 	}
 
 	for (int b = 0; b < num_blocks; b++) {
-		fprintf(stderr, "zkboo: -- sha256\n");
+		//fprintf(stderr, "zkboo: -- sha256\n");
 		// the first 512 bits -> the padded data
 		// the rest of the 256 bits -> the 8 * 32 bits of the digest values
 

@@ -28,28 +28,19 @@ static inline bool GetBit(uint32_t x, int bit) {
 
 //template<typename IO>
 void GenViewsHash(void (*f)(block[], block[], int), block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[], int numRands) {
-//void GenViews(string circuitFile, block *w, int wLen, vector<CircuitView *> &views, block *c, int outLen, uint8_t *seeds[], int numRands) {
     uint64_t wShares[WIRES];
     uint64_t outShares[WIRES];
  	block* b = NULL;
  
 
-    //FILE *f = fopen(circuitFile.c_str(), "r");
-    //BristolFormat cf(f);
-    //printf("n1=%d, n2=%d, n3=%d\n", cf.n1, cf.n2, cf.n3);
     ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
-    //setup_plain_prot(false, "");
     (*f)(c, w, wLen);
-    //hash_in_circuit(c, w, wLen);
-    //finalize_plain_prot();
-    //cf.compute(c, w, b);
     for (int i = 0; i < 3; i++) {
         views.push_back(ex->view[i]);
     }
     // TODO cleanup
     delete ex;
-    //fclose(f);
     
 }
 
@@ -143,7 +134,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     CommitViews(views, proof.comms);
     
     proof.idx = oracle.GetRand(proof.comms) % 3;
-    fprintf(stderr, "zkboo: got idx = %d\n", proof.idx);
     proof.views[0] = views[proof.idx];
     proof.views[1] = views[(proof.idx + 1) % 3];
     proof.w[0] = w_tmp[proof.idx];
@@ -165,8 +155,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     // TODO run randomness tape on verifier
     proof.rands[0] = new RandomSource(seeds[proof.idx], numRands);
     proof.rands[1] = new RandomSource(seeds[(proof.idx+1)%3], numRands);
-    //memcpy(proof.rands[0].seed, seeds[proof.idx], SHA256_DIGEST_LENGTH);
-    //memcpy(proof.rands[1].seed, seeds[(proof.idx + 1) % 3], SHA256_DIGEST_LENGTH);
 
     proof.outLen = 1;
     bool b;
@@ -181,21 +169,12 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     b = (shares[0] + shares[1] + shares[2]) % 2;
     proof.out = (uint8_t *)malloc(1);
     proof.out[0] = b;
-    fprintf(stderr, "zkboo: OUTPUT: %d\n", b);
-    //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
-    /*from_bool(bs, output, out_len);
-    printf("output bytes: ");
-    for (int i = 0; i < out_len / 8; i++) {
-        printf("%x", output[i]);
-    }
-    printf("\n");*/
+
 }
 
 // each block just contains one bit
 void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out_len, int numRands, Proof &proof, uint8_t *output) {
-//void Prove(string circuitFile, uint8_t *w, int in_len, int out_len, int numRands, Proof &proof) {
     vector<CircuitView *> views;
-    //int out_len = 256;
     block *out = new block[out_len];
     block *wShares = (block *)malloc(in_len * sizeof(block));
     memset((void *)out, 0, sizeof(block) * out_len);
@@ -238,8 +217,6 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
     // TODO run randomness tape on verifier
     proof.rands[0] = new RandomSource(seeds[proof.idx], numRands);
     proof.rands[1] = new RandomSource(seeds[(proof.idx+1)%3], numRands);
-    //memcpy(proof.rands[0].seed, seeds[proof.idx], SHA256_DIGEST_LENGTH);
-    //memcpy(proof.rands[1].seed, seeds[(proof.idx + 1) % 3], SHA256_DIGEST_LENGTH);
 
     proof.w[0] = indivShares[proof.idx];
     proof.w[1] = indivShares[(proof.idx + 1) % 3];
@@ -257,7 +234,6 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
         bs[i] = (shares[0] + shares[1] + shares[2]) % 2;
     }
     proof.outLen = out_len;
-    //uint8_t *output_bytes = (uint8_t *)malloc(out_len / 8);
     proof.out = (uint8_t *)malloc(out_len / 8);
     from_bool(bs, output, out_len);
     from_bool(bs, proof.out, out_len);
