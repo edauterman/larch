@@ -58,8 +58,6 @@ class ZKBooCircExecProver : public CircuitExecution {
                 memcpy(shares, (uint8_t *)&w[i], 3 * sizeof(uint32_t));
                 for (int j = 0; j < 3; j++) {
                     view[j]->wires.push_back(shares[j] & 1);
-                    //view[j]->wires.push_back(*(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1);
-                    //view[j]->wires[GetWireNum(*(uint32_t *)&w[i])] = *(((uint8_t *)&w[i]) + j * sizeof(uint32_t)) & 1;
                 }
             }
             nextWireNum = wLen;
@@ -84,7 +82,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             block out;
             for (int i = 0; i < 3; i++) {
                 view[i]->wires.push_back(out_shares[i]);
-                SetWireNum(&out_shares[i], nextWireNum);
+                //SetWireNum(&out_shares[i], nextWireNum);
             }
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
@@ -103,7 +101,6 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->AddShares(a_shares, b_shares, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //nextWireNum++;
             //printf("XOR %d %d -> %d\n", (a_shares[0] + a_shares[1] + a_shares[2]) % 2, (b_shares[0] + b_shares[1] + b_shares[2]) % 2, (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
         }
@@ -117,7 +114,6 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->AddConst(a_shares, 1, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //nextWireNum++;
             //printf("NOT (%d, %d, %d) %d -> (%d, %d, %d) %d\n", a_shares[0], a_shares[1], a_shares[2], (a_shares[0] + a_shares[1] + a_shares[2]) % 2,  out_shares[0], out_shares[1], out_shares[2], (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
             return out;
         }
@@ -132,11 +128,6 @@ class ZKBooCircExecProver : public CircuitExecution {
             uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
                 shares[i] = b;
-                if (b == 0) {
-                    SetZeroWireNum(&shares[i]);
-                } else {
-                    SetOneWireNum(&shares[i]);
-                }
             }
             memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
             return out;

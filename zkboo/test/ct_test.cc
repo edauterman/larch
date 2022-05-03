@@ -67,7 +67,8 @@ int main() {
     INIT_TIMER;
     START_TIMER;
     //#pragma omp parallel for
-    for (int i = 0; i < NUM_ROUNDS; i++) {
+    for (int i = 0; i < 1; i++) {
+    //for (int i = 0; i < NUM_ROUNDS; i++) {
         ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, pi[i]);
     }
     STOP_TIMER("Prover time (100)");

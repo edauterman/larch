@@ -40,11 +40,12 @@ Prover::Prover(uint8_t *seeds[], int numRands) {
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
     int bit = 0;
+    uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 3; i++) {
-        out[i] = 0;
-        bool aBit = GetBit(a[i], bit);
-        bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
-        SetBit(&out[i], bit, res);
+        //bool aBit = GetBit(a[i], bit);
+        //bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
+        //SetBit(&out[i], bit, res);
+        out[i] = (i == 0) ? a[i] ^ setalpha : a[i];
     }
 }
 
@@ -52,8 +53,8 @@ void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     int bit = 0;
     for (int i = 0; i < 3; i++) {
-        out[i] = 0;
-        SetBit(&out[i], bit, ((a[i] & 1) + (b[i] & 1)) % 2);
+        out[i] = a[i] ^ b[i];
+        //SetBit(&out[i], bit, ((a[i] & 1) + (b[i] & 1)) % 2);
     }
 }
 
@@ -61,14 +62,16 @@ void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     int bit = 0;    
     for (int i = 0; i < 3; i++) {
-        out[i] = 0;
+        /*out[i] = 0;
         bool a0Bit = a[i] & 1;
         bool a1Bit = a[(i+1)%3] & 1;
         bool b0Bit = b[i] & 1;
         bool b1Bit = b[(i+1)%3] & 1;
         bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
                 + rands[i]->GetRand(numAnds) - rands[(i+1)%3]->GetRand(numAnds)) % 2;
-        SetBit(&out[i], bit, res);
+        SetBit(&out[i], bit, res);*/
+        out[i] = ((a[i] & b[i]) ^ (a[(i+1)%3] & b[i]) ^ (a[i] & b[(i+1)%3])
+                ^ rands[i]->GetRand(numAnds) ^ (rands[(i+1)%3]->GetRand(numAnds)));
     }
     numAnds++;
 }

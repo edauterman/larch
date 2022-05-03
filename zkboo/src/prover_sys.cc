@@ -88,7 +88,7 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
         indivShares[1][i] = indivShares[1][i] % 2;
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit((uint32_t)input[i/8], i%8);
         for (int j = 0; j < 3; j++) {
-            SetWireNum(&indivShares[j][i], i + offset);
+            //SetWireNum(&indivShares[j][i], i + offset);
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             dst[j][i + offset] = indivShares[j][i];
         }
@@ -191,7 +191,7 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
         indivShares[1][i] = indivShares[1][i] % 2;
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit((uint32_t)w[i/8], i%8);
         for (int j = 0; j < 3; j++) {
-            SetWireNum(&indivShares[j][i], i);
+            //SetWireNum(&indivShares[j][i], i);
             memcpy(((uint8_t *)&wShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
         }
     }

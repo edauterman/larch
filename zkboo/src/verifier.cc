@@ -39,35 +39,23 @@ Verifier::Verifier(RandomSource *in_rands[], int in_idx) {
 
 inline void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-
+    uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 2; i++) {
-        out[i] = 0;
-        bool aBit = a[i] & 1;
-        bool res = (idx + i) % 3 == 0 ? (aBit + alpha) % 2 : aBit;
-        SetBit(&out[i], 0, res);
+        out[i] = (idx + 1) % 3 == 0 ? a[i] ^ setalpha : a[i];
     }
 }
 
 inline void Verifier::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
     for (int i = 0; i < 2; i++) {
-        out[i] = 0;
-        SetBit(&out[i], 0, ((a[i] & 1) + (b[i] & 1)) % 2);
+        out[i] = a[i] ^ b[i];
     }
 }
 
 inline void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    for (int i = 0; i < 1; i++) {
-        out[i] = 0;
-        bool a0Bit = a[i] & 1;
-        bool a1Bit = a[i+1] & 1;
-        bool b0Bit = b[i] & 1;
-        bool b1Bit = b[i+1] & 1;
-        bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
-                + rands[i]->GetRand(numAnds) - rands[(i+1)]->GetRand(numAnds)) % 2;
-        SetBit(&out[i], 0, res);
-    }
+    out[0] = ((a[0] & b[0]) ^ (a[1] & b[0]) ^ (a[0] & b[1])
+            ^ rands[0]->GetRand(numAnds) ^ (rands[1]->GetRand(numAnds)));
     numAnds++;
 }
 
@@ -78,7 +66,7 @@ void AssembleShares(uint32_t *in0, uint32_t *in1, uint32_t *in2, uint8_t *out, i
             memcpy((uint8_t *)&shares[j], ((uint8_t *)&in[i]) + (j * sizeof(uint32_t)), sizeof(uint32_t));
             //memcpy((uint8_t *)&shares[j], ((uint8_t *)&in[i]) + (j * sizeof(uint32_t)), sizeof(uint32_t));
         }*/
-        bs[i] = (in0[i] + in1[i] + in2[i]) % 2;
+        bs[i] = in0[i] ^ in1[i] ^ in2[i];
     }
     from_bool(bs, out, num_blocks);
 }

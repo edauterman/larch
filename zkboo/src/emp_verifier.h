@@ -79,8 +79,8 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             }
             out_shares[0] = views[0]->wires[nextWireNum];
             out_shares[1] = views[1]->wires[nextWireNum];
-            SetWireNum(&out_shares[0], nextWireNum);
-            SetWireNum(&out_shares[1], nextWireNum);
+            //SetWireNum(&out_shares[0], nextWireNum);
+            //SetWireNum(&out_shares[1], nextWireNum);
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
@@ -125,11 +125,11 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
                 shares[i] = b; 
-                if (b == 0) {
+                /*if (b == 0) {
                     SetZeroWireNum(&shares[i]);
                 } else {
                     SetOneWireNum(&shares[i]);
-                }
+                }*/
             }
             memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
             return out;

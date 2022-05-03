@@ -209,7 +209,7 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
         w[i] = (uint32_t *)malloc(sizeof(uint32_t) * wLen);
         for (int j = 0; j < wLen; j++) {
             uint32_t val = DeserializeBit(&ptr, &bitIdx);
-            SetWireNum(&val, j);
+            //SetWireNum(&val, j);
             w[i][j] = val;
             //w[i][j] = DeserializeBit(&ptr, &bitIdx);
             //w[i][j] = DeserializeInt32(&ptr);
@@ -234,17 +234,17 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
         pubInShares[i] = (uint32_t *)malloc((mLen + 256 + 256) * sizeof(uint32_t));
         for (int j = 0; j < 256; j++) {
             pubInShares[i][j] = DeserializeBit(&ptr, &bitIdx);
-            SetWireNum(&pubInShares[i][j], mLen + j);
+            //SetWireNum(&pubInShares[i][j], mLen + j);
             //pubInShares[i][j] = DeserializeInt32(&ptr);
         }
         for (int j = 0; j < 256; j++) {
             pubInShares[i][j + 256] = DeserializeBit(&ptr, &bitIdx);
-            SetWireNum(&pubInShares[i][j + 256], 2 * mLen + 256 + 128 + 128 + j);
+            //SetWireNum(&pubInShares[i][j + 256], 2 * mLen + 256 + 128 + 128 + j);
             //pubInShares[i][j] = DeserializeInt32(&ptr);
         }
         for (int j = 0; j < mLen; j++) {
             pubInShares[i][j + 256 + 256] = DeserializeBit(&ptr, &bitIdx);
-            SetWireNum(&pubInShares[i][j + 256 + 256], mLen + 256 + j);
+            //SetWireNum(&pubInShares[i][j + 256 + 256], mLen + 256 + j);
             //pubInShares[i][j] = DeserializeInt32(&ptr);
         }
  
