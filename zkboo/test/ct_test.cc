@@ -4,6 +4,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <emp-tool/emp-tool.h>
+//#include "omp.h"
 
 #include "../src/view.h"
 #include "../src/prover.h"
@@ -15,11 +16,13 @@
 using namespace std;
 using namespace emp;
 
+#define NUM_ROUNDS 137
+
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
 int main() {
 
-    Proof pi;
+    Proof pi[NUM_ROUNDS];
     int numRands = 81543;
     //int numRands = 89984;
 
@@ -60,14 +63,20 @@ int main() {
     memset(key, 0, 128/8);
     aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);
 
-    printf("finished setup, starting proving\n");
+    //printf("finished setup, starting proving with %d threads\n", omp_get_num_threads());
     INIT_TIMER;
     START_TIMER;
-    ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, pi);
-    STOP_TIMER("Prover time");
+    //#pragma omp parallel for
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, pi[i]);
+    }
+    STOP_TIMER("Prover time (100)");
     cout << "Finished proving" << endl; 
     START_TIMER;
-    bool check = VerifyCtCircuit(pi, iv, m_len, in_len, hash_out, comm, ct);
+    bool check;
+    for (int i = 0; i < 1; i++) {
+        check = VerifyCtCircuit(pi[0], iv, m_len, in_len, hash_out, comm, ct);
+    }
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

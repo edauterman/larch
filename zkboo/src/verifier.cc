@@ -171,7 +171,6 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     AssembleShares(proof.pubInShares[0], proof.pubInShares[1], proof.pubInShares[2], hashOutTest, 256);
     AssembleShares(proof.pubInShares[0] + 256, proof.pubInShares[1] + 256, proof.pubInShares[2] + 256, keyCommTest, 256);
     AssembleShares(proof.pubInShares[0] + 512, proof.pubInShares[1] + 512, proof.pubInShares[2] + 512, ctTest, m_len);
-    printf("moving on to these checks\n");
     if (memcmp(hashOutTest, hashOutRaw, 256 / 8) != 0) {
         return false;
     }
@@ -181,13 +180,10 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     if (memcmp(ctTest, ctRaw, m_len / 8) != 0) {
         return false;
     }
-    printf("after\n");
     uint32_t outTest = (proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2;
     if (((proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2) != 1) {
         return false;
     }
-    printf("out\n");
-
 
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);
     CircuitExecution::circ_exec = ex;
@@ -197,7 +193,6 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     } else {
         return false;
     }
-    printf("verif\n");
 
     // TODO check output lines up
     

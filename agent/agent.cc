@@ -20,6 +20,8 @@
 #include "base64.h"
 #include "u2f.h"
 #include "client.h"
+#include "../zkboo/utils/timer.h"
+#include "../zkboo/utils/colors.h"
 
 // Used to define JSON messages.
 #define ID "agent-det2f"
@@ -161,6 +163,8 @@ void handle_registration(Client *c, json request) {
 
 /* Handle authentication request and send response. */
 void handle_authentication(Client *c, json request) {
+  INIT_TIMER;
+  START_TIMER;
   json response;
   string app_id_str, challenge_str, key_handle_str;
   U2F_AUTHENTICATE_RESP u2f_resp;
@@ -169,7 +173,7 @@ void handle_authentication(Client *c, json request) {
   uint8_t challenge[U2F_NONCE_SIZE + 1];
   uint8_t key_handle[MAX_KH_SIZE + 1];
 
-  fprintf(stderr, "det2f: handling authentication request\n");
+  //fprintf(stderr, "det2f: handling authentication request\n");
 
   /* Set base field. */
   response[TYPE] = AUTH_RESP;
@@ -177,34 +181,25 @@ void handle_authentication(Client *c, json request) {
   /* Decode app id. */
   app_id_str = request[APP_ID];
   const uint8_t *app_id_buf = (const uint8_t *)app_id_str.c_str();
-  fprintf(stderr, "det2f: app_id %s\n", app_id_str.c_str());
+  //fprintf(stderr, "det2f: app_id %s\n", app_id_str.c_str());
   int app_id_size = decode_base64(app_id, app_id_str.c_str());
-  if (app_id_size != U2F_APPID_SIZE + 1)
-    fprintf(stderr, "det2f: ERROR decoded sign data that's not of length\
-            U2F_APPID_SIZE: %d\n", app_id_size);
 
   /* Decode challenge. */
   challenge_str = request[CHALLENGE];
-  fprintf(stderr, "det2f: challenge %s\n", challenge_str.c_str());
+  //fprintf(stderr, "det2f: challenge %s\n", challenge_str.c_str());
   int challenge_size = decode_base64(challenge, challenge_str.c_str());
-  if (challenge_size != U2F_NONCE_SIZE + 1)
-    fprintf(stderr, "det2f: ERROR decoded sign data that's not of length\
-            U2F_NONCE_SIZE: %d\n", challenge_size);
 
   /* Decode key handle. */
   key_handle_str = request[KEY_HANDLE];
-  fprintf(stderr, "det2f: key handle %s\n", key_handle_str.c_str());
+  //fprintf(stderr, "det2f: key handle %s\n", key_handle_str.c_str());
   int key_handle_size = decode_base64(key_handle, key_handle_str.c_str());
-  if (key_handle_size != MAX_KH_SIZE + 1)
-    fprintf(stderr, "det2f: ERROR decoded sign data that's not of length\
-            MAX_KH_SIZE: %d\n", key_handle_size);
 
   /* Authenticate with device. */
   int sig_len = c->Authenticate(app_id, app_id_str.size(), challenge, key_handle, &u2f_resp.flags,
                              &u2f_resp.ctr, u2f_resp.sig);
   if (sig_len > 0) {
     /* Successful authentication. */
-    fprintf(stderr, "det2f: successful authentication\n");
+    //fprintf(stderr, "det2f: successful authentication\n");
 
     /* Set response fields. */
     response[CODE] = DEVICE_OK;
@@ -220,7 +215,7 @@ void handle_authentication(Client *c, json request) {
     //memcpy(resp_buf, u2f_resp.sig, sig_len);
     //memcpy(resp_buf, &u2f_resp, msg_len);
     char *encoded_sig = encode_base64(sig_len, u2f_resp.sig);
-    fprintf(stderr, "det2f: encoded sig %s\n", encoded_sig);
+    //fprintf(stderr, "det2f: encoded sig %s\n", encoded_sig);
     response[SIGNATURE] = string(encoded_sig);
     response[RESPONSE_DATA] = responseData;
     response[COUNTER] = u2f_resp.ctr;
@@ -230,8 +225,9 @@ void handle_authentication(Client *c, json request) {
     fprintf(stderr, "det2f: unsuccessful authentication\n");
     response[CODE] = DEVICE_ERR;
   }
-  fprintf(stderr, "det2f: sending %s\n", response.dump().c_str());
+  //fprintf(stderr, "det2f: sending %s\n", response.dump().c_str());
   send_message(encode_message(response));
+  STOP_TIMER("overall auth");
 }
 
 int main(int argc, char *argv[]) {

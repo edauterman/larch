@@ -39,7 +39,6 @@ LogServer::LogServer() {
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     memcpy(enc_key_comm, req->key_comm().c_str(), 32);
 
-    printf("copying in hints\n");
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
         h.xcoord = BN_bin2bn((uint8_t *)req->hints(i).xcoord().c_str(), req->hints(i).xcoord().size(), NULL);
@@ -55,7 +54,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
         h.alpha = BN_bin2bn((uint8_t *)req->hints(i).alpha().c_str(), req->hints(i).alpha().size(), NULL);
         hints.push_back(h);
     }
-    printf("done copying in hints\n");
+    //printf("done copying in hints\n");
 
     pk = EC_POINT_new(Params_group(params));
     sk = BN_new();
@@ -63,9 +62,9 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     //pk = EC_POINT_dup(Params_gen(params), Params_group(params));
     Params_rand_point_exp(params, pk, sk);
     //Params_rand_point_exp(params, pk, sk);
-    printf("chose key\n");
+    //printf("chose key\n");
     EC_POINT_point2oct(Params_group(params), pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
-    printf("done choosing log key\n");
+    //printf("done choosing log key\n");
 }
 
 void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
@@ -104,7 +103,7 @@ void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     memset(y_out, 0, P256_SCALAR_SIZE);
     BN_bn2bin(x, x_out);
     BN_bn2bin(y, y_out);
-    printf("x = ");
+    /*printf("x = ");
     for (int i = 0; i < P256_SCALAR_SIZE; i++) {
         printf("%x", x_out[i]);
     }
@@ -113,7 +112,7 @@ void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     for (int i = 0; i < P256_SCALAR_SIZE; i++) {
         printf("%x", y_out[i]);
     }
-    printf("\n");
+    printf("\n");*/
 };
 
 void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *sig_out, unsigned int *sig_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len) {
@@ -143,7 +142,7 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
            
     // TODO somehow need to check key_comm matches things? and that ct is correctly in the witness?
     // TODO digest is different?????
-    printf("digest: ");
+    /*printf("digest: ");
     for (int i = 0; i < 32; i++) {
         printf("%02x", digest[i]);
     } 
@@ -157,20 +156,20 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     for (int i = 0; i < 32; i++) {
         printf("%02x", ct[i]);
     } 
-    printf("\n");
+    printf("\n");*/
     bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
     if (check) {
-        printf("VERIFIED\n");
+        //printf("VERIFIED\n");
     } else {
         printf("PROOF FAILED TO VERIFY\n");
         return;
     }
     
-    printf("challenge to sign: ");
+   /* printf("challenge to sign: ");
     for (int i = 0; i < challenge_len / 8; i++) {
         printf("%d ", challenge[i]);
     }
-    printf("\n");
+    printf("\n");*/
 
     BN_bin2bn(d_in, d_in_len, d_client); 
     BN_bin2bn(e_in, e_in_len, e_client);
@@ -178,16 +177,16 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     // TODO make sure that digest lines up with value in serialized proof
     BN_bin2bn(digest, 32, hash_bn);
     BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-    printf("converted hash to bn\n");
-    printf("message hash bn = %s\n", BN_bn2hex(hash_bn));
+    //printf("converted hash to bn\n");
+    //printf("message hash bn = %s\n", BN_bn2hex(hash_bn));
 
-    printf("auth ctr = %d\n", auth_ctr);
-    printf("x_coord = %s\n", BN_bn2hex(hints[auth_ctr].xcoord));
+    //printf("auth ctr = %d\n", auth_ctr);
+    //printf("x_coord = %s\n", BN_bn2hex(hints[auth_ctr].xcoord));
     BN_mod_mul(val, hints[auth_ctr].xcoord, sk, Params_order(params), ctx);
     //BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
-    printf("got sig mul value\n");
-    printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
-    printf("val = %s\n", BN_bn2hex(val));
+    //printf("got sig mul value\n");
+    //printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
+    //printf("val = %s\n", BN_bn2hex(val));
     
     BN_mod_mul(auth_hash_bn, hash_bn, hints[auth_ctr].alpha, Params_order(params), ctx);
     BN_mod_mul(auth_val, hints[auth_ctr].auth_xcoord, sk, Params_order(params), ctx);
@@ -195,15 +194,15 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
 
     BN_mod_sub(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_sub(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
-    printf("computed d and e\n");
+    //printf("computed d and e\n");
 
     BN_mod_sub(auth_d_log, hints[auth_ctr].auth_r, hints[auth_ctr].f, Params_order(params), ctx);
     BN_mod_sub(auth_e_log, auth_val, hints[auth_ctr].g, Params_order(params), ctx);
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
-    printf("d = %s, e = %s\n", BN_bn2hex(d), BN_bn2hex(e));
-    printf("combined d and e\n");
+    //printf("d = %s, e = %s\n", BN_bn2hex(d), BN_bn2hex(e));
+    //printf("combined d and e\n");
 
     // de + d[b] + e[a] + [c]
     //BN_mod_mul(out, d, e, Params_order(params), ctx);
@@ -213,8 +212,8 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BN_mod_mul(prod, e, hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, hints[auth_ctr].c, Params_order(params), ctx);
-    printf("computed s\n");
-    printf("share of s = %s\n", BN_bn2hex(out));
+    //printf("computed s\n");
+    //printf("share of s = %s\n", BN_bn2hex(out));
 
     // authenticated value
     // de.\alpha + d[g] + e[f] + [h]
@@ -252,27 +251,27 @@ class LogServiceImpl final : public Log::Service {
         LogServiceImpl(LogServer *server) : server(server) {}
 
         Status SendInit(ServerContext *context, const InitRequest *req, InitResponse *resp) override {
-            printf("Received initialization request\n");
+            //printf("Received initialization request\n");
             uint8_t pkBuf[33];
             server->Initialize(req, pkBuf);
             resp->set_pk(pkBuf, 33);
-            printf("Sending initialization response\n");
+            //printf("Sending initialization response\n");
             return Status::OK;
         }
 
         Status SendReg(ServerContext *context, const RegRequest *req, RegResponse *resp) override {
-            printf("Received registration request\n");
+            //printf("Received registration request\n");
             uint8_t x[P256_SCALAR_SIZE];
             uint8_t y[P256_SCALAR_SIZE];
             server->GenerateKeyPair(x, y);
             resp->set_pk_x(x, P256_SCALAR_SIZE);
             resp->set_pk_y(y, P256_SCALAR_SIZE);
-            printf("Sending registration response\n");
+            //printf("Sending registration response\n");
             return Status::OK;
         }
 
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
-            printf("Received auth request\n");
+            //printf("Received auth request\n");
             uint8_t prod[32];
             unsigned int prod_len = 0;
             unsigned int d_len = 0;
@@ -287,7 +286,7 @@ class LogServiceImpl final : public Log::Service {
             resp->set_prod(prod, prod_len);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
-            printf("Sending auth response\n");
+            //printf("Sending auth response\n");
             return Status::OK;
         }
 };
@@ -318,5 +317,5 @@ int main(int argc, char *argv[]) {
     runServer(bindAddr);
     cout << "after run server?" << endl;
 
-	printf("Hello world\n");
+	//printf("Hello world\n");
 }

@@ -9,6 +9,16 @@ include_directories(
 
 find_package(OpenSSL REQUIRED)
 find_package(emp-tool REQUIRED)
+#find_package(OpenMP REQUIRED)
+
+#set(OpenMP_CXX "${CMAKE_CXX_COMPILER}")
+#set(OpenMP_CXX_FLAGS "-fopenmp=libomp -Wno-unused-command-line-argument")
+#set(OpenMP_CXX_LIB_NAMES "libomp" "libgomp" "libiomp5")
+#set(OpenMP_libomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+#set(OpenMP_libgomp_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+#set(OpenMP_libiomp5_LIBRARY ${OpenMP_CXX_LIB_NAMES})
+
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 include_directories(${EMP-TOOL_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
@@ -38,6 +48,7 @@ target_link_libraries(ct_test
 	Prover
     Base
     OpenSSL::SSL)
+#OpenMP::OpenMP_CXX)
 
 add_executable(serialize_test serialize_test.cc)
 target_link_libraries(serialize_test
