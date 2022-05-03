@@ -124,7 +124,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out = makeBlock(0,0);
             uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
-                shares[i] = b; 
+                shares[i] = b == 0 ? 0 : 0xffffffff; 
                 /*if (b == 0) {
                     SetZeroWireNum(&shares[i]);
                 } else {

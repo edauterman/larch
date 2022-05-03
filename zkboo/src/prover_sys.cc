@@ -82,11 +82,10 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
     memset(inputShares, 0, len * sizeof(block));
     for (int i = 0; i < len; i++) {
         // individual shares of bits
+        uint32_t setval = GetBit((uint32_t)input[i/8], i%8) == 0 ? 0 : 0xffffffff;
         RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
-        indivShares[0][i] = indivShares[0][i] % 2;
-        indivShares[1][i] = indivShares[1][i] % 2;
-        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^  GetBit((uint32_t)input[i/8], i%8);
+        indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ setval;
         for (int j = 0; j < 3; j++) {
             //SetWireNum(&indivShares[j][i], i + offset);
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
@@ -161,6 +160,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     for (int i = 0; i < 3; i++) {
         proof.outShares[i] = (uint32_t *)malloc(sizeof(uint32_t));
         memcpy(((uint8_t *)&proof.outShares[i][0]), ((uint8_t *)&out[0]) + i * sizeof(uint32_t), sizeof(uint32_t));
+        printf("copying in %d\n", proof.outShares[i][0]);
     }
     uint32_t shares[3];
     for (int j = 0; j < 3; j++) {
@@ -223,10 +223,12 @@ void ProveHash(void (*f)(block[], block[], int), uint8_t *w, int in_len, int out
     proof.wLen = in_len;
     proof.outShares[0] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     proof.outShares[1] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
+    proof.outShares[2] = (uint32_t *)malloc(out_len * sizeof(uint32_t));
     bool *bs = new bool[out_len];
     for (int i = 0; i < out_len; i++) {
         memcpy(((uint8_t *)&proof.outShares[0][i]), ((uint8_t *)&out[i]) + proof.idx * sizeof(uint32_t), sizeof(uint32_t));
         memcpy(((uint8_t *)&proof.outShares[1][i]), ((uint8_t *)&out[i]) + ((proof.idx + 1) % 3) * sizeof(uint32_t), sizeof(uint32_t));
+        memcpy(((uint8_t *)&proof.outShares[2][i]), ((uint8_t *)&out[i]) + ((proof.idx + 2) % 3) * sizeof(uint32_t), sizeof(uint32_t));
         uint32_t shares[3];
         for (int j = 0; j < 3; j++) {
             memcpy((uint8_t *)&shares[j], ((uint8_t *)&out[i]) + (sizeof(uint32_t) * j), sizeof(uint32_t));

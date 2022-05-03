@@ -169,8 +169,12 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         return false;
     }
     uint32_t outTest = (proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2;
-    if (((proof.outShares[0][0] + proof.outShares[1][0] + proof.outShares[2][0]) % 2) != 1) {
-        return false;
+    for (int i = 0; i < 32; i++) {
+        uint32_t res = ((GetBit(proof.outShares[0][0], i) + GetBit(proof.outShares[1][0], i) + GetBit(proof.outShares[2][0], i)) % 2);
+        if (((GetBit(proof.outShares[0][0], i) + GetBit(proof.outShares[1][0], i) + GetBit(proof.outShares[2][0], i)) % 2) != 1) {
+            printf("for %d -> %d, %d, %d -> %d\n", i, proof.outShares[0][0], proof.outShares[1][0], proof.outShares[2][0], res);
+            //return false; 
+        }
     }
 
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);

@@ -86,7 +86,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             }
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //printf("AND %d %d -> %d\n", (a_shares[0] + a_shares[1] + a_shares[2]) % 2, (b_shares[0] + b_shares[1] + b_shares[2]) % 2, (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
+            //printf("AND (%d %d %d) %d %d -> (%d %d %d) %d\n", a_shares[0], a_shares[1], a_shares[2], a_shares[0] ^ a_shares[1] ^ a_shares[2], b_shares[0] ^ b_shares[1] ^ b_shares[2], out_shares[0], out_shares[1], out_shares[2], out_shares[0] ^ out_shares[1] ^ out_shares[2]);
             return out;
             //return a;
         }
@@ -101,7 +101,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->AddShares(a_shares, b_shares, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //printf("XOR %d %d -> %d\n", (a_shares[0] + a_shares[1] + a_shares[2]) % 2, (b_shares[0] + b_shares[1] + b_shares[2]) % 2, (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
+            //printf("XOR (%d %d %d) %d %d -> (%d %d %d) %d\n", a_shares[0], a_shares[1], a_shares[2], a_shares[0] ^ a_shares[1] ^ a_shares[2], b_shares[0] ^ b_shares[1] ^ b_shares[2], out_shares[0], out_shares[1], out_shares[2], out_shares[0] ^ out_shares[1] ^ out_shares[2]);
             return out;
         }
 
@@ -114,7 +114,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             p->AddConst(a_shares, 1, out_shares);
             block out;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //printf("NOT (%d, %d, %d) %d -> (%d, %d, %d) %d\n", a_shares[0], a_shares[1], a_shares[2], (a_shares[0] + a_shares[1] + a_shares[2]) % 2,  out_shares[0], out_shares[1], out_shares[2], (out_shares[0] + out_shares[1] + out_shares[2]) % 2);
+            //printf("NOT (%d, %d, %d) %d -> (%d, %d, %d) %d\n", a_shares[0], a_shares[1], a_shares[2], (a_shares[0] ^ a_shares[1] ^ a_shares[2]),  out_shares[0], out_shares[1], out_shares[2], (out_shares[0] ^ out_shares[1] ^ out_shares[2]));
             return out;
         }
 
@@ -127,7 +127,7 @@ class ZKBooCircExecProver : public CircuitExecution {
             block out = makeBlock(0,0);
             uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
-                shares[i] = b;
+                shares[i] = b == 0 ? 0 : 0xffffffff;
             }
             memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
             return out;
