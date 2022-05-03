@@ -41,7 +41,7 @@ inline void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
     uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 2; i++) {
-        out[i] = (idx + 1) % 3 == 0 ? a[i] ^ setalpha : a[i];
+        out[i] = (idx + i) % 3 == 0 ? a[i] ^ setalpha : a[i];
     }
 }
 
