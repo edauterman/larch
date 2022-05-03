@@ -844,7 +844,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   //fprintf(stderr, "det2f: proving circuit\n");
   req.set_digest(hash_out, 32);
-  ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, proof);
+  ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
 
   proof_buf = proof.Serialize(&proof_buf_len);
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);

@@ -40,7 +40,7 @@ int main() {
     uint8_t output[SHA256_DIGEST_LENGTH];
     INIT_TIMER;
     START_TIMER;
-    ProveHash(hash_in_circuit, w, wLen, 256, numRands, pi, output);
+    ProveHash(hash_in_circuit, w, wLen, 256, numRands, &pi, output);
     //Prove(circuitFile, w, wLen, 256, numRands, pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 

@@ -61,7 +61,7 @@ int main() {
     printf("finished setup, starting proving\n");
     INIT_TIMER;
     START_TIMER;
-    ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, pi);
+    ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, &pi);
     STOP_TIMER("Prover time");
     cout << "Finished proving" << endl; 
     int buf_len;

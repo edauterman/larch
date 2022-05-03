@@ -10,7 +10,7 @@ include_directories(
 find_package(OpenSSL REQUIRED)
 find_package(emp-tool REQUIRED)
 
-set(CMAKE_C_FLAGS "-Wall")
+set(CMAKE_C_FLAGS "-Wall -pthread")
 #set(CMAKE_C_FLAGS "-Wall -lpthread -lssl -lcrypto")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -g")
 

@@ -55,3 +55,9 @@ target_link_libraries(serialize_test
 	Prover
     Base
     OpenSSL::SSL)
+
+add_executable(parallel_test parallel_test.cc)
+target_link_libraries(parallel_test
+	Prover
+    Base
+    OpenSSL::SSL)
