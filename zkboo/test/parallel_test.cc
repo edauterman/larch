@@ -18,7 +18,7 @@
 using namespace std;
 using namespace emp;
 
-#define NUM_ROUNDS 137
+#define NUM_ROUNDS 5 
 
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
@@ -75,13 +75,15 @@ int main() {
     START_TIMER;
     //#pragma omp parallel for
     thread workers[NUM_ROUNDS];
+    //for (int i = 0; i < 1; i++) {
     for (int i = 0; i < NUM_ROUNDS; i++) {
         //workers[i] = thread(foo, m, m_len, hash_in, in_len, iv, &pi[i]);
         workers[i] = thread(ProveCtCircuit, m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, &pi[i]);
         //workers[i] = thread(&ProveCtCircuit, m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, pi[i]);
         //workers.push_back(thread(ProveCtCircuit, m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, pi[i]));
-        //ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, pi[i]);
+        //ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, &pi[i]);
     }
+    //for (int i = 0; i <1; i++) {
     for (int i = 0; i < NUM_ROUNDS; i++) {
         workers[i].join();
     }

@@ -5,7 +5,7 @@
 
 using namespace emp;
 
-void sha256(block *input, block *output, int input_len);
+void sha256(block *input, block *output, int input_len, CircuitExecution *ex);
 void sha256_test();
 void hmac(block *key, int key_len, block *data, int data_len, block *output);
 void hmac_test();

@@ -179,7 +179,7 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
 
     ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, proof.wLen, proof.idx);
     CircuitExecution::circ_exec = ex;
-    check_ciphertext_circuit(hashOut, m, m_len, hashIn, in_len, ct, iv, key, keyComm, keyR, out);
+    check_ciphertext_circuit(ex, hashOut, m, m_len, hashIn, in_len, ct, iv, key, keyComm, keyR, out);
     if (ex->verified) {
         return true;
     } else {

@@ -5,6 +5,7 @@
 #include "emp-tool/execution/circuit_execution.h"
 #include <vector>
 #include <string>
+#include <thread>
 
 #include <openssl/rand.h>
 
@@ -58,9 +59,11 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128 + 256) * sizeof(block), hashInShares, in_len * sizeof(block));
 
 
-    ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
-    CircuitExecution::circ_exec = ex;
-    check_ciphertext_circuit(hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
+    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
+    //CircuitExecution::circ_exec = ex;
+    cout << "starting for " << this_thread::get_id() << endl;
+    check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
+    cout << "finished for " << this_thread::get_id() << endl;
     for (int i = 0; i < 3; i++) {
         views.push_back(ex->view[i]);
     }

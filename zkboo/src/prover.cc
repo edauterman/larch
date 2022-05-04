@@ -35,6 +35,8 @@ Prover::Prover(uint8_t *seeds[], int numRands) {
         rands[i] = new RandomSource(seeds[i], numRands);
         //memcpy(rands[i].seed, seeds[i], SHA256_DIGEST_LENGTH);
     }
+    id = seeds[0][0] & 0xff;
+    //id = rand() % 100;
 }
 
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {

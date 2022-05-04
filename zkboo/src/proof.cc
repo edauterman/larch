@@ -86,7 +86,6 @@ uint32_t Proof::DeserializeInt32(uint8_t **buf) {
 
 uint32_t Proof::DeserializeBit(uint8_t **buf, int *idx) {
     uint32_t ret = ((*buf)[0] & (1 << *idx)) >> (*idx);
-    assert(ret == 0 || ret == 1);
     if (*idx == 7) {
         *idx = 0;
         *buf += 1;

@@ -81,9 +81,9 @@ int get_padded_len(int L) {
 	return L + 1 + K + 64;
 }
 
-void padding(block *input, block *output, int input_len) {
-	block one = CircuitExecution::circ_exec->public_label(true);
-	block zero = CircuitExecution::circ_exec->public_label(false);
+void padding(block *input, block *output, int input_len, CircuitExecution *ex) {
+	block one = ex->public_label(true);
+	block zero = ex->public_label(false);
 
 	for (int i = 0; i < input_len; i++) {
 		output[i] = input[i];
@@ -120,7 +120,7 @@ void padding(block *input, block *output, int input_len) {
 	}
 }
 
-void sha256(block *input, block *output, int input_len) {
+void sha256(block *input, block *output, int input_len, CircuitExecution *ex) {
 	// new input
 	auto input_new = new block[input_len];
 
@@ -134,7 +134,7 @@ void sha256(block *input, block *output, int input_len) {
 	block *padded_input = new block[padded_len];
 
 	// pad
-	padding(input_new, padded_input, input_len);
+	padding(input_new, padded_input, input_len, ex);
 
 	delete[] input_new;
 
@@ -153,8 +153,8 @@ void sha256(block *input, block *output, int input_len) {
 	digest[6] = 0x1F83D9ABL;
 	digest[7] = 0x5BE0CD19L;
 
-	block one = CircuitExecution::circ_exec->public_label(true);
-	block zero = CircuitExecution::circ_exec->public_label(false);
+	block one = ex->public_label(true);
+	block zero = ex->public_label(false);
 
 	auto input_to_sha256_circuit = new block[768];
 	block output_from_sha256_circuit[256];
@@ -181,8 +181,8 @@ void sha256(block *input, block *output, int input_len) {
 			input_to_sha256_circuit[512 + i] = digest_bits[i];
 		}
 
-		//BristolFormat bf("/home/ec2-user/zkboo-r1cs/zkboo/circuit_files/sha-256-multiblock-aligned.txt");
-		BristolFormat bf("/Users/emmadauterman/Projects/zkboo-r1cs/zkboo/circuit_files/sha-256-multiblock-aligned.txt");
+		BristolFormat bf("/home/ec2-user/zkboo-r1cs/zkboo/circuit_files/sha-256-multiblock-aligned.txt", ex);
+		//BristolFormat bf("/Users/emmadauterman/Projects/zkboo-r1cs/zkboo/circuit_files/sha-256-multiblock-aligned.txt");
 		bf.compute(output_from_sha256_circuit, input_to_sha256_circuit, input_to_sha256_circuit);
 
 		for (int i = 0; i < 256; i++) {
@@ -215,14 +215,14 @@ void sha256_test() {
 	}
 
 	// empty sha256
-	sha256(input, output, 0);
+	sha256(input, output, 0, CircuitExecution::circ_exec);
 	print_hash(output);
 
 	// hash of 256 bits "1"
 	for (int i = 0; i < 256; i++) {
 		input[i] = one;
 	}
-	sha256(input, output, 256);
+	sha256(input, output, 256, CircuitExecution::circ_exec);
 	print_hash(output);
 
 	// hash of 512 bits "1"
@@ -230,7 +230,7 @@ void sha256_test() {
 	for (int i = 0; i < 512; i++) {
 		input[i] = one;
 	}
-	sha256(input, output, 512);
+	sha256(input, output, 512, CircuitExecution::circ_exec);
 	print_hash(output);
 
 	// hash of 1024 bits "1"
@@ -238,7 +238,7 @@ void sha256_test() {
 	for (int i = 0; i < 1024; i++) {
 		input[i] = one;
 	}
-	sha256(input, output, 1024);
+	sha256(input, output, 1024, CircuitExecution::circ_exec);
 	print_hash(output);
 }
 
@@ -283,7 +283,7 @@ void hmac(block *key, int key_len, block *data, int data_len, block *output) {
 	block output_from_hash_function[256];
 
 	// compute the inner hash
-	sha256(input_to_hash_function, output_from_hash_function, 512 + data_len);
+	sha256(input_to_hash_function, output_from_hash_function, 512 + data_len, CircuitExecution::circ_exec);
 
 	// create the opad
 	unsigned char opad_bytes[512 / 8];
@@ -316,7 +316,7 @@ void hmac(block *key, int key_len, block *data, int data_len, block *output) {
 	block output_2_from_hash_function[256];
 
 	// compute the outer hash
-	sha256(input_2_to_hash_function, output_2_from_hash_function, 512 + 256);
+	sha256(input_2_to_hash_function, output_2_from_hash_function, 512 + 256, CircuitExecution::circ_exec);
 
 	for (int i = 0; i < 256; i++) {
 		output[i] = output_2_from_hash_function[i];
@@ -518,7 +518,7 @@ void hkdf_expand_label_test() {
 
 	// second, compute the empty hash
 	block empty_hash[256];
-	sha256(nullptr, empty_hash, 0);
+	sha256(nullptr, empty_hash, 0, CircuitExecution::circ_exec);
 	print_hash(empty_hash);
 
 	// third, compute derived

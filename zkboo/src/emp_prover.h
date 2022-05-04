@@ -47,6 +47,7 @@ class ZKBooCircExecProver : public CircuitExecution {
         Prover *p;
         CircuitView *view[3];
         int nextWireNum;
+        int id;
 
         ZKBooCircExecProver(uint8_t *seeds[], block *w, int wLen, int numRands) {
             for (int i = 0; i < 3; i++) {
@@ -60,11 +61,13 @@ class ZKBooCircExecProver : public CircuitExecution {
                     view[j]->wires.push_back(shares[j] & 1);
                 }
             }
+            id = rand();
+            printf("circexec for id %d\n", id);
             nextWireNum = wLen;
         }
 
         ~ZKBooCircExecProver() {
-            fprintf(stderr, "****** Num ands: %d\n", p->numAnds);
+            fprintf(stderr, "****** Num ands: %d -- %d, %d \n", p->numAnds, id, p->id);
         }
 
 
@@ -72,7 +75,7 @@ class ZKBooCircExecProver : public CircuitExecution {
 
         block and_gate(const block &a, const block &b) override {
             and_ct++;
-            //printf("and gate\n");
+            //printf("and gate, %d\n", nextWireNum);
             uint32_t a_shares[3];
             uint32_t b_shares[3];
             uint32_t out_shares[3];
@@ -119,7 +122,8 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         uint64_t num_and() override {
-            return and_ct;
+            printf("id = %d\n", p->id);
+            return p->numAnds;
         }
 
         block public_label(bool b) override {

@@ -22,6 +22,7 @@ class Prover {
         void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
         int numAnds;
+        int id;
     private:
         RandomOracle oracle;
         RandomSource *rands[3];
