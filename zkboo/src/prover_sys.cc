@@ -60,7 +60,9 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
 
 
     thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
-    //CircuitExecution::circ_exec = ex;
+    if (CircuitExecution::circ_exec != NULL) printf("****** NOT NULL *******\n");
+    else printf("*** IS NULL ***\n");
+    CircuitExecution::circ_exec = ex;
     cout << "starting for " << this_thread::get_id() << endl;
     check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
     cout << "finished for " << this_thread::get_id() << endl;
