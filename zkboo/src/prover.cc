@@ -28,14 +28,13 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
 }
 
 
-Prover::Prover(uint8_t *seeds[], int numRands) {
+Prover::Prover(uint8_t seeds[3][32][16], int numRands) {
     currGate = 0;
     numAnds = 0;
     for (int i = 0; i < 3; i++) {
         rands[i] = new RandomSource(seeds[i], numRands);
         //memcpy(rands[i].seed, seeds[i], SHA256_DIGEST_LENGTH);
     }
-    id = seeds[0][0] & 0xff;
     //id = rand() % 100;
 }
 
@@ -62,7 +61,14 @@ void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
 
 void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     currGate++;
-    int bit = 0;    
+    int bit = 0; 
+    uint32_t masks[3];
+    for (int i = 0; i < 3; i++) {
+        masks[i] = 0;
+        for (int j = 0; j < 32; j++) {
+            masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
+        }
+    }   
     for (int i = 0; i < 3; i++) {
         /*out[i] = 0;
         bool a0Bit = a[i] & 1;
@@ -73,7 +79,8 @@ void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
                 + rands[i]->GetRand(numAnds) - rands[(i+1)%3]->GetRand(numAnds)) % 2;
         SetBit(&out[i], bit, res);*/
         out[i] = ((a[i] & b[i]) ^ (a[(i+1)%3] & b[i]) ^ (a[i] & b[(i+1)%3])
-                ^ rands[i]->GetRand(numAnds) ^ (rands[(i+1)%3]->GetRand(numAnds)));
+                ^ masks[i] ^ masks[(i+1)%3]);
+                //^ rands[i]->GetRand(numAnds) ^ (rands[(i+1)%3]->GetRand(numAnds)));
     }
     numAnds++;
 }

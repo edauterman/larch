@@ -31,17 +31,17 @@ set(sources
     /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )
 
-add_executable(prover_test prover_test.cc)
-target_link_libraries(prover_test
-	Prover
-    Base
-    OpenSSL::SSL)
+#add_executable(prover_test prover_test.cc)
+#target_link_libraries(prover_test
+#	Prover
+#    Base
+#    OpenSSL::SSL)
 
-add_executable(hash_test hash_test.cc)
-target_link_libraries(hash_test
-	Prover
-    Base
-    OpenSSL::SSL)
+#add_executable(hash_test hash_test.cc)
+#target_link_libraries(hash_test
+#	Prover
+#    Base
+#    OpenSSL::SSL)
 
 add_executable(ct_test ct_test.cc)
 target_link_libraries(ct_test

@@ -17,8 +17,10 @@ static inline bool GetBit(uint32_t x, int bit) {
     return (bool)((x & (1 << bit)) >> bit);
 }
 
-RandomSource::RandomSource(uint8_t *in_seed, int numRands) {
-    memcpy(seed, in_seed, 16);
+RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
+    for (int i = 0; i < 32; i++) {
+        memcpy(seeds[i], in_seeds[i], 16);
+    }
     //RAND_bytes(seed, 16);
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
@@ -28,17 +30,22 @@ RandomSource::RandomSource(uint8_t *in_seed, int numRands) {
     uint8_t pt[16];
     memset(iv, 0, 16);
     memset(pt, 0, 16);
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
-    int len;
-    randomness = (uint8_t *)malloc(numRands / 8 + 16);
-    for (int i = 0; i < numRands / (8 * 16) + 1; i++) {
-        EVP_EncryptUpdate(ctx, &randomness[i * 16], &len, pt, 16);
-    }   
-    EVP_CIPHER_CTX_free(ctx);
+
+    for (int i = 0; i < 32; i++) {
+        EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+        EVP_CIPHER_CTX_init(ctx);
+        EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seeds[i], iv);
+        int len;
+        randomness[i] = (uint8_t *)malloc(numRands / 8 + 16);
+        for (int j = 0; j < numRands / (8 * 16) + 1; j++) {
+            EVP_EncryptUpdate(ctx, &randomness[i][j * 16], &len, pt, 16);
+        }   
+        EVP_CIPHER_CTX_free(ctx);
+    }
 }
 
-uint8_t RandomSource::GetRand(int gate) {
-    return GetBit((uint32_t)randomness[gate/8], gate%8);
+uint8_t RandomSource::GetRand(int idx, int gate) {
+    return GetBit((uint32_t)randomness[idx][gate/8], gate%8);
     /*return 1;
     int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
     buf[0] = gate;
@@ -102,7 +109,7 @@ uint8_t *Proof::Serialize(int *out_len) {
    int len = (sizeof(uint32_t) * 4) +                       // wLen and outLen and idx and numWires
        (SHA256_DIGEST_LENGTH * 3) +                         // CircuitComm
        ((views[0]->wires.size() * 2) / 8) +                 // views
-       (16 * 2) +                                           // seeds for RandomSource
+       (16 * 2 * 32) +                                      // seeds for RandomSource
        ((wLen * 2) / 8) +                                   // shares of witness
        ((outLen * 3) / 8) +                                 // shares of output
        (bytesOutLen) +                                      // output raw values
@@ -134,8 +141,10 @@ uint8_t *Proof::Serialize(int *out_len) {
     ptr += 1;
     // randomness seeds
     for (int i = 0; i < 2; i++) {
-        memcpy(ptr, rands[i]->seed, 16);
-        ptr += 16;
+        for (int j = 0; j < 32; j++) {
+            memcpy(ptr, rands[i]->seeds[j], 16);
+            ptr += 16;
+        }
     }
     // witness shares
     bitIdx = 0;
@@ -198,8 +207,12 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     ptr += 1;
     // randomness seeds
     for (int i = 0; i < 2; i++) {
-        rands[i] = new RandomSource(ptr, numRands);
-        ptr += 16;
+        uint8_t seeds_tmp[32][16];
+        for (int j = 0; j < 32; j++) {
+            memcpy(seeds_tmp[j], ptr, 16);
+            ptr += 16;
+        }
+        rands[i] = new RandomSource(seeds_tmp, numRands);
         // TODO expand seed
     }
     // witness shares

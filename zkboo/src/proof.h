@@ -5,11 +5,11 @@
 
 class RandomSource {
     public:
-        uint8_t seed[16];
-        uint8_t *randomness;
+        uint8_t seeds[32][16];
+        uint8_t *randomness[32];
 
-        RandomSource(uint8_t *seed, int numRands);
-        uint8_t GetRand(int gate);
+        RandomSource(uint8_t seeds[32][16], int numRands);
+        uint8_t GetRand(int idx, int gate);
         //uint8_t GetRand(int gate, int wireIdx);
 };
 

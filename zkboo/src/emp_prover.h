@@ -49,7 +49,7 @@ class ZKBooCircExecProver : public CircuitExecution {
         int nextWireNum;
         int id;
 
-        ZKBooCircExecProver(uint8_t *seeds[], block *w, int wLen, int numRands) {
+        ZKBooCircExecProver(uint8_t seeds[3][32][16], block *w, int wLen, int numRands) {
             for (int i = 0; i < 3; i++) {
                 view[i] = new CircuitView();
             }
