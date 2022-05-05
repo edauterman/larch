@@ -136,7 +136,10 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&hashOut[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len], sizeof(uint32_t));
         for (int j = 0; j < 2; j++) {
             for (int k = 0; k < 32; k++) {
-                if (GetBit(proof.w[j][i+m_len], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i], k)) return false;
+                if (GetBit(proof.w[j][i+m_len], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i], k)) {
+                    fprintf(stderr, "zkboo: public input shares don't match (hashOut) i=%d j=%d k=%d -- %d %d\n", i, j, k, proof.w[j][i + m_len], proof.pubInShares[(j+proof.idx[k])%3][i]);
+                    return false;
+                }
             }
             //if (memcmp(((uint8_t *)&hashOut[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i], sizeof(uint32_t)) != 0) return false;
         }
@@ -147,7 +150,10 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&ct[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256], sizeof(uint32_t));
         for (int j = 0; j < 2; j++) {
             for (int k = 0; k < 32; k++) {
-                if (GetBit(proof.w[j][i+m_len+256], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i + 256 + 256], k)) return false;
+                if (GetBit(proof.w[j][i+m_len+256], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i + 256 + 256], k)) {
+                    fprintf(stderr, "zkboo: public input shares don't match (ct)\n");
+                    return false;
+                }
             }
  
             //if (memcmp(((uint8_t *)&ct[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256 + 256], sizeof(uint32_t)) != 0) return false;
@@ -169,7 +175,10 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
         for (int j = 0; j < 2; j++) {
             for (int k = 0; k < 32; k++) {
-                if (GetBit(proof.w[j][i+m_len+256+m_len+128+128], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i + 256], k)) return false;
+                if (GetBit(proof.w[j][i+m_len+256+m_len+128+128], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i + 256], k)) {
+                    fprintf(stderr, "zkboo: public input shares don't match (keyComm)\n");
+                    return false;
+                }
             }
             //if (memcmp(((uint8_t *)&keyComm[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256], sizeof(uint32_t)) != 0) return false;
         }

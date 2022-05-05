@@ -150,7 +150,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     for (int i = 0; i < 2; i++) {
         proof->w[i] = (uint32_t *)malloc(proof->wLen * sizeof(uint32_t));
         for (int j = 0; j < proof->wLen; j++) {
-            uint32_t val;
+            uint32_t val = 0;
             for (int k = 0; k < 32; k++) {
                 SetBit(&val, k, GetBit(w_tmp[(proof->idx[k] + i) % 3][j], k));
             }
