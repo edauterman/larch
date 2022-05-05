@@ -150,6 +150,7 @@ uint8_t *Proof::Serialize(int *out_len) {
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 32; j++) {
             memcpy(ptr, openings[i][j], 16);
+            ptr += 16;
         }
     }
     int bitIdx = 0;
