@@ -19,7 +19,7 @@ class CircuitView {
     public:
         vector<uint32_t> wires;
 
-        void Commit(CircuitComm &comm, int idx);
+        void Commit(CircuitComm &comm, int idx, uint8_t *opening);
 };
 
 #endif

@@ -44,11 +44,11 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     delete ex;
 }
 
-void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32]) {
+void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32], uint8_t openings[3][32][16]) {
     // Commit by hashing views
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 32; j++) {
-            views[i]->Commit(comms[i][j], j);
+            views[i]->Commit(comms[i][j], j, openings[i][j]);
         }
     }
 }
@@ -91,6 +91,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     vector<CircuitView *>verifierViews;
     vector<CircuitView *>proverViews;
     RandomOracle oracle; 
+    uint8_t openings[3][32][16];
 
     proof->wLen = m_len + 256 + m_len + 128 + 128 + 256 + in_len;
     uint32_t *w_tmp[3];
@@ -118,6 +119,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 32; j++) {
             RAND_bytes(seeds[i][j], 16);
+            RAND_bytes(openings[i][j], 16);
         }
     }
 
@@ -125,7 +127,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     //START_TIMER;
     GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, out, seeds, numRands);
     //STOP_TIMER("Gen views");
-    CommitViews(proverViews, proof->comms);
+    CommitViews(proverViews, proof->comms, openings);
 
     for (int i = 0; i < 32; i++) { 
         proof->idx[i] = oracle.GetRand(proof->comms[0][i]) % 3;
@@ -146,6 +148,9 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
                 SetBit(&val, k, GetBit(w_tmp[(proof->idx[k] + i) % 3][j], k));
             }
             proof->w[i][j] = val;
+        }
+        for (int j = 0; j < 32; j++) {
+            memcpy(proof->openings[i][j], openings[(proof->idx[j] + i) % 3][j], 16);
         }
     }
     //proof->w[0] = w_tmp[proof->idx];
