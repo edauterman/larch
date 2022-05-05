@@ -57,14 +57,18 @@ class ZKBooCircExecProver : public CircuitExecution {
         uint64_t and_ct = 0;
         //int wireIdx;
         Prover *p;
-        CircuitView *view[3];
+        CircuitView *verifierViews[2];
+        CircuitView *proverViews[3];
         int nextWireNum;
         int id;
         uint32_t idx[32];
 
         ZKBooCircExecProver(uint8_t seeds[3][32][16], block *w, int wLen, int numRands, uint32_t *idx_in) {
             for (int i = 0; i < 3; i++) {
-                view[i] = new CircuitView();
+                proverViews[i] = new CircuitView();
+            }
+            for (int i = 0; i < 2; i++) {
+                verifierViews[i] = new CircuitView();
             }
             p = new Prover(seeds, numRands);
             for (int i = 0; i < wLen; i++) {
@@ -75,8 +79,11 @@ class ZKBooCircExecProver : public CircuitExecution {
                     SetBit(&vals[0], j, GetBit(shares[idx[j]], j));
                     SetBit(&vals[1], j, GetBit(shares[(idx[j] + 1) % 3], j));
                 }
-                view[0]->wires.push_back(vals[0]);
-                view[1]->wires.push_back(vals[1]);
+                verifierViews[0]->wires.push_back(vals[0]);
+                verifierViews[1]->wires.push_back(vals[1]);
+                proverViews[0]->wires.push_back(shares[0]);
+                proverViews[1]->wires.push_back(shares[1]);
+                proverViews[2]->wires.push_back(shares[2]);
             }
             id = rand();
             printf("circexec for id %d\n", id);
@@ -108,8 +115,11 @@ class ZKBooCircExecProver : public CircuitExecution {
                 SetBit(&vals[0], j, GetBit(out_shares[idx[j]], j));
                 SetBit(&vals[1], j, GetBit(out_shares[(idx[j] + 1) % 3], j));
             }
-            view[0]->wires.push_back(vals[0]);
-            view[1]->wires.push_back(vals[1]);
+            verifierViews[0]->wires.push_back(vals[0]);
+            verifierViews[1]->wires.push_back(vals[1]);
+            proverViews[0]->wires.push_back(out_shares[0]);
+            proverViews[1]->wires.push_back(out_shares[1]);
+            proverViews[2]->wires.push_back(out_shares[2]);
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             //printf("AND (%d %d %d) %d %d -> (%d %d %d) %d\n", a_shares[0], a_shares[1], a_shares[2], a_shares[0] ^ a_shares[1] ^ a_shares[2], b_shares[0] ^ b_shares[1] ^ b_shares[2], out_shares[0], out_shares[1], out_shares[2], out_shares[0] ^ out_shares[1] ^ out_shares[2]);

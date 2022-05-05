@@ -21,7 +21,7 @@
 using namespace std;
 using namespace emp;
 
-void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t seeds[3][32][16], int numRands, uint32_t *idx) {
+void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &proverViews, vector<CircuitView *>&verifierViews, block *out, uint8_t seeds[3][32][16], int numRands, uint32_t *idx) {
     int wLen = m_len + 256 + 128 + m_len + 256 + 128 + in_len;
     block *w = new block[wLen];
 
@@ -42,8 +42,11 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     cout << "starting for " << this_thread::get_id() << endl;
     check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
     cout << "finished for " << this_thread::get_id() << endl;
+    for (int i = 0; i < 3; i++) {
+        proverViews.push_back(ex->proverViews[i]);
+    }
     for (int i = 0; i < 2; i++) {
-        views.push_back(ex->view[i]);
+        verifierViews.push_back(ex->verifierViews[i]);
     }
     delete ex;
 }
@@ -78,7 +81,8 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
 }
 
 void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof *proof) {
-    vector<CircuitView *>views;
+    vector<CircuitView *>verifierViews;
+    vector<CircuitView *>proverViews;
     RandomOracle oracle; 
 
     proof->wLen = m_len + 256 + m_len + 128 + 128 + 256 + in_len;
@@ -116,13 +120,14 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
  
     //INIT_TIMER;
     //START_TIMER;
-    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands, proof->idx);
+    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, verifierViews, out, seeds, numRands, proof->idx);
     //STOP_TIMER("Gen views");
-    CommitViews(views, proof->comms);
+    CommitViews(proverViews, proof->comms);
    
-    proof->views[0] = views[0];
-    proof->views[1] = views[1];
+    proof->views[0] = verifierViews[0];
+    proof->views[1] = verifierViews[1];
     for (int i = 0; i < 2; i++) {
+        proof->w[i] = (uint32_t *)malloc(proof->wLen * sizeof(uint32_t));
         for (int j = 0; j < proof->wLen; j++) {
             uint32_t val;
             for (int k = 0; k < 32; k++) {
