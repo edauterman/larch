@@ -21,7 +21,7 @@
 using namespace std;
 using namespace emp;
 
-void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &proverViews, vector<CircuitView *>&verifierViews, block *out, uint8_t seeds[3][32][16], int numRands, uint32_t *idx) {
+void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &proverViews, block *out, uint8_t seeds[3][32][16], int numRands) {
     int wLen = m_len + 256 + 128 + m_len + 256 + 128 + in_len;
     block *w = new block[wLen];
 
@@ -35,7 +35,7 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128 + 256) * sizeof(block), hashInShares, in_len * sizeof(block));
 
 
-    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands, idx);
+    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     if (CircuitExecution::circ_exec != NULL) printf("****** NOT NULL *******\n");
     else printf("*** IS NULL ***\n");
     CircuitExecution::circ_exec = ex;
@@ -44,9 +44,6 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     cout << "finished for " << this_thread::get_id() << endl;
     for (int i = 0; i < 3; i++) {
         proverViews.push_back(ex->proverViews[i]);
-    }
-    for (int i = 0; i < 2; i++) {
-        verifierViews.push_back(ex->verifierViews[i]);
     }
     delete ex;
 }
@@ -77,6 +74,20 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             dst[j][i + offset] = indivShares[j][i];
         }
+    }
+}
+
+void FillVerifierViews(vector<CircuitView *> &proverViews, vector<CircuitView *> &verifierViews, uint32_t *idx) {
+    for (int i = 0; i < proverViews[0]->wires.size(); i++) {
+        uint32_t vals[2];
+        vals[0] = 0;
+        vals[1] = 0;
+        for (int j = 0; j < 32; j++) {
+            SetBit(&vals[0], j, GetBit(proverViews[idx[j]]->wires[i], j));
+            SetBit(&vals[1], j, GetBit(proverViews[(idx[j] + 1) % 3]->wires[i], j));
+        }
+        verifierViews[0]->wires.push_back(vals[0]);
+        verifierViews[1]->wires.push_back(vals[1]);
     }
 }
 
@@ -115,14 +126,24 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     }
 
     for (int i = 0; i < 32; i++) { 
-        proof->idx[i] = oracle.GetRand(proof->comms[0]) % 3;
+        proof->idx[i] = oracle.GetRand(proof->comms[i]) % 3;
     }
  
     //INIT_TIMER;
     //START_TIMER;
-    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, verifierViews, out, seeds, numRands, proof->idx);
+    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, out, seeds, numRands);
     //STOP_TIMER("Gen views");
     CommitViews(proverViews, proof->comms);
+
+    for (int i = 0; i < 32; i++) { 
+        proof->idx[i] = oracle.GetRand(&(proof->comms[0][i])) % 3;
+        printf("idx = %d\n", proof->idx[i]);
+    }
+
+    verifierViews.push_back(new CircuitView());
+    verifierViews.push_back(new CircuitView());
+    FillVerifierViews(proverViews, verifierViews, proof->idx);
+ 
    
     proof->views[0] = verifierViews[0];
     proof->views[1] = verifierViews[1];

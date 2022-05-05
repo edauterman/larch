@@ -20,8 +20,10 @@ void CircuitView::Commit(CircuitComm &comm, int idx) {
     int len = wires.size() / 8 + 1;
     uint8_t *data = (uint8_t *)malloc(len);
     memset(data, 0, len);
+    //for (int i = 0; i < 1; i++) {
     for (int i = 0; i < wires.size(); i++) {
         data[i/8] = data[i/8] | (GetBit(wires[i], idx) << (i % 8));
     }
+    printf("idx = %d, hashing %x\n", idx, data[0]);
     hash_to_bytes(comm.digest, SHA256_DIGEST_LENGTH, (const uint8_t *)data, len);
 }

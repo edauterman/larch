@@ -20,11 +20,7 @@ static inline bool GetBit(uint32_t x, int bit) {
 }
 
 static inline void SetBit(uint32_t *x, int bit, bool val) {
-    if (val == 0) {
-        *x = *x & (val << bit);
-    } else {
-        *x = *x | (val << bit);
-    }
+    *x = *x | (val << bit);
 }
 
 // QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
@@ -96,12 +92,13 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         CircuitComm c0, c1;
         proof.views[0]->Commit(c0, i);
         proof.views[1]->Commit(c1, i);
+        printf("i = %d, idx = %d\n", i, proof.idx[i]);
         if (memcmp(c0.digest, proof.comms[proof.idx[i]][i].digest, SHA256_DIGEST_LENGTH) != 0) {
             fprintf(stderr, "zkboo: commit for c0 failed\n");
             return false;
         }
 
-        if (memcmp(c1.digest, proof.comms[(proof.idx[i] + 1) % WIRES][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+        if (memcmp(c1.digest, proof.comms[(proof.idx[i] + 1) % 3][i].digest, SHA256_DIGEST_LENGTH) != 0) {
             fprintf(stderr, "zkboo: commit for c1 failed\n");
             return false;
         }
@@ -110,9 +107,9 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
     for (int i = 0; i < 32; i++) {
-        uint8_t idx_check = oracle.GetRand(proof.comms[i]) % WIRES;
+        uint8_t idx_check = oracle.GetRand(&(proof.comms[0][i])) % 3;
         if (proof.idx[i] != idx_check) {
-            fprintf(stderr, "zkboo: idx = %d, should equal %d\n", idx_check, proof.idx);
+            fprintf(stderr, "zkboo: idx = %d, should equal %d\n", idx_check, proof.idx[i]);
             return false;
         }
     }
