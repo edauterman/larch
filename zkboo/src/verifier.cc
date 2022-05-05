@@ -29,19 +29,30 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
 
 // QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
 
-Verifier::Verifier(RandomSource *in_rands[], int in_idx) {
+Verifier::Verifier(RandomSource *in_rands[], uint32_t *in_idx) {
     rands[0] = in_rands[0];
     rands[1] = in_rands[1];
     currGate = 0;
-    idx = in_idx;
+    for (int i = 0; i < 32; i++) {
+        idx[i] = in_idx[i];
+    }
     numAnds = 0;
+    for (int i = 0; i < 2; i++) {
+        one_mask[i] = 0;
+        for (int j = 0; j < 32; j++) {
+            if (((idx[j] + 1) % 3) == 0) {
+                SetBit(&one_mask[i], j, 1);
+            }
+        }
+    }
 }
 
 inline void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
     uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 2; i++) {
-        out[i] = (idx + i) % 3 == 0 ? a[i] ^ setalpha : a[i];
+        uint32_t setalpha = (alpha == 0) ? 0xffffffff ^ one_mask[i] : one_mask[i];
+        out[i] = setalpha ^ a[i];
     }
 }
 
@@ -85,12 +96,12 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         CircuitComm c0, c1;
         proof.views[0]->Commit(c0, i);
         proof.views[1]->Commit(c1, i);
-        if (memcmp(c0.digest, proof.comms[proof.idx][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+        if (memcmp(c0.digest, proof.comms[proof.idx[i]][i].digest, SHA256_DIGEST_LENGTH) != 0) {
             fprintf(stderr, "zkboo: commit for c0 failed\n");
             return false;
         }
 
-        if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+        if (memcmp(c1.digest, proof.comms[(proof.idx[i] + 1) % WIRES][i].digest, SHA256_DIGEST_LENGTH) != 0) {
             fprintf(stderr, "zkboo: commit for c1 failed\n");
             return false;
         }
@@ -98,10 +109,12 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
 
     // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
-    uint8_t idx_check = oracle.GetRand(proof.comms[0]) % WIRES;
-    if (proof.idx != idx_check) {
-        fprintf(stderr, "zkboo: idx = %d, should equal %d\n", idx_check, proof.idx);
-        return false;
+    for (int i = 0; i < 32; i++) {
+        uint8_t idx_check = oracle.GetRand(proof.comms[i]) % WIRES;
+        if (proof.idx[i] != idx_check) {
+            fprintf(stderr, "zkboo: idx = %d, should equal %d\n", idx_check, proof.idx);
+            return false;
+        }
     }
 
     //int m_len = (proof.wLen - 256 - 128 - 128 - 256) / 2;
@@ -125,7 +138,10 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&hashOut[i], (uint8_t *)&proof.w[0][i + m_len], sizeof(uint32_t));
         memcpy((uint8_t *)&hashOut[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len], sizeof(uint32_t));
         for (int j = 0; j < 2; j++) {
-            if (memcmp(((uint8_t *)&hashOut[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i], sizeof(uint32_t)) != 0) return false;
+            for (int k = 0; k < 32; k++) {
+                if (GetBit(proof.w[j][i+m_len], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i], k)) return false;
+            }
+            //if (memcmp(((uint8_t *)&hashOut[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i], sizeof(uint32_t)) != 0) return false;
         }
     }
 
@@ -133,7 +149,11 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&ct[i], (uint8_t *)&proof.w[0][i + m_len + 256], sizeof(uint32_t));
         memcpy((uint8_t *)&ct[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256], sizeof(uint32_t));
         for (int j = 0; j < 2; j++) {
-            if (memcmp(((uint8_t *)&ct[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256 + 256], sizeof(uint32_t)) != 0) return false;
+            for (int k = 0; k < 32; k++) {
+                if (GetBit(proof.w[j][i+m_len+256], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i + 256 + 256], k)) return false;
+            }
+ 
+            //if (memcmp(((uint8_t *)&ct[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256 + 256], sizeof(uint32_t)) != 0) return false;
         }
     }
 
@@ -151,7 +171,10 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&keyComm[i], (uint8_t *)&proof.w[0][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
         memcpy((uint8_t *)&keyComm[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128], sizeof(uint32_t));
         for (int j = 0; j < 2; j++) {
-            if (memcmp(((uint8_t *)&keyComm[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256], sizeof(uint32_t)) != 0) return false;
+            for (int k = 0; k < 32; k++) {
+                if (GetBit(proof.w[j][i+m_len+256+m_len+128+128], k) != GetBit(proof.pubInShares[(j + proof.idx[k]) % 3][i + 256], k)) return false;
+            }
+            //if (memcmp(((uint8_t *)&keyComm[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256], sizeof(uint32_t)) != 0) return false;
         }
     }
 
@@ -160,8 +183,8 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&hashIn[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i + m_len + 256 + m_len + 128 + 128 + 256], sizeof(uint32_t));
     }
     
-    memcpy((uint8_t *)&out[0], (uint8_t *)&proof.outShares[proof.idx][0], sizeof(uint32_t));
-    memcpy((uint8_t *)&out[0] + sizeof(uint32_t), (uint8_t *)&proof.outShares[(proof.idx + 1) % 3][0], sizeof(uint32_t));
+    //memcpy((uint8_t *)&out[0], (uint8_t *)&proof.outShares[proof.idx][0], sizeof(uint32_t));
+    //memcpy((uint8_t *)&out[0] + sizeof(uint32_t), (uint8_t *)&proof.outShares[(proof.idx + 1) % 3][0], sizeof(uint32_t));
 
     uint8_t *hashOutTest = (uint8_t *)malloc(256 / 8);
     uint8_t *keyCommTest = (uint8_t *)malloc(256 / 8);

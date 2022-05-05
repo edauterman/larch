@@ -21,12 +21,7 @@
 using namespace std;
 using namespace emp;
 
-
-static inline bool GetBit(uint32_t x, int bit) {
-    return (bool)((x & (1 << bit)) >> bit);
-}
-
-void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t seeds[3][32][16], int numRands) {
+void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &views, block *out, uint8_t seeds[3][32][16], int numRands, uint32_t *idx) {
     int wLen = m_len + 256 + 128 + m_len + 256 + 128 + in_len;
     block *w = new block[wLen];
 
@@ -40,14 +35,14 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128 + 256) * sizeof(block), hashInShares, in_len * sizeof(block));
 
 
-    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
+    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands, idx);
     if (CircuitExecution::circ_exec != NULL) printf("****** NOT NULL *******\n");
     else printf("*** IS NULL ***\n");
     CircuitExecution::circ_exec = ex;
     cout << "starting for " << this_thread::get_id() << endl;
     check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
     cout << "finished for " << this_thread::get_id() << endl;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         views.push_back(ex->view[i]);
     }
     delete ex;
@@ -115,17 +110,29 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         }
     }
 
+    for (int i = 0; i < 32; i++) { 
+        proof->idx[i] = oracle.GetRand(proof->comms[0]) % 3;
+    }
+ 
     //INIT_TIMER;
     //START_TIMER;
-    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands);
+    GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, views, out, seeds, numRands, proof->idx);
     //STOP_TIMER("Gen views");
     CommitViews(views, proof->comms);
-    
-    proof->idx = oracle.GetRand(proof->comms[0]) % 3;
-    proof->views[0] = views[proof->idx];
-    proof->views[1] = views[(proof->idx + 1) % 3];
-    proof->w[0] = w_tmp[proof->idx];
-    proof->w[1] = w_tmp[(proof->idx + 1) % 3];
+   
+    proof->views[0] = views[0];
+    proof->views[1] = views[1];
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < proof->wLen; j++) {
+            uint32_t val;
+            for (int k = 0; k < 32; k++) {
+                SetBit(&val, k, GetBit(w_tmp[(proof->idx[k] + i) % 3][j], k));
+            }
+            proof->w[i][j] = val;
+        }
+    }
+    //proof->w[0] = w_tmp[proof->idx];
+    //proof->w[1] = w_tmp[(proof->idx + 1) % 3];
     
     for (int i = 0; i < 3; i++) {
         proof->pubInShares[i] = (uint32_t *)malloc((m_len + 256 + 256) * sizeof(uint32_t));
@@ -141,8 +148,15 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     }
 
     // TODO run randomness tape on verifier
-    proof->rands[0] = new RandomSource(seeds[proof->idx], numRands);
-    proof->rands[1] = new RandomSource(seeds[(proof->idx+1)%3], numRands);
+    for (int i = 0; i < 2; i++) {
+        uint8_t seeds_tmp[32][16];
+        for (int j = 0; j < 32; j++) {
+            memcpy(seeds_tmp[j], seeds[(proof->idx[j] + i) % 3][j], 16);
+        }
+        proof->rands[i] = new RandomSource(seeds_tmp, numRands);
+    }
+    //proof->rands[0] = new RandomSource(seeds[proof->idx], numRands);
+    //proof->rands[1] = new RandomSource(seeds[(proof->idx+1)%3], numRands);
 
     proof->outLen = 1;
     bool b;

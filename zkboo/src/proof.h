@@ -29,7 +29,7 @@ class Proof {
         uint32_t *outShares[3];
         uint8_t *out;
         uint32_t outLen;
-        uint32_t idx;
+        uint32_t idx[32];
 
         uint8_t *Serialize(int *out_len);
         void Deserialize(uint8_t *buf, int numRands);

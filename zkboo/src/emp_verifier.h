@@ -49,7 +49,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
         Verifier *v;
         int nextWireNum;
 
-        ZKBooCircExecVerifier(RandomSource *in_rands[], CircuitView *in_views[], int wLen, int idx) {
+        ZKBooCircExecVerifier(RandomSource *in_rands[], CircuitView *in_views[], int wLen, uint32_t *idx) {
             for (int i = 0; i < 2; i++) {
                 views[i] = in_views[i];
             }

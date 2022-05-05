@@ -8,6 +8,18 @@
 
 using namespace emp;
 
+static inline bool GetBit(uint32_t x, int bit) {
+    return (bool)((x & (1 << bit)) >> bit);
+}
+
+static inline void SetBit(uint32_t *x, int bit, bool val) {
+    if (val == 0) {
+        *x = *x & (val << bit);
+    } else {
+        *x = *x | (val << bit);
+    }
+}
+
 static inline void SetWireNum(uint32_t *x, uint32_t wireNum) {
     *x = *x | (wireNum << 1);
 }
@@ -48,8 +60,9 @@ class ZKBooCircExecProver : public CircuitExecution {
         CircuitView *view[3];
         int nextWireNum;
         int id;
+        uint32_t idx[32];
 
-        ZKBooCircExecProver(uint8_t seeds[3][32][16], block *w, int wLen, int numRands) {
+        ZKBooCircExecProver(uint8_t seeds[3][32][16], block *w, int wLen, int numRands, uint32_t *idx_in) {
             for (int i = 0; i < 3; i++) {
                 view[i] = new CircuitView();
             }
@@ -57,13 +70,20 @@ class ZKBooCircExecProver : public CircuitExecution {
             for (int i = 0; i < wLen; i++) {
                 uint32_t shares[3];
                 memcpy(shares, (uint8_t *)&w[i], 3 * sizeof(uint32_t));
-                for (int j = 0; j < 3; j++) {
-                    view[j]->wires.push_back(shares[j] & 1);
+                uint32_t vals[2];
+                for (int j = 0; j < 32; j++) {
+                    SetBit(&vals[0], j, GetBit(shares[idx[j]], j));
+                    SetBit(&vals[1], j, GetBit(shares[(idx[j] + 1) % 3], j));
                 }
+                view[0]->wires.push_back(vals[0]);
+                view[1]->wires.push_back(vals[1]);
             }
             id = rand();
             printf("circexec for id %d\n", id);
             nextWireNum = wLen;
+            for (int i = 0; i < 32; i++) {
+                idx[i] = idx_in[i];
+            }
         }
 
         ~ZKBooCircExecProver() {
@@ -83,10 +103,13 @@ class ZKBooCircExecProver : public CircuitExecution {
             memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
             p->MultShares(a_shares, b_shares, out_shares);
             block out;
-            for (int i = 0; i < 3; i++) {
-                view[i]->wires.push_back(out_shares[i]);
-                //SetWireNum(&out_shares[i], nextWireNum);
+            uint32_t vals[2];
+            for (int j = 0; j < 32; j++) {
+                SetBit(&vals[0], j, GetBit(out_shares[idx[j]], j));
+                SetBit(&vals[1], j, GetBit(out_shares[(idx[j] + 1) % 3], j));
             }
+            view[0]->wires.push_back(vals[0]);
+            view[1]->wires.push_back(vals[1]);
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
             //printf("AND (%d %d %d) %d %d -> (%d %d %d) %d\n", a_shares[0], a_shares[1], a_shares[2], a_shares[0] ^ a_shares[1] ^ a_shares[2], b_shares[0] ^ b_shares[1] ^ b_shares[2], out_shares[0], out_shares[1], out_shares[2], out_shares[0] ^ out_shares[1] ^ out_shares[2]);

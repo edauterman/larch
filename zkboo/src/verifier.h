@@ -15,16 +15,17 @@ using namespace emp;
 
 class Verifier {
     public:
-        Verifier(RandomSource *rands[], int idx);
+        Verifier(RandomSource *rands[], uint32_t *idx);
 
         inline void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
         inline void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);
         inline void MultShares(uint32_t a[], uint32_t b[], uint32_t out[]);
 
-        int idx;
+        uint32_t idx[32];
 
     private:
         RandomSource *rands[2];
+        uint32_t one_mask[2];
         int currGate;
         int numAnds;
 };
