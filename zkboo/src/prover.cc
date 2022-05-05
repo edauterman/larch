@@ -46,7 +46,8 @@ void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
         //bool aBit = GetBit(a[i], bit);
         //bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
         //SetBit(&out[i], bit, res);
-        out[i] = (i == 0) ? a[i] ^ setalpha : a[i];
+        out[i] = 0xffffffff ^ a[i]; 
+        //out[i] = (i == 0) ? a[i] ^ setalpha : a[i];
     }
 }
 

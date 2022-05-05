@@ -45,10 +45,11 @@ Verifier::Verifier(RandomSource *in_rands[], uint32_t *in_idx) {
 
 inline void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-    uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
+    //uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 2; i++) {
-        uint32_t setalpha = (alpha == 0) ? 0xffffffff ^ one_mask[i] : one_mask[i];
-        out[i] = setalpha ^ a[i];
+        //uint32_t setalpha = (alpha == 0) ? 0xffffffff ^ one_mask[i] : one_mask[i];
+        out[i] = 0xffffffff ^ a[i];
+        //out[i] = setalpha ^ a[i];
     }
 }
 
