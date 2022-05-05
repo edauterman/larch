@@ -90,17 +90,10 @@ void AssembleShares(uint32_t *in0, uint32_t *in1, uint32_t *in2, uint8_t *out, i
 //bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
 bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw, bool *ret) {
     for (int i = 0; i < 32; i++) {
-        CircuitComm c0, c1;
-        proof->views[0]->Commit(c0, i, proof->openings[0][i]);
-        proof->views[1]->Commit(c1, i, proof->openings[1][i]);
-        if (memcmp(c0.digest, proof->comms[proof->idx[i]][i].digest, SHA256_DIGEST_LENGTH) != 0) {
-            fprintf(stderr, "zkboo: commit for c0 failed\n");
-            *ret = false;
-            return false;
-        }
-
-        if (memcmp(c1.digest, proof->comms[(proof->idx[i] + 1) % 3][i].digest, SHA256_DIGEST_LENGTH) != 0) {
-            fprintf(stderr, "zkboo: commit for c1 failed\n");
+        CircuitComm c;
+        proof->view->Commit(c, i, proof->openings[1][i]);
+        if (memcmp(c.digest, proof->comms[(proof->idx[i] + 1) % 3][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+            fprintf(stderr, "zkboo: commit for c1 (input) failed\n");
             *ret = false;
             return false;
         }
@@ -226,9 +219,21 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
         }
     }
 
-    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof->rands, proof->views, proof->wLen, proof->idx);
+    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof->rands, proof->view, proof->w[0], proof->wLen, proof->idx);
     CircuitExecution::circ_exec = ex;
     check_ciphertext_circuit(ex, hashOut, m, m_len, hashIn, in_len, ct, iv, key, keyComm, keyR, out);
+    
+    for (int i = 0; i < 32; i++) {
+        CircuitComm c;
+        ex->out_view->Commit(c, i, proof->openings[0][i]);
+
+        if (memcmp(c.digest, proof->comms[proof->idx[i]][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+            fprintf(stderr, "zkboo: commit for c0 (output) failed\n");
+            *ret = false;
+            return false;
+        }
+    }
+    
     if (ex->verified) {
         *ret = true;
         return true;

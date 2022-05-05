@@ -120,7 +120,7 @@ uint8_t *Proof::Serialize(int *out_len) {
    int len = (sizeof(uint32_t) * 35) +                       // wLen and outLen and idx and numWires
        (SHA256_DIGEST_LENGTH * 3 * 32) +                    // CircuitComm
        (16 * 2 * 32) +                                      // openings
-       ((views[0]->wires.size() * 2)  * sizeof(uint32_t)) + // views
+       ((view->wires.size())  * sizeof(uint32_t)) +     // views
        (16 * 2 * 32) +                                      // seeds for RandomSource
        ((wLen * 2) * sizeof(uint32_t)) +                    // shares of witness
        ((outLen * 3) * sizeof(uint32_t)) +                  // shares of output
@@ -132,7 +132,7 @@ uint8_t *Proof::Serialize(int *out_len) {
     memset(out, 0, len);
     if (out == NULL) printf("NULL alloc\n");
     uint8_t *ptr = out;
-    uint32_t numWires = views[0]->wires.size();
+    uint32_t numWires = view->wires.size();
     SerializeInt32(wLen, &ptr);
     SerializeInt32(outLen, &ptr);
     for (int i = 0; i < 32; i++) {
@@ -155,10 +155,8 @@ uint8_t *Proof::Serialize(int *out_len) {
     }
     int bitIdx = 0;
     // views
-    for (int i = 0; i < 2; i++) {
-        for (int j = 0; j < numWires; j++) {
-            SerializeInt32(views[i]->wires[j], &ptr);
-        }
+    for (int i = 0; i < numWires; i++) {
+        SerializeInt32(view->wires[i], &ptr);
     }
     ptr += 1;
     // randomness seeds
@@ -224,11 +222,9 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     }
     int bitIdx = 0;
     // views
-    for (int i = 0; i < 2; i++) {
-        views[i] = new CircuitView();
-        for (int j = 0; j < numWires; j++) {
-            views[i]->wires.push_back(DeserializeInt32(&ptr));
-        }
+    view = new CircuitView();
+    for (int i = 0; i < numWires; i++) {
+        view->wires.push_back(DeserializeInt32(&ptr));
     }
     ptr += 1;
     // randomness seeds

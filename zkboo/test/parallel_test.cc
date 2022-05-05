@@ -18,14 +18,7 @@
 using namespace std;
 using namespace emp;
 
-#define NUM_ROUNDS 3 
-
-const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
-
-void foo(uint8_t *m, int m_len, uint8_t *hash_in, int in_len, __m128i iv, Proof *pi) {
-    printf("hi");
-}
-
+#define NUM_ROUNDS 5 
 
 int main() {
 

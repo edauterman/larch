@@ -73,17 +73,13 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
     }
 }
 
-void FillVerifierViews(vector<CircuitView *> &proverViews, vector<CircuitView *> &verifierViews, uint32_t *idx) {
+void FillVerifierView(vector<CircuitView *> &proverViews, CircuitView * verifierView, uint32_t *idx) {
     for (int i = 0; i < proverViews[0]->wires.size(); i++) {
-        uint32_t vals[2];
-        vals[0] = 0;
-        vals[1] = 0;
+        uint32_t val = 0;
         for (int j = 0; j < 32; j++) {
-            SetBit(&vals[0], j, GetBit(proverViews[idx[j]]->wires[i], j));
-            SetBit(&vals[1], j, GetBit(proverViews[(idx[j] + 1) % 3]->wires[i], j));
+            SetBit(&val, j, GetBit(proverViews[(idx[j] + 1) % 3]->wires[i], j));
         }
-        verifierViews[0]->wires.push_back(vals[0]);
-        verifierViews[1]->wires.push_back(vals[1]);
+        verifierView->wires.push_back(val);
     }
 }
 
@@ -133,13 +129,9 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         proof->idx[i] = oracle.GetRand(proof->comms[0][i], proof->comms[1][i], proof->comms[2][i]);
     }
 
-    verifierViews.push_back(new CircuitView());
-    verifierViews.push_back(new CircuitView());
-    FillVerifierViews(proverViews, verifierViews, proof->idx);
+    proof->view = new CircuitView();
+    FillVerifierView(proverViews, proof->view, proof->idx);
  
-   
-    proof->views[0] = verifierViews[0];
-    proof->views[1] = verifierViews[1];
     for (int i = 0; i < 2; i++) {
         proof->w[i] = (uint32_t *)malloc(proof->wLen * sizeof(uint32_t));
         for (int j = 0; j < proof->wLen; j++) {

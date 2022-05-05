@@ -43,15 +43,18 @@ static inline bool IsOneWireNum(const block &x) {
 template<typename T>
 class ZKBooCircExecVerifier : public CircuitExecution {
     public:
-        CircuitView *views[2];
+        CircuitView *in_view;
+        CircuitView *out_view;
         bool verified;
         int gateNum;
         Verifier *v;
         int nextWireNum;
 
-        ZKBooCircExecVerifier(RandomSource *in_rands[], CircuitView *in_views[], int wLen, uint32_t *idx) {
-            for (int i = 0; i < 2; i++) {
-                views[i] = in_views[i];
+        ZKBooCircExecVerifier(RandomSource *in_rands[], CircuitView *view, uint32_t *out_w, int wLen, uint32_t *idx) {
+            in_view = view;
+            out_view = new CircuitView();
+            for (int i = 0; i < wLen; i++) {
+                out_view->wires.push_back(out_w[i]);
             }
             verified = true;
             gateNum = -1;
@@ -72,12 +75,13 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             v->MultShares(a_shares, b_shares, out_shares);
             block out;
             //printf("AND compare %d and %d\n", views[0]->wireMap[nextWireNum], out_shares[0]);
-            if (views[0]->wires[nextWireNum] != out_shares[0]) {
+/*            if (views[0]->wires[nextWireNum] != out_shares[0]) {
                 printf("and gate output failed (%d) -- wanted %d got %d (%d - %d, %d - %d)\n", nextWireNum, views[0]->wires[nextWireNum], out_shares[0], a_shares[0],GetWireNum(a), b_shares[0], GetWireNum(b));
                 verified = false;
-            }
-            out_shares[0] = views[0]->wires[nextWireNum];
-            out_shares[1] = views[1]->wires[nextWireNum];
+            }*/
+            //out_shares[0] = views[0]->wires[nextWireNum];
+            out_shares[1] = in_view->wires[nextWireNum];
+            out_view->wires.push_back(out_shares[0]);
             //SetWireNum(&out_shares[0], nextWireNum);
             //SetWireNum(&out_shares[1], nextWireNum);
             nextWireNum++;
