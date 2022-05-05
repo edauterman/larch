@@ -108,12 +108,12 @@ uint8_t *Proof::Serialize(int *out_len) {
    //int mLen = (wLen - 256 - 128 - 128 - 256) / 2;
    int len = (sizeof(uint32_t) * 35) +                       // wLen and outLen and idx and numWires
        (SHA256_DIGEST_LENGTH * 3 * 32) +                    // CircuitComm
-       ((views[0]->wires.size() * 2) / 8) +                 // views
+       ((views[0]->wires.size() * 2)  * sizeof(uint32_t)) + // views
        (16 * 2 * 32) +                                      // seeds for RandomSource
-       ((wLen * 2) / 8) +                                   // shares of witness
-       ((outLen * 3) / 8) +                                 // shares of output
+       ((wLen * 2) * sizeof(uint32_t)) +                    // shares of witness
+       ((outLen * 3) * sizeof(uint32_t)) +                  // shares of output
        (bytesOutLen) +                                      // output raw values
-       (((mLen + 256 + 256) * 3) / 8) +                     // shares of public input
+       (((mLen + 256 + 256) * 3) * sizeof(uint32_t)) +      // shares of public input
        5;                                                   
     fprintf(stderr, "zkboo: allocating %d bytes\n", len);
     uint8_t *out = (uint8_t *)malloc(len);
@@ -138,8 +138,8 @@ uint8_t *Proof::Serialize(int *out_len) {
     // views
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < numWires; j++) {
-            SerializeBit(views[i]->wires[j], &ptr, &bitIdx);
-            //SerializeInt32(views[i]->wires[j], &ptr);
+            //SerializeBit(views[i]->wires[j], &ptr, &bitIdx);
+            SerializeInt32(views[i]->wires[j], &ptr);
         }
     }
     ptr += 1;
@@ -154,15 +154,15 @@ uint8_t *Proof::Serialize(int *out_len) {
     bitIdx = 0;
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < wLen; j++) {
-            SerializeBit(w[i][j], &ptr, &bitIdx);
-            //SerializeInt32(w[i][j], &ptr);
+            //SerializeBit(w[i][j], &ptr, &bitIdx);
+            SerializeInt32(w[i][j], &ptr);
         }
     }
     // output shares
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < outLen; j++) {
-            SerializeBit(outShares[i][j], &ptr, &bitIdx);
-            //SerializeInt32(outShares[i][j], &ptr);
+            //SerializeBit(outShares[i][j], &ptr, &bitIdx);
+            SerializeInt32(outShares[i][j], &ptr);
         }
     }
     ptr += 1;
@@ -173,8 +173,8 @@ uint8_t *Proof::Serialize(int *out_len) {
     bitIdx = 0;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < mLen + 256 + 256; j++) {
-            SerializeBit(pubInShares[i][j], &ptr, &bitIdx);
-            //SerializeInt32(pubInShares[i][j], &ptr);
+            //SerializeBit(pubInShares[i][j], &ptr, &bitIdx);
+            SerializeInt32(pubInShares[i][j], &ptr);
         }
     }
 
@@ -205,11 +205,11 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     for (int i = 0; i < 2; i++) {
         views[i] = new CircuitView();
         for (int j = 0; j < numWires; j++) {
-            uint32_t val = DeserializeBit(&ptr, &bitIdx);
+            //uint32_t val = DeserializeBit(&ptr, &bitIdx);
             //SetWireNum(&val, j + wLen);
-            views[i]->wires.push_back(val);
+            views[i]->wires.push_back(DeserializeInt32(&ptr));
+            //views[i]->wires.push_back(val);
             //views[i]->wires.push_back(DeserializeBit(&ptr, &bitIdx));
-            //views[i]->wires.push_back(DeserializeInt32(&ptr));
         }
     }
     ptr += 1;
@@ -228,19 +228,17 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     for (int i = 0; i < 2; i++) {
         w[i] = (uint32_t *)malloc(sizeof(uint32_t) * wLen);
         for (int j = 0; j < wLen; j++) {
-            uint32_t val = DeserializeBit(&ptr, &bitIdx);
-            //SetWireNum(&val, j);
-            w[i][j] = val;
-            //w[i][j] = DeserializeBit(&ptr, &bitIdx);
-            //w[i][j] = DeserializeInt32(&ptr);
+            //uint32_t val = DeserializeBit(&ptr, &bitIdx);
+            //w[i][j] = val;
+            w[i][j] = DeserializeInt32(&ptr);
         }
     }
     // output shares
     for (int i = 0; i < 3; i++) {
         outShares[i] = (uint32_t *)malloc(sizeof(uint32_t) * outLen);
         for (int j = 0; j < outLen; j++) {
-            outShares[i][j] = DeserializeBit(&ptr, &bitIdx);
-            //outShares[i][j] = DeserializeInt32(&ptr);
+            //outShares[i][j] = DeserializeBit(&ptr, &bitIdx);
+            outShares[i][j] = DeserializeInt32(&ptr);
         }
     }
     ptr += 1;
@@ -253,19 +251,19 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     for (int i = 0; i < 3; i++) {
         pubInShares[i] = (uint32_t *)malloc((mLen + 256 + 256) * sizeof(uint32_t));
         for (int j = 0; j < 256; j++) {
-            pubInShares[i][j] = DeserializeBit(&ptr, &bitIdx);
+            //pubInShares[i][j] = DeserializeBit(&ptr, &bitIdx);
             //SetWireNum(&pubInShares[i][j], mLen + j);
-            //pubInShares[i][j] = DeserializeInt32(&ptr);
+            pubInShares[i][j] = DeserializeInt32(&ptr);
         }
         for (int j = 0; j < 256; j++) {
-            pubInShares[i][j + 256] = DeserializeBit(&ptr, &bitIdx);
+            //pubInShares[i][j + 256] = DeserializeBit(&ptr, &bitIdx);
             //SetWireNum(&pubInShares[i][j + 256], 2 * mLen + 256 + 128 + 128 + j);
-            //pubInShares[i][j] = DeserializeInt32(&ptr);
+            pubInShares[i][j + 256] = DeserializeInt32(&ptr);
         }
         for (int j = 0; j < mLen; j++) {
-            pubInShares[i][j + 256 + 256] = DeserializeBit(&ptr, &bitIdx);
+            //pubInShares[i][j + 256 + 256] = DeserializeBit(&ptr, &bitIdx);
             //SetWireNum(&pubInShares[i][j + 256 + 256], mLen + 256 + j);
-            //pubInShares[i][j] = DeserializeInt32(&ptr);
+            pubInShares[i][j + 256 + 256] = DeserializeInt32(&ptr);
         }
  
     }

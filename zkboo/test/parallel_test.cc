@@ -18,7 +18,7 @@
 using namespace std;
 using namespace emp;
 
-#define NUM_ROUNDS 5 
+#define NUM_ROUNDS 3 
 
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
