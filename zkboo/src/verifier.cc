@@ -93,7 +93,6 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
         CircuitComm c0, c1;
         proof.views[0]->Commit(c0, i);
         proof.views[1]->Commit(c1, i);
-        printf("i = %d, idx = %d\n", i, proof.idx[i]);
         if (memcmp(c0.digest, proof.comms[proof.idx[i]][i].digest, SHA256_DIGEST_LENGTH) != 0) {
             fprintf(stderr, "zkboo: commit for c0 failed\n");
             return false;

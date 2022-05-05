@@ -55,7 +55,6 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             }
             verified = true;
             gateNum = -1;
-            fprintf(stderr, "zkboo: idx = %d\n", idx);
             v = new Verifier(in_rands, idx);
             nextWireNum = wLen;
         }

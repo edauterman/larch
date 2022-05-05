@@ -36,12 +36,8 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
 
 
     thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
-    if (CircuitExecution::circ_exec != NULL) printf("****** NOT NULL *******\n");
-    else printf("*** IS NULL ***\n");
     CircuitExecution::circ_exec = ex;
-    cout << "starting for " << this_thread::get_id() << endl;
     check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
-    cout << "finished for " << this_thread::get_id() << endl;
     for (int i = 0; i < 3; i++) {
         proverViews.push_back(ex->proverViews[i]);
     }
@@ -137,7 +133,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
 
     for (int i = 0; i < 32; i++) { 
         proof->idx[i] = oracle.GetRand(&(proof->comms[0][i])) % 3;
-        printf("idx = %d\n", proof->idx[i]);
     }
 
     verifierViews.push_back(new CircuitView());
@@ -189,7 +184,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     for (int i = 0; i < 3; i++) {
         proof->outShares[i] = (uint32_t *)malloc(sizeof(uint32_t));
         memcpy(((uint8_t *)&proof->outShares[i][0]), ((uint8_t *)&out[0]) + i * sizeof(uint32_t), sizeof(uint32_t));
-        printf("copying in %d\n", proof->outShares[i][0]);
     }
     uint32_t shares[3];
     for (int j = 0; j < 3; j++) {
