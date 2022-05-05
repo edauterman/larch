@@ -121,10 +121,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         }
     }
 
-    for (int i = 0; i < 32; i++) { 
-        proof->idx[i] = oracle.GetRand(proof->comms[i]) % 3;
-    }
- 
     //INIT_TIMER;
     //START_TIMER;
     GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, out, seeds, numRands);
@@ -132,7 +128,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     CommitViews(proverViews, proof->comms);
 
     for (int i = 0; i < 32; i++) { 
-        proof->idx[i] = oracle.GetRand(&(proof->comms[0][i])) % 3;
+        proof->idx[i] = oracle.GetRand(proof->comms[0][i]) % 3;
     }
 
     verifierViews.push_back(new CircuitView());
