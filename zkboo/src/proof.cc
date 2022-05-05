@@ -56,9 +56,21 @@ uint8_t RandomSource::GetRand(int idx, int gate) {
     return (out) % 2;*/
 }
 
-uint8_t RandomOracle::GetRand(CircuitComm &in) {
+uint8_t RandomOracle::GetRand(CircuitComm &in0, CircuitComm &in1, CircuitComm &in2) {
     uint8_t out;
-    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), in.digest, SHA256_DIGEST_LENGTH);
+    uint8_t ctr;
+    uint8_t bytes[SHA256_DIGEST_LENGTH * 3 + 1];
+    while (true) {
+        memcpy(bytes, in0.digest, SHA256_DIGEST_LENGTH);
+        memcpy(bytes + SHA256_DIGEST_LENGTH, in1.digest, SHA256_DIGEST_LENGTH);
+        memcpy(bytes + 2 * SHA256_DIGEST_LENGTH, in2.digest, SHA256_DIGEST_LENGTH);
+        memcpy(bytes + 3 * SHA256_DIGEST_LENGTH, &ctr, 1);
+        hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), bytes, 3 * SHA256_DIGEST_LENGTH);
+        while (true) {
+            if (out % 4 != 3) return out % 3;
+            out = out >> 2;
+        }
+    }
     return out;
 }
 

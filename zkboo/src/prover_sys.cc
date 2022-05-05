@@ -130,7 +130,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     CommitViews(proverViews, proof->comms, openings);
 
     for (int i = 0; i < 32; i++) { 
-        proof->idx[i] = oracle.GetRand(proof->comms[0][i]) % 3;
+        proof->idx[i] = oracle.GetRand(proof->comms[0][i], proof->comms[1][i], proof->comms[2][i]);
     }
 
     verifierViews.push_back(new CircuitView());

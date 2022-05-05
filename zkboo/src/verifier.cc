@@ -109,7 +109,7 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
     // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
     for (int i = 0; i < 32; i++) {
-        uint8_t idx_check = oracle.GetRand(proof->comms[0][i]) % 3;
+        uint8_t idx_check = oracle.GetRand(proof->comms[0][i], proof->comms[1][i], proof->comms[2][i]);
         if (proof->idx[i] != idx_check) {
             fprintf(stderr, "zkboo: idx = %d, should equal %d\n", idx_check, proof->idx[i]);
             *ret = false;

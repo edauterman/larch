@@ -15,7 +15,7 @@ class RandomSource {
 
 class RandomOracle {
     public:
-        uint8_t GetRand(CircuitComm &in);
+        uint8_t GetRand(CircuitComm &in0, CircuitComm &in1, CircuitComm &in2);
 };
 
 class Proof {
