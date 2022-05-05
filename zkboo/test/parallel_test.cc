@@ -85,12 +85,18 @@ int main() {
     cout << "Finished proving" << endl; 
     START_TIMER;
     bool check[NUM_ROUNDS];
-    for (int i = 0; i < 1; i++) {
-        workers[i] = thread(VerifyCtCircuit, &pi[i], iv, m_len, in_len, hash_out, comm, ct, &check[i]);
+    bool final_check = true;
+    thread workers2[NUM_ROUNDS];
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        workers2[i] = thread(VerifyCtCircuit, &pi[i], iv, m_len, in_len, hash_out, comm, ct, &check[i]);
         //check = VerifyCtCircuit(pi[0], iv, m_len, in_len, hash_out, comm, ct);
     }
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        workers2[i].join();
+        final_check = final_check && check[i];
+    }
     STOP_TIMER("Verifier time");
-    if (check) {
+    if (final_check) {
         cout << "Proof verified" << endl;
     } else {
         cout << "Proof FAILED to verify" << endl;
