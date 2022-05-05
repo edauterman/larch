@@ -53,10 +53,12 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     delete ex;
 }
 
-void CommitViews(vector<CircuitView *> &views, CircuitComm *comms) {
+void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32]) {
     // Commit by hashing views
     for (int i = 0; i < 3; i++) {
-        views[i]->Commit(comms[i]);
+        for (int j = 0; j < 32; j++) {
+            views[i]->Commit(comms[i][j], j);
+        }
     }
 }
 
@@ -119,7 +121,7 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     //STOP_TIMER("Gen views");
     CommitViews(views, proof->comms);
     
-    proof->idx = oracle.GetRand(proof->comms) % 3;
+    proof->idx = oracle.GetRand(proof->comms[0]) % 3;
     proof->views[0] = views[proof->idx];
     proof->views[1] = views[(proof->idx + 1) % 3];
     proof->w[0] = w_tmp[proof->idx];

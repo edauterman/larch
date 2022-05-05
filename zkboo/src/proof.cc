@@ -107,7 +107,7 @@ uint8_t *Proof::Serialize(int *out_len) {
    int mLen = 256;
    //int mLen = (wLen - 256 - 128 - 128 - 256) / 2;
    int len = (sizeof(uint32_t) * 4) +                       // wLen and outLen and idx and numWires
-       (SHA256_DIGEST_LENGTH * 3) +                         // CircuitComm
+       (SHA256_DIGEST_LENGTH * 3 * 32) +                    // CircuitComm
        ((views[0]->wires.size() * 2) / 8) +                 // views
        (16 * 2 * 32) +                                      // seeds for RandomSource
        ((wLen * 2) / 8) +                                   // shares of witness
@@ -127,8 +127,10 @@ uint8_t *Proof::Serialize(int *out_len) {
     SerializeInt32(numWires, &ptr);
     // commitments
     for (int i = 0; i < 3; i++) {
-        memcpy(ptr, comms[i].digest, 32);
-        ptr += 32;
+        for (int j = 0; j < 32; j++) {
+            memcpy(ptr, comms[i][j].digest, 32);
+            ptr += 32;
+        }
     }
     int bitIdx = 0;
     // views
@@ -189,8 +191,10 @@ void Proof::Deserialize(uint8_t *buf, int numRands) {
     int bytesOutLen = outLen < 8 ? 1 : outLen / 8; 
     // commitments
     for (int i = 0; i < 3; i++) {
-        memcpy(comms[i].digest, ptr, 32);
-        ptr += 32;
+        for (int j = 0; j < 32; j++) {
+            memcpy(comms[i][j].digest, ptr, 32);
+            ptr += 32;
+        }
     }
     int bitIdx = 0;
     // views

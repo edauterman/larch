@@ -81,22 +81,24 @@ void AssembleShares(uint32_t *in0, uint32_t *in1, uint32_t *in2, uint8_t *out, i
 
 //bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
 bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw) {
-    CircuitComm c0, c1;
-    proof.views[0]->Commit(c0);
-    proof.views[1]->Commit(c1);
-    if (memcmp(c0.digest, proof.comms[proof.idx].digest, SHA256_DIGEST_LENGTH) != 0) {
-        fprintf(stderr, "zkboo: commit for v0 failed\n");
-        return false;
-    }
+    for (int i = 0; i < 32; i++) {
+        CircuitComm c0, c1;
+        proof.views[0]->Commit(c0, i);
+        proof.views[1]->Commit(c1, i);
+        if (memcmp(c0.digest, proof.comms[proof.idx][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+            fprintf(stderr, "zkboo: commit for c0 failed\n");
+            return false;
+        }
 
-    if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES].digest, SHA256_DIGEST_LENGTH) != 0) {
-        fprintf(stderr, "zkboo: commit for v1 failed\n");
-        return false;
+        if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES][i].digest, SHA256_DIGEST_LENGTH) != 0) {
+            fprintf(stderr, "zkboo: commit for c1 failed\n");
+            return false;
+        }
     }
 
     // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
-    uint8_t idx_check = oracle.GetRand(proof.comms) % WIRES;
+    uint8_t idx_check = oracle.GetRand(proof.comms[0]) % WIRES;
     if (proof.idx != idx_check) {
         fprintf(stderr, "zkboo: idx = %d, should equal %d\n", idx_check, proof.idx);
         return false;
@@ -200,52 +202,3 @@ bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t * 
     
 }
 
-bool VerifyHash(void (*f)(block[], block[], int), Proof &proof) {
-    CircuitComm c0, c1;
-    proof.views[0]->Commit(c0);
-    proof.views[1]->Commit(c1);
-    if (memcmp(c0.digest, proof.comms[proof.idx].digest, SHA256_DIGEST_LENGTH) != 0) {
-        fprintf(stderr, "zkboo: commit for v0 failed\n");
-        return false;
-    }
-
-    if (memcmp(c1.digest, proof.comms[(proof.idx + 1) % WIRES].digest, SHA256_DIGEST_LENGTH) != 0) {
-        fprintf(stderr, "zkboo: commit for v1 failed\n");
-        return false;
-    }
-
-    // Need to check that views chosen randomly correctly?
-    RandomOracle oracle;
-    uint8_t idx_check = oracle.GetRand(proof.comms) % WIRES;
-    if (proof.idx != idx_check) {
-        return false;
-    }
-
-    int in_len = proof.wLen;
-    block *w = new block[in_len];
-    block *b = NULL;
-    block *out = new block[256];
-
-    for (int i = 0; i < in_len; i++) {
-        memcpy((uint8_t *)&w[i], (uint8_t *)&proof.w[0][i], sizeof(uint32_t));
-        memcpy((uint8_t *)&w[i] + sizeof(uint32_t), (uint8_t *)&proof.w[1][i], sizeof(uint32_t));
-    }
-
-    //FILE *f = fopen(circuitFile.c_str(), "r");
-    //BristolFormat cf(f);
-    ZKBooCircExecVerifier<AbandonIO> *ex = new ZKBooCircExecVerifier<AbandonIO>(proof.rands, proof.views, in_len, proof.idx);
-    CircuitExecution::circ_exec = ex;
-    (*f)(out, w, in_len);
-    //hash_in_circuit(out, w, in_len);
-    //cf.compute(out, w, b);
-    if (ex->verified) {
-        return true;
-    } else {
-        return false;
-    }
-
-    // TODO check output lines up
-    
-    return true;
-    
-}
