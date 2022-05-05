@@ -30,6 +30,6 @@ class Verifier {
         int numAnds;
 };
 
-bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len, uint8_t *hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw);
+bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t *hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw, bool *ret);
 
 #endif

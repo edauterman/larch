@@ -69,7 +69,8 @@ int main() {
     pi2.Deserialize(buf, numRands);
     START_TIMER;
     //bool check = VerifyCtCircuit(pi, iv, m_len, in_len);
-    bool check = VerifyCtCircuit(pi2, iv, m_len, in_len, hash_out, comm, ct);
+    bool check;
+    VerifyCtCircuit(&pi2, iv, m_len, in_len, hash_out, comm, ct, &check);
     STOP_TIMER("Verifier time");
     if (check) {
         cout << "Proof verified" << endl;

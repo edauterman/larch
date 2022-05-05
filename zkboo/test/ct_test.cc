@@ -76,7 +76,7 @@ int main() {
     START_TIMER;
     bool check;
     for (int i = 0; i < 1; i++) {
-        check = VerifyCtCircuit(pi[0], iv, m_len, in_len, hash_out, comm, ct);
+        VerifyCtCircuit(&pi[0], iv, m_len, in_len, hash_out, comm, ct, &check);
     }
     STOP_TIMER("Verifier time");
     if (check) {
