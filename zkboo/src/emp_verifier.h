@@ -82,8 +82,6 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             //out_shares[0] = views[0]->wires[nextWireNum];
             out_shares[1] = in_view->wires[nextWireNum];
             out_view->wires.push_back(out_shares[0]);
-            //SetWireNum(&out_shares[0], nextWireNum);
-            //SetWireNum(&out_shares[1], nextWireNum);
             nextWireNum++;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
@@ -93,7 +91,8 @@ class ZKBooCircExecVerifier : public CircuitExecution {
         }
 
         block xor_gate(const block &a, const block &b) override {
-            //printf("xor gate\n");
+            return a ^ b;
+            /*//printf("xor gate\n");
             uint32_t a_shares[2];
             uint32_t b_shares[2];
             uint32_t out_shares[2];
@@ -103,11 +102,12 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             block out;
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
-            return out;
+            return out;*/
         }
 
         block not_gate(const block &a) override {
-            uint32_t a_shares[2];
+            return a ^ 0xffffffffffffffffffffffff;
+            /*uint32_t a_shares[2];
             uint32_t out_shares[2];
             memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));
             v->AddConst(a_shares, 1, out_shares);
@@ -115,7 +115,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
             memcpy((uint8_t *)&out, out_shares, 2 * sizeof(uint32_t));
             gateNum++;
             return out;
-            //return a;
+            //return a;*/
         }
 
         uint64_t num_and() override {
@@ -124,18 +124,11 @@ class ZKBooCircExecVerifier : public CircuitExecution {
 
         block public_label(bool b) override {
             //printf("label\n");
-            block out = makeBlock(0,0);
-            uint32_t shares[3];
-            for (int i = 0; i < 3; i++) {
-                shares[i] = b == 0 ? 0 : 0xffffffff; 
-                /*if (b == 0) {
-                    SetZeroWireNum(&shares[i]);
-                } else {
-                    SetOneWireNum(&shares[i]);
-                }*/
+            if (b == 0) {
+                return makeBlock(0,0);
+            } else {
+                return makeBlock(-1, -1);
             }
-            memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
-            return out;
         }
 };
 

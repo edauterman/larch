@@ -66,12 +66,12 @@ inline void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     for (int i = 0; i < 2; i++) {
         masks[i] = 0; 
         for (int j = 0; j < 32; j++) {
-            masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
+            masks[i] = masks[i] | (GetBit(rands[i]->randomness[j][numAnds/8], numAnds%8) << j);
+            //masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
         }
     }
     out[0] = ((a[0] & b[0]) ^ (a[1] & b[0]) ^ (a[0] & b[1])
             ^ masks[0] ^ masks[1]);
-            //^ rands[0]->GetRand(numAnds) ^ (rands[1]->GetRand(numAnds)));
     numAnds++;
 }
 

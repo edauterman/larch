@@ -30,22 +30,6 @@ static inline uint32_t GetWireNum(const block &x) {
     return GetWireNum(x32);
 }
 
-static inline void SetZeroWireNum(uint32_t *x) {
-    SetWireNum(x, 1000000000);
-}
-
-static inline void SetOneWireNum(uint32_t *x) {
-    SetWireNum(x, 2000000000);
-}
-
-static inline bool IsZeroWireNum(const block &x) {
-    return GetWireNum(x) == 1000000000;
-}
-
-static inline bool IsOneWireNum(const block &x) {
-    return GetWireNum(x) == 2000000000;
-}
-
 
 template<typename T>
 class ZKBooCircExecProver : public CircuitExecution {
@@ -75,7 +59,7 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         ~ZKBooCircExecProver() {
-            fprintf(stderr, "****** Num ands: %d \n", p->numAnds);
+            //fprintf(stderr, "****** Num ands: %d \n", p->numAnds);
         }
 
 
@@ -102,30 +86,11 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         block xor_gate(const block &a, const block &b) override {
-            //printf("xor gate\n");
-            uint32_t a_shares[3];
-            uint32_t b_shares[3];
-            uint32_t out_shares[3];
-            memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
-            memcpy(b_shares, (uint8_t *)&b, 3 * sizeof(uint32_t));
-            p->AddShares(a_shares, b_shares, out_shares);
-            block out;
-            memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //printf("XOR (%d %d %d) %d %d -> (%d %d %d) %d\n", a_shares[0], a_shares[1], a_shares[2], a_shares[0] ^ a_shares[1] ^ a_shares[2], b_shares[0] ^ b_shares[1] ^ b_shares[2], out_shares[0], out_shares[1], out_shares[2], out_shares[0] ^ out_shares[1] ^ out_shares[2]);
-            return out;
+            return a ^ b;
         }
 
         block not_gate(const block &a) override {
-            //printf("not\n");
-            uint32_t a_shares[3];
-            uint32_t b_shares[3];
-            uint32_t out_shares[3];
-            memcpy(a_shares, (uint8_t *)&a, 3 * sizeof(uint32_t));
-            p->AddConst(a_shares, 1, out_shares);
-            block out;
-            memcpy((uint8_t *)&out, out_shares, 3 * sizeof(uint32_t));
-            //printf("NOT (%d, %d, %d) %d -> (%d, %d, %d) %d\n", a_shares[0], a_shares[1], a_shares[2], (a_shares[0] ^ a_shares[1] ^ a_shares[2]),  out_shares[0], out_shares[1], out_shares[2], (out_shares[0] ^ out_shares[1] ^ out_shares[2]));
-            return out;
+            return a ^ 0xffffffffffffffffffffffff;
         }
 
         uint64_t num_and() override {
@@ -134,13 +99,17 @@ class ZKBooCircExecProver : public CircuitExecution {
 
         block public_label(bool b) override {
             //printf("label\n");
-            block out = makeBlock(0,0);
-            uint32_t shares[3];
+            if (b == 0) {
+                return makeBlock(0,0);
+            } else {
+                return makeBlock(-1, -1);
+            }
+            /*uint32_t shares[3];
             for (int i = 0; i < 3; i++) {
                 shares[i] = b == 0 ? 0 : 0xffffffff;
             }
             memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
-            return out;
+            return out;*/
         }
 };
 

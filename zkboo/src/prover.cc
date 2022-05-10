@@ -67,21 +67,13 @@ void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     for (int i = 0; i < 3; i++) {
         masks[i] = 0;
         for (int j = 0; j < 32; j++) {
-            masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
+            masks[i] = masks[i] | (GetBit(rands[i]->randomness[j][numAnds/8], numAnds%8) << j);
+            //masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
         }
     }   
     for (int i = 0; i < 3; i++) {
-        /*out[i] = 0;
-        bool a0Bit = a[i] & 1;
-        bool a1Bit = a[(i+1)%3] & 1;
-        bool b0Bit = b[i] & 1;
-        bool b1Bit = b[(i+1)%3] & 1;
-        bool res = ((a0Bit * b0Bit) + (a1Bit * b0Bit) + (a0Bit * b1Bit)
-                + rands[i]->GetRand(numAnds) - rands[(i+1)%3]->GetRand(numAnds)) % 2;
-        SetBit(&out[i], bit, res);*/
         out[i] = ((a[i] & b[i]) ^ (a[(i+1)%3] & b[i]) ^ (a[i] & b[(i+1)%3])
                 ^ masks[i] ^ masks[(i+1)%3]);
-                //^ rands[i]->GetRand(numAnds) ^ (rands[(i+1)%3]->GetRand(numAnds)));
     }
     numAnds++;
 }
