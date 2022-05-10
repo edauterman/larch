@@ -90,7 +90,7 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         block not_gate(const block &a) override {
-            return a ^ 0xffffffffffffffffffffffff;
+            return a ^ makeBlock(-1, -1);
         }
 
         uint64_t num_and() override {

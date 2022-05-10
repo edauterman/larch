@@ -42,7 +42,7 @@ message RegResponse {
 }
 
 message AuthRequest {
-    bytes proof = 1;
+    repeated bytes proof = 1;
     bytes challenge = 2;
     bytes ct = 3;
     bytes iv = 4;

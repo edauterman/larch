@@ -41,7 +41,7 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     for (int i = 0; i < 3; i++) {
         proverViews.push_back(ex->proverViews[i]);
     }
-    delete ex;
+    //delete ex;
 }
 
 void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32], uint8_t openings[3][32][16]) {

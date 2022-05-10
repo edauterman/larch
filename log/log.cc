@@ -20,6 +20,8 @@
 
 #include "log.h"
 
+#define NUM_ROUNDS 5
+
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -115,8 +117,8 @@ void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
     printf("\n");*/
 };
 
-void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *sig_out, unsigned int *sig_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len) {
-    Proof proof;
+void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *sig_out, unsigned int *sig_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len) {
+    Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
     BIGNUM *d_log = BN_new();
@@ -133,7 +135,7 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
     BIGNUM *auth_out = BN_new();
     BIGNUM *prod = BN_new();
     BN_CTX *ctx = BN_CTX_new();
-    proof.Deserialize(proof_bytes, numRands);
+    //proof.Deserialize(proof_bytes, numRands);
 
     uint64_t low = *((uint64_t *)iv_bytes);
     uint64_t high = *(((uint64_t *)iv_bytes) + 1);
@@ -157,8 +159,19 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes, uint8_t *challenge, uin
         printf("%02x", ct[i]);
     } 
     printf("\n");*/
-    bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
-    if (check) {
+    bool final_check = true;
+    bool check[NUM_ROUNDS];
+    thread workers[NUM_ROUNDS];
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        proof[i].Deserialize(proof_bytes[i], numRands);
+        workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, enc_key_comm, ct, &check[i]);
+        //bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
+    }
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        workers[i].join();
+        final_check = final_check && check[i];
+    }
+    if (final_check) {
         //printf("VERIFIED\n");
     } else {
         printf("PROOF FAILED TO VERIFY\n");
@@ -278,11 +291,15 @@ class LogServiceImpl final : public Log::Service {
             unsigned int e_len = 0;
             uint8_t d[32];
             uint8_t e[32];
-            string proofStr = req->proof();
+            uint8_t *proof_bytes[NUM_ROUNDS];
+            for (int i = 0; i < NUM_ROUNDS; i++) {
+                proof_bytes[i] = (uint8_t *)req->proof(i).c_str();
+            }
+            //string proofStr = req->proof();
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server->VerifyProofAndSign((uint8_t *)req->proof().c_str(), (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), prod, &prod_len, d, &d_len, e, &e_len);
+            server->VerifyProofAndSign(proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), prod, &prod_len, d, &d_len, e, &e_len);
             resp->set_prod(prod, prod_len);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);

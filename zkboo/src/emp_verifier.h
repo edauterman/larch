@@ -106,7 +106,7 @@ class ZKBooCircExecVerifier : public CircuitExecution {
         }
 
         block not_gate(const block &a) override {
-            return a ^ 0xffffffffffffffffffffffff;
+            return a ^ makeBlock(-1, -1);
             /*uint32_t a_shares[2];
             uint32_t out_shares[2];
             memcpy(a_shares, (uint8_t *)&a, 2 * sizeof(uint32_t));

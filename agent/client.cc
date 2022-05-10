@@ -10,6 +10,7 @@
 #include <string>
 #include <time.h>
 #include <map>
+#include <thread>
 
 #include <iostream>
 #include <iomanip>
@@ -70,6 +71,8 @@
 #define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
 #define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
 #define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+
+#define NUM_ROUNDS 5
 
 using namespace std;
 using namespace nlohmann;
@@ -765,9 +768,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   __m128i iv = makeBlock(0,0);
   __m128i enc_key_128 = makeBlock(0,0);
   //uint8_t enc_key[16];
-  Proof proof;
+  Proof proof[NUM_ROUNDS];
   int numRands = 116916;
-  uint8_t *proof_buf;
+  uint8_t *proof_buf[NUM_ROUNDS];
+  thread workers[NUM_ROUNDS];
   int proof_buf_len;
   uint8_t iv_raw[16];
   uint8_t *d_buf;
@@ -844,11 +848,18 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   //fprintf(stderr, "det2f: proving circuit\n");
   req.set_digest(hash_out, 32);
-  ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
+  for (int i = 0; i < NUM_ROUNDS; i++) {
+    workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
+    //ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
+  }
 
-  proof_buf = proof.Serialize(&proof_buf_len);
+  for (int i = 0; i < NUM_ROUNDS; i++) {
+    workers[i].join();
+    proof_buf[i] = proof[i].Serialize(&proof_buf_len);
+    req.add_proof(proof_buf[i], proof_buf_len);
+  }
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
-  req.set_proof(proof_buf, proof_buf_len);
+  //req.set_proof(proof_buf, proof_buf_len);
   //fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
