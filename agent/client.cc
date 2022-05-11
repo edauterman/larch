@@ -807,7 +807,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
  * and a key handle obtained from registration. Returns length of signature. */
 int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
-                 uint8_t *sig_out, bool checkOnly) {
+                 uint8_t *sig_out, bool noRegistration) {
   int rv = ERROR;
   INIT_TIMER;
   START_TIMER;
@@ -856,6 +856,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t *e_buf;
   uint8_t *check_d_buf;
   uint8_t *check_e_buf;
+  BIGNUM *sk;
 
   unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
@@ -866,6 +867,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   ClientContext client_ctx2;
 
   CHECK_A (out = BN_new());
+  CHECK_A (sk = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (mdctx2 = EVP_MD_CTX_create());
   CHECK_A (mdctx3 = EVP_MD_CTX_create());
@@ -922,7 +924,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
-  ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+  if (!noRegistration) {
+    ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+  } else {
+    ThresholdSign(out, hash_out, sk, req);
+  }
   //INIT_TIMER;
   //START_TIMER;
 

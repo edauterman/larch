@@ -76,3 +76,13 @@ target_link_libraries(sigs_bench
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(auth_bench auth_bench.cc)
+target_link_libraries(auth_bench
+    Prover
+    Base
+    Utils
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
