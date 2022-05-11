@@ -755,6 +755,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   ctx = BN_CTX_new();
  
  
+  req.set_digest(hash_out, 32);
   GetPreprocessValueSet(auth_ctr, r, auth_r, a, b, c, f, g, h, alpha);
   BN_bin2bn(hash_out, 32, hash_bn);
   BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
@@ -896,7 +897,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
 
   //fprintf(stderr, "det2f: proving circuit\n");
-  req.set_digest(hash_out, 32);
+  //req.set_digest(hash_out, 32);
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
     //ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
