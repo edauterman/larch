@@ -82,7 +82,7 @@ Params_new (CurveName c)
   CHECK_C (EC_GROUP_get_curve_GFp (p->group, p->base_prime, NULL, NULL, p->ctx));
 
   // Precompute powers of g for faster multiplication
-  CHECK_C (EC_GROUP_precompute_mult (p->group, p->ctx));
+  //CHECK_C (EC_GROUP_precompute_mult (p->group, p->ctx));
   if (!gen) {
     Params_free (p);
     return NULL;
@@ -126,8 +126,8 @@ Params_point_new (const_Params p)
 void 
 Params_free (Params p)
 {
-  if (p->group) 
-    EC_GROUP_clear_free (p->group);
+  //if (p->group) 
+  //  EC_GROUP_clear_free (p->group);
   if (p->order) 
     BN_free (p->order);
   if (p->ctx) 
@@ -235,7 +235,7 @@ Params_exp_base (const_Params p, EC_POINT *point,
   return EC_POINT_mul (p->group, point, NULL, base, exponent, p->ctx);
 }
 
-int 
+/*int 
 Params_exp_base2 (const_Params p, EC_POINT *point, 
     const EC_POINT *base1, const BIGNUM *e1,
     const EC_POINT *base2, const BIGNUM *e2)
@@ -244,7 +244,7 @@ Params_exp_base2 (const_Params p, EC_POINT *point,
   const BIGNUM *exps[2] = {e1, e2};
 
   return EC_POINTs_mul(p->group, point, NULL, 2, points, exps , p->ctx);
-}
+}*/
 
 int
 Params_exp_base_g (const_Params p, EC_POINT *point,

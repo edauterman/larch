@@ -18,7 +18,8 @@
 using namespace std;
 using namespace emp;
 
-#define NUM_ROUNDS 5 
+#define NUM_ROUNDS 5
+#define NUM_REPS 100
 
 int main() {
 
@@ -68,12 +69,14 @@ int main() {
     START_TIMER;
     //#pragma omp parallel for
     thread workers[NUM_ROUNDS];
-    for (int i = 0; i < NUM_ROUNDS; i++) {
+    for (int reps = 0; reps < NUM_REPS; reps++) {
+        for (int i = 0; i < NUM_ROUNDS; i++) {
         //ProveCtCircuit(m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, &pi[i]);
-        workers[i] = thread(ProveCtCircuit, m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, &pi[i]);
-    }
-    for (int i = 0; i < NUM_ROUNDS; i++) {
-        workers[i].join();
+            workers[i] = thread(ProveCtCircuit, m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, &pi[i]);
+        }
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            workers[i].join();
+        }
     }
     STOP_TIMER("Prover time (100)");
     cout << "Finished proving" << endl; 
@@ -81,13 +84,15 @@ int main() {
     bool check[NUM_ROUNDS];
     bool final_check = true;
     thread workers2[NUM_ROUNDS];
-    for (int i = 0; i < NUM_ROUNDS; i++) {
-        workers2[i] = thread(VerifyCtCircuit, &pi[i], iv, m_len, in_len, hash_out, comm, ct, &check[i]);
+    for (int reps = 0; reps < NUM_REPS; reps++) {
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            workers2[i] = thread(VerifyCtCircuit, &pi[i], iv, m_len, in_len, hash_out, comm, ct, &check[i]);
         //check = VerifyCtCircuit(pi[0], iv, m_len, in_len, hash_out, comm, ct);
-    }
-    for (int i = 0; i < NUM_ROUNDS; i++) {
-        workers2[i].join();
-        final_check = final_check && check[i];
+        }
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            workers2[i].join();
+            final_check = final_check && check[i];
+        }
     }
     STOP_TIMER("Verifier time");
     if (final_check) {
