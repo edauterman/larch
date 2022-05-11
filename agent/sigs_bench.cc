@@ -4,6 +4,7 @@
 #include "client.h"
 #include "../network/log.grpc.pb.h"
 #include "../network/log.pb.h"
+#include "../zkboo/utils/timer.h"
 
 int main(int argc, char *argv[]) {
     Client *c = new Client();
@@ -12,8 +13,9 @@ int main(int argc, char *argv[]) {
     BIGNUM *sk = BN_new();
     AuthRequest req;
     c->ReadFromStorage();
-    fprintf(stderr, "det2f: starting initialize\n");
+    INIT_TIMER;
+    START_TIMER;
     c->ThresholdSign(out, digest, sk, req);
-    fprintf(stderr, "det2f: finished initialize\n");
+    STOP_TIMER("signature");
     c->WriteToStorage();
 }
