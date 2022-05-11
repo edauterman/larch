@@ -11,6 +11,8 @@
 #include "u2f.h"
 #include "../crypto/params.h"
 #include "../crypto/sigs.h"
+#include "../network/log.grpc.pb.h"
+#include "../network/log.pb.h"
 
 using namespace std;
 
@@ -45,6 +47,7 @@ class Client {
         int Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                         uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool checkOnly = false);
+        void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req);
     private:
         Params params;
         map<string, EC_POINT*> pk_map;

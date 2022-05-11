@@ -708,6 +708,94 @@ void Client::MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alph
     BN_CTX_free(ctx);
 }
 
+void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
+  BIGNUM *a, *b, *c;
+  BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
+  BIGNUM *e_client, *e_log, *auth_e, *e, *check_e;
+  BIGNUM *f, *g, *h;
+  BIGNUM *alpha;
+  BIGNUM *auth_r, *r;
+  BIGNUM *hash_bn = NULL;
+  BIGNUM *out_client, *out_log, *auth_out_client;
+  BIGNUM *val;
+  BIGNUM *zero;
+  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  AuthCheckRequest checkReq;
+  AuthResponse resp;
+  AuthCheckResponse checkResp;
+  ClientContext client_ctx;
+  ClientContext client_ctx2;
+  uint8_t *d_buf, *e_buf, *check_d_buf, *check_e_buf;
+  BN_CTX *ctx;
+
+  a = BN_new();
+  b = BN_new();
+  c = BN_new();
+  d_client = BN_new();
+  d_log = BN_new();
+  d = BN_new();
+  e_client = BN_new();
+  e_log = BN_new();
+  e = BN_new();
+  auth_d = BN_new();
+  auth_e = BN_new();
+  f = BN_new();
+  g = BN_new();
+  h = BN_new();
+  alpha = BN_new();
+  r = BN_new();
+  auth_r = BN_new();
+  out_log = BN_new();
+  out_client = BN_new();
+  auth_out_client = BN_new();
+  hash_bn = BN_new();
+  check_d = BN_new();
+  check_e = BN_new();
+  val = BN_new();
+  ctx = BN_CTX_new();
+ 
+ 
+  GetPreprocessValueSet(auth_ctr, r, auth_r, a, b, c, f, g, h, alpha);
+  BN_bin2bn(hash_out, 32, hash_bn);
+  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+  StartSigning(hash_bn, sk, val, r, auth_r, a, b, c, d_client, e_client, auth_d, auth_e, f, g, h, alpha);
+  d_buf = (uint8_t *)malloc(BN_num_bytes(d_client));
+  e_buf = (uint8_t *)malloc(BN_num_bytes(e_client));
+  BN_bn2bin(d_client, d_buf);
+  BN_bn2bin(e_client, e_buf);
+  req.set_d(d_buf, BN_num_bytes(d_client));
+  req.set_e(e_buf, BN_num_bytes(e_client));
+
+  stub->SendAuth(&client_ctx, req, &resp);
+
+  BN_bin2bn((uint8_t *)resp.d().c_str(), resp.d().size(), d_log);
+  BN_bin2bn((uint8_t *)resp.e().c_str(), resp.e().size(), e_log);
+  BN_bin2bn((uint8_t *)resp.prod().c_str(), resp.prod().size(), out_log);
+  
+  BN_mod_add(d, d_client, d_log, Params_order(params), ctx);
+  BN_mod_add(e, e_client, e_log, Params_order(params), ctx);
+
+  FinishSigning(val, r, a, b, c, d, e, f, g, h, alpha, out_client, auth_out_client);
+
+  MakeCheckVal(check_d, d, auth_d, alpha);
+  MakeCheckVal(check_e, e, auth_e, alpha);
+
+  check_d_buf = (uint8_t *)malloc(BN_num_bytes(check_d));
+  check_e_buf = (uint8_t *)malloc(BN_num_bytes(check_e));
+  BN_bn2bin(check_d, check_d_buf);
+  BN_bn2bin(check_e, check_e_buf);
+  checkReq.set_check_d(check_d_buf, BN_num_bytes(check_d));
+  checkReq.set_check_e(check_e_buf, BN_num_bytes(check_e));
+  checkReq.set_session_ctr(resp.session_ctr());
+
+  stub->SendAuthCheck(&client_ctx2, checkReq, &checkResp);
+
+  BN_bin2bn((uint8_t *)checkResp.out().c_str(), checkResp.out().size(), out_log);
+
+  BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
+ 
+}
+
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
@@ -718,21 +806,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   INIT_TIMER;
   START_TIMER;
   
-  BIGNUM *s = NULL;
-  BIGNUM *r = NULL;
-  BIGNUM *a, *b, *c;
-  BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
-  BIGNUM *e_client, *e_log, *auth_e, *e, *check_e;
-  BIGNUM *f, *g, *h;
-  BIGNUM *alpha;
-  BIGNUM *auth_r;
-  BIGNUM *val = NULL;
-  BIGNUM *hash_bn = NULL;
-  BIGNUM *out_client, *out_log, *auth_out_client;
   BIGNUM *out = NULL;
-  BIGNUM *zero;
-  BIGNUM *r_inv;
-  BIGNUM *neg_one;
   EC_POINT *R;
   EVP_MD_CTX *mdctx;
   EVP_MD_CTX *mdctx2;
@@ -785,32 +859,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   ClientContext client_ctx;
   ClientContext client_ctx2;
 
-  CHECK_A (r = BN_new());
-  CHECK_A (s = BN_new());
-  CHECK_A (a = BN_new());
-  CHECK_A (b = BN_new());
-  CHECK_A (c = BN_new());
-  CHECK_A (d_client = BN_new());
-  CHECK_A (d_log = BN_new());
-  CHECK_A (d = BN_new());
-  CHECK_A (e_client = BN_new());
-  CHECK_A (e_log = BN_new());
-  CHECK_A (e = BN_new());
-  CHECK_A (auth_d = BN_new());
-  CHECK_A (auth_e = BN_new());
-  CHECK_A (f = BN_new());
-  CHECK_A (g = BN_new());
-  CHECK_A (h = BN_new());
-  CHECK_A (alpha = BN_new());
-  CHECK_A (auth_r = BN_new());
-  CHECK_A (out_log = BN_new());
-  CHECK_A (out_client = BN_new());
-  CHECK_A (auth_out_client = BN_new());
   CHECK_A (out = BN_new());
-  CHECK_A (val = BN_new());
-  CHECK_A (hash_bn = BN_new());
-  CHECK_A (check_d = BN_new());
-  CHECK_A (check_e = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (mdctx2 = EVP_MD_CTX_create());
   CHECK_A (mdctx3 = EVP_MD_CTX_create());
@@ -846,13 +895,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
   aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
 
-/*  memset(comm_in, 0, 512 / 8);
-  memcpy(comm_in, enc_key, 128 / 8);
-  memcpy(comm_in + (128 / 8), r_open, 128 / 8);
-  EVP_DigestInit_ex(mdctx3, EVP_sha256(), NULL);
-  EVP_DigestUpdate(mdctx3, comm_in, 512/8);
-  EVP_DigestFinal(mdctx3, enc_key_comm, NULL);*/
-
   //fprintf(stderr, "det2f: proving circuit\n");
   req.set_digest(hash_out, 32);
   for (int i = 0; i < NUM_ROUNDS; i++) {
@@ -874,84 +916,18 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
-
-  //fprintf(stderr, "det2f: auth_ctr = %d\n", auth_ctr);
-  GetPreprocessValueSet(auth_ctr, r, auth_r, a, b, c, f, g, h, alpha);
-  /*BN_zero(a);
-  BN_zero(b);
-  BN_zero(c);*/
-  BN_bin2bn(hash_out, 32, hash_bn);
-  //fprintf(stderr, "det2f: message hash bn = %s\n", BN_bn2hex(hash_bn));
-  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-  StartSigning(hash_bn, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], val, r, auth_r, a, b, c, d_client, e_client, auth_d, auth_e, f, g, h, alpha);
-  d_buf = (uint8_t *)malloc(BN_num_bytes(d_client));
-  e_buf = (uint8_t *)malloc(BN_num_bytes(e_client));
-  BN_bn2bin(d_client, d_buf);
-  BN_bn2bin(e_client, e_buf);
-  req.set_d(d_buf, BN_num_bytes(d_client));
-  req.set_e(e_buf, BN_num_bytes(e_client));
-  //req.set_digest(hash_out, 32);
-
-  stub->SendAuth(&client_ctx, req, &resp);
-
-  //fprintf(stderr, "det2f: unpack d, e, prod\n");
-  BN_bin2bn((uint8_t *)resp.d().c_str(), resp.d().size(), d_log);
-  BN_bin2bn((uint8_t *)resp.e().c_str(), resp.e().size(), e_log);
-  BN_bin2bn((uint8_t *)resp.prod().c_str(), resp.prod().size(), out_log);
-  
-  BN_mod_add(d, d_client, d_log, Params_order(params), ctx);
-  BN_mod_add(e, e_client, e_log, Params_order(params), ctx);
-
-  //fprintf(stderr, "det2f: going to finish signing\n");
-  FinishSigning(val, r, a, b, c, d, e, f, g, h, alpha, out_client, auth_out_client);
-  //fprintf(stderr, "det2f: finished signing\n");
-
-  MakeCheckVal(check_d, d, auth_d, alpha);
-  MakeCheckVal(check_e, e, auth_e, alpha);
-
-  check_d_buf = (uint8_t *)malloc(BN_num_bytes(check_d));
-  check_e_buf = (uint8_t *)malloc(BN_num_bytes(check_e));
-  BN_bn2bin(check_d, check_d_buf);
-  BN_bn2bin(check_e, check_e_buf);
-  checkReq.set_check_d(check_d_buf, BN_num_bytes(check_d));
-  checkReq.set_check_e(check_e_buf, BN_num_bytes(check_e));
-  checkReq.set_session_ctr(resp.session_ctr());
-
-  stub->SendAuthCheck(&client_ctx2, checkReq, &checkResp);
-
-  BN_bin2bn((uint8_t *)checkResp.out().c_str(), checkResp.out().size(), out_log);
-
-  BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
-  //fprintf(stderr, "det2f: COMPUTED OUT = %s\n", BN_bn2hex(out));
-  //BN_mod_mul(out, val, r, Params_order(params), ctx);
+  ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+  //INIT_TIMER;
+  //START_TIMER;
 
   /* Output signature. */
   //fprintf(stderr, "encoding sig\n");
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   //asn1_sigp(sig_out, r, s);
-  //fprintf(stderr, "r=%s\n", BN_bn2hex(clientHints[auth_ctr].xcoord));
-  //fprintf(stderr, "s=%s\n", BN_bn2hex(out));
   asn1_sigp(sig_out, clientHints[auth_ctr].xcoord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
-  //fprintf(stderr, "det2f: sig len = %d\n", sig_len);
-/*  fprintf(stderr, "det2f: ECDSA_SIG ");
-  for (int i = 0; i < sig_len; i++) {
-    fprintf(stderr, "%02x", sig_out2[i]);
-  }*/
-  //fprintf(stderr, "\n");
-  //fprintf(stderr, "det2f: manually encoded sig ");
-  /*for (int i = 0; i < MAX_ECDSA_SIG_SIZE; i++) {
-    fprintf(stderr, "%02x", sig_out[i]);
-  }*/
-  /*fprintf(stderr, "\n det2f: CORRECT SIG ");
-  for (int i = 0; i < MAX_ECDSA_SIG_SIZE; i++) {
-    fprintf(stderr, "%02x", sig_out2[i]);
-  }
-  fprintf(stderr, "\n");*/
-/*  if (memcmp(sig_out, sig_out2, sig_len) != 0) {
-    fprintf(stderr, "det2f: NOT SAME\n");
-  }*/
+  STOP_TIMER("ECDSA sign");
 
   /* Output message from device. */
   *flags_out = flags;
