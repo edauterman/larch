@@ -66,3 +66,13 @@ target_link_libraries(init
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(sigs_bench sigs_bench.cc)
+target_link_libraries(sigs_bench
+    Prover
+    Base
+    Utils
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})

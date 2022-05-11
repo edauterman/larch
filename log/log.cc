@@ -39,8 +39,9 @@ AuthState::AuthState(BIGNUM *check_d_in, BIGNUM *check_e_in, BIGNUM *out_in) {
     out = out_in;
 }
 
-LogServer::LogServer() {
+LogServer::LogServer(bool onlySigs_in) {
     params = Params_new(P256);
+    onlySigs = onlySigs_in;
     auth_ctr = 0;
 };
 
@@ -170,20 +171,22 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *ch
     bool final_check = true;
     bool check[NUM_ROUNDS];
     thread workers[NUM_ROUNDS];
-    for (int i = 0; i < NUM_ROUNDS; i++) {
-        proof[i].Deserialize(proof_bytes[i], numRands);
-        workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, enc_key_comm, ct, &check[i]);
-        //bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
-    }
-    for (int i = 0; i < NUM_ROUNDS; i++) {
-        workers[i].join();
-        final_check = final_check && check[i];
-    }
-    if (final_check) {
-        //printf("VERIFIED\n");
-    } else {
-        printf("PROOF FAILED TO VERIFY\n");
-        return;
+    if (!onlySigs) {
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            proof[i].Deserialize(proof_bytes[i], numRands);
+            workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, enc_key_comm, ct, &check[i]);
+            //bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
+        }
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            workers[i].join();
+            final_check = final_check && check[i];
+        }
+        if (final_check) {
+            printf("VERIFIED\n");
+        } else {
+            printf("PROOF FAILED TO VERIFY\n");
+            return;
+        }
     }
     
    /* printf("challenge to sign: ");
@@ -302,8 +305,9 @@ void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned i
 class LogServiceImpl final : public Log::Service {
     public:
         LogServer *server;
+        bool onlySigs;
 
-        LogServiceImpl(LogServer *server) : server(server) {}
+        LogServiceImpl(LogServer *server, bool onlySigs_in) : server(server), onlySigs(onlySigs_in) {}
 
         Status SendInit(ServerContext *context, const InitRequest *req, InitResponse *resp) override {
             //printf("Received initialization request\n");
@@ -335,8 +339,10 @@ class LogServiceImpl final : public Log::Service {
             uint8_t e[32];
             uint32_t sessionCtr;
             uint8_t *proof_bytes[NUM_ROUNDS];
-            for (int i = 0; i < NUM_ROUNDS; i++) {
-                proof_bytes[i] = (uint8_t *)req->proof(i).c_str();
+            if (!onlySigs) {
+                for (int i = 0; i < NUM_ROUNDS; i++) {
+                    proof_bytes[i] = (uint8_t *)req->proof(i).c_str();
+                }
             }
             //string proofStr = req->proof();
             string challengeStr = req->challenge();
@@ -359,9 +365,9 @@ class LogServiceImpl final : public Log::Service {
         }
 };
 
-void runServer(string bindAddr) {
-    LogServer *s = new LogServer();
-    LogServiceImpl logService(s);
+void runServer(string bindAddr, bool onlySigs) {
+    LogServer *s = new LogServer(onlySigs);
+    LogServiceImpl logService(s, onlySigs);
 
     grpc::EnableDefaultHealthCheckService(true);
     grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -382,7 +388,13 @@ int main(int argc, char *argv[]) {
     string bindAddr = "0.0.0.0:12345"; // + string(config[PORT]);
 
     cout << "going to bind to " << bindAddr << endl;
-    runServer(bindAddr);
+    bool onlySigs = (argc > 1) && (strcmp(argv[1], "sigs") == 0);
+    if (onlySigs) {
+        cout << "running WITHOUT proof verification" << endl;
+    } else {
+        cout << "running with proof verification" << endl;
+    }
+    runServer(bindAddr, onlySigs);
     cout << "after run server?" << endl;
 
 	//printf("Hello world\n");
