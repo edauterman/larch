@@ -67,14 +67,14 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 #define NUM_ROUNDS 5
 
@@ -740,8 +740,8 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   check_e = BN_new();
   val = BN_new();
   ctx = BN_CTX_new();
-  INIT_TIMER;
-  START_TIMER;
+  //INIT_TIMER;
+  //START_TIMER;
  
  
   req.set_digest(hash_out, 32);
@@ -756,7 +756,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BN_bn2bin(e_client, e_buf);
   req.set_d(d_buf, BN_num_bytes(d_client));
   req.set_e(e_buf, BN_num_bytes(e_client));
-  STOP_TIMER("before send");
+  //STOP_TIMER("before send");
 
   stub->SendAuth(&client_ctx, req, &resp);
 
@@ -795,8 +795,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool noRegistration) {
   int rv = ERROR;
-  INIT_TIMER;
-  START_TIMER;
+  //INIT_TIMER;
+  //START_TIMER;
   
   BIGNUM *out = NULL;
   EC_POINT *R;
@@ -888,11 +888,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 //  memset(enc_key, 0, 16);
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
   aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
-  STOP_TIMER("setup garbage"); 
+  //STOP_TIMER("setup garbage"); 
 
   //fprintf(stderr, "det2f: proving circuit\n");
   //req.set_digest(hash_out, 32);
-  START_TIMER;
+  //START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
     //ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
@@ -903,7 +903,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
-  STOP_TIMER("Prover time");
+  //STOP_TIMER("Prover time");
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
   //req.set_proof(proof_buf, proof_buf_len);
   //fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
@@ -913,7 +913,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
-  START_TIMER;
+  //START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
@@ -929,7 +929,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   asn1_sigp(sig_out, clientHints[auth_ctr].xcoord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
-  STOP_TIMER("ECDSA sign");
+  //STOP_TIMER("ECDSA sign");
 
   /* Output message from device. */
   *flags_out = flags;
@@ -938,7 +938,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
   auth_ctr++;
-  STOP_TIMER("authenticate time");
+  //STOP_TIMER("authenticate time");
 
 cleanup:
   if (mdctx) EVP_MD_CTX_destroy(mdctx);

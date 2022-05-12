@@ -62,7 +62,7 @@ class Client {
         uint32_t auth_ctr;
         uint32_t id;
 
-        const int NUM_AUTHS = 10;
+        const int NUM_AUTHS = 10000;
         //const int NUM_AUTHS = 10000;
 
         void Preprocess(vector<Hint> &logHints);

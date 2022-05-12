@@ -127,7 +127,7 @@ uint8_t *Proof::Serialize(int *out_len) {
        (bytesOutLen) +                                      // output raw values
        (((mLen + 256 + 256) * 3) * sizeof(uint32_t)) +      // shares of public input
        5;                                                   
-    fprintf(stderr, "zkboo: allocating %d bytes\n", len);
+    //fprintf(stderr, "zkboo: allocating %d bytes\n", len);
     uint8_t *out = (uint8_t *)malloc(len);
     memset(out, 0, len);
     if (out == NULL) printf("NULL alloc\n");
