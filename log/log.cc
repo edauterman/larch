@@ -39,14 +39,17 @@ AuthState::AuthState(BIGNUM *check_d_in, BIGNUM *check_e_in, BIGNUM *out_in) {
     out = out_in;
 }
 
+InitState::InitState() {}
+
 LogServer::LogServer(bool onlySigs_in) {
     params = Params_new(P256);
     onlySigs = onlySigs_in;
-    auth_ctr = 0;
+    //auth_ctr = 0;
 };
 
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
-    memcpy(enc_key_comm, req->key_comm().c_str(), 32);
+    InitState *initSt = new InitState();
+    memcpy(initSt->enc_key_comm, req->key_comm().c_str(), 32);
 
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
@@ -61,70 +64,25 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
         h.g = BN_bin2bn((uint8_t *)req->hints(i).g().c_str(), req->hints(i).g().size(), NULL);
         h.h = BN_bin2bn((uint8_t *)req->hints(i).h().c_str(), req->hints(i).h().size(), NULL);
         h.alpha = BN_bin2bn((uint8_t *)req->hints(i).alpha().c_str(), req->hints(i).alpha().size(), NULL);
-        hints.push_back(h);
+        initSt->hints.push_back(h);
     }
     //printf("done copying in hints\n");
 
-    pk = EC_POINT_new(Params_group(params));
-    sk = BN_new();
+    initSt->pk = EC_POINT_new(Params_group(params));
+    initSt->sk = BN_new();
     //BN_zero(sk);
     //pk = EC_POINT_dup(Params_gen(params), Params_group(params));
-    Params_rand_point_exp(params, pk, sk);
+    Params_rand_point_exp(params, initSt->pk, initSt->sk);
     //Params_rand_point_exp(params, pk, sk);
     //printf("chose key\n");
-    EC_POINT_point2oct(Params_group(params), pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
+    EC_POINT_point2oct(Params_group(params), initSt->pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
+    initSt->auth_ctr = 0;
+
+    clientMap[req->id()] = initSt;
     //printf("done choosing log key\n");
 }
 
-void LogServer::GenerateKeyPair(uint8_t *x_out, uint8_t *y_out) {
-    key = EC_KEY_new();
-    pkey = EVP_PKEY_new();
-/*    BIGNUM *sk = BN_new();
-    EC_POINT *pk_pt = Params_point_new(params);
-
-    Params_rand_point_exp(params, pk_pt, sk);
-
-    EC_KEY_set_group(key, params->group);
-    EC_KEY_set_public_key(key, pk_pt);
-    EC_KEY_set_private_key(key, sk);
-    //EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
-    EVP_PKEY_assign_EC_KEY(pkey, key);
-
-    BIGNUM *x = BN_new();
-    BIGNUM *y = BN_new();
-    EC_POINT_get_affine_coordinates_GFp(params->group, pk_pt, x, y, NULL);
-
-    memset(x_out, 0, P256_SCALAR_SIZE);
-    memset(y_out, 0, P256_SCALAR_SIZE);
-    BN_bn2bin(x, x_out);
-    BN_bn2bin(y, y_out);*/
-  
-    EC_KEY_set_group(key, params->group);
-    EC_KEY_generate_key(key);
-    //EC_KEY_set_private_key(key, sk_map[string((const char *)key_handle, MAX_KH_SIZE)]);
-    EVP_PKEY_assign_EC_KEY(pkey, key);
-
-    const EC_POINT *pk = EC_KEY_get0_public_key(key);
-    BIGNUM *x = BN_new();
-    BIGNUM *y = BN_new();
-    EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
-    memset(x_out, 0, P256_SCALAR_SIZE);
-    memset(y_out, 0, P256_SCALAR_SIZE);
-    BN_bn2bin(x, x_out);
-    BN_bn2bin(y, y_out);
-    /*printf("x = ");
-    for (int i = 0; i < P256_SCALAR_SIZE; i++) {
-        printf("%x", x_out[i]);
-    }
-    printf("\n");
-    printf("y = ");
-    for (int i = 0; i < P256_SCALAR_SIZE; i++) {
-        printf("%x", y_out[i]);
-    }
-    printf("\n");*/
-};
-
-void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr) {
+void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr) {
     Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
@@ -145,6 +103,8 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *ch
     BIGNUM *check_e = BN_new();
     BN_CTX *ctx = BN_CTX_new();
     //proof.Deserialize(proof_bytes, numRands);
+    
+    uint32_t auth_ctr = clientMap[id]->auth_ctr;
 
     uint64_t low = *((uint64_t *)iv_bytes);
     uint64_t high = *(((uint64_t *)iv_bytes) + 1);
@@ -174,7 +134,7 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *ch
     if (!onlySigs) {
         for (int i = 0; i < NUM_ROUNDS; i++) {
             proof[i].Deserialize(proof_bytes[i], numRands);
-            workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, enc_key_comm, ct, &check[i]);
+            workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
             //bool check = VerifyCtCircuit(proof, iv, m_len, challenge_len, digest, enc_key_comm, ct);
         }
         for (int i = 0; i < NUM_ROUNDS; i++) {
@@ -206,22 +166,22 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *ch
 
     //printf("auth ctr = %d\n", auth_ctr);
     //printf("x_coord = %s\n", BN_bn2hex(hints[auth_ctr].xcoord));
-    BN_mod_mul(val, hints[auth_ctr].xcoord, sk, Params_order(params), ctx);
+    BN_mod_mul(val, clientMap[id]->hints[auth_ctr].xcoord, clientMap[id]->sk, Params_order(params), ctx);
     //BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
     //printf("got sig mul value\n");
     //printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
     //printf("val = %s\n", BN_bn2hex(val));
     
-    BN_mod_mul(auth_hash_bn, hash_bn, hints[auth_ctr].alpha, Params_order(params), ctx);
-    BN_mod_mul(auth_val, hints[auth_ctr].auth_xcoord, sk, Params_order(params), ctx);
+    BN_mod_mul(auth_hash_bn, hash_bn, clientMap[id]->hints[auth_ctr].alpha, Params_order(params), ctx);
+    BN_mod_mul(auth_val, clientMap[id]->hints[auth_ctr].auth_xcoord, clientMap[id]->sk, Params_order(params), ctx);
     BN_mod_add(auth_val, auth_val, auth_hash_bn, Params_order(params), ctx);
 
-    BN_mod_sub(d_log, hints[auth_ctr].r, hints[auth_ctr].a, Params_order(params), ctx);
-    BN_mod_sub(e_log, val, hints[auth_ctr].b, Params_order(params), ctx);
+    BN_mod_sub(d_log, clientMap[id]->hints[auth_ctr].r, clientMap[id]->hints[auth_ctr].a, Params_order(params), ctx);
+    BN_mod_sub(e_log, val, clientMap[id]->hints[auth_ctr].b, Params_order(params), ctx);
     //printf("computed d and e\n");
 
-    BN_mod_sub(auth_d_log, hints[auth_ctr].auth_r, hints[auth_ctr].f, Params_order(params), ctx);
-    BN_mod_sub(auth_e_log, auth_val, hints[auth_ctr].g, Params_order(params), ctx);
+    BN_mod_sub(auth_d_log, clientMap[id]->hints[auth_ctr].auth_r, clientMap[id]->hints[auth_ctr].f, Params_order(params), ctx);
+    BN_mod_sub(auth_e_log, auth_val, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
@@ -231,23 +191,23 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *ch
     // de + d[b] + e[a] + [c]
     //BN_mod_mul(out, d, e, Params_order(params), ctx);
     //BN_mod_mul(prod, d, hints[auth_ctr].b, Params_order(params), ctx);
-    BN_mod_mul(out, d, hints[auth_ctr].b, Params_order(params), ctx);
+    BN_mod_mul(out, d, clientMap[id]->hints[auth_ctr].b, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
-    BN_mod_mul(prod, e, hints[auth_ctr].a, Params_order(params), ctx);
+    BN_mod_mul(prod, e, clientMap[id]->hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
-    BN_mod_add(out, out, hints[auth_ctr].c, Params_order(params), ctx);
+    BN_mod_add(out, out, clientMap[id]->hints[auth_ctr].c, Params_order(params), ctx);
     //printf("computed s\n");
     //printf("share of s = %s\n", BN_bn2hex(out));
 
     // authenticated value
     // de.\alpha + d[g] + e[f] + [h]
     BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
-    BN_mod_mul(auth_out, auth_out, hints[auth_ctr].alpha, Params_order(params), ctx);
-    BN_mod_mul(prod, d, hints[auth_ctr].g, Params_order(params), ctx);
+    BN_mod_mul(auth_out, auth_out, clientMap[id]->hints[auth_ctr].alpha, Params_order(params), ctx);
+    BN_mod_mul(prod, d, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
     BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_mul(prod, e, hints[auth_ctr].f, Params_order(params), ctx);
+    BN_mod_mul(prod, e, clientMap[id]->hints[auth_ctr].f, Params_order(params), ctx);
     BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, hints[auth_ctr].h, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, clientMap[id]->hints[auth_ctr].h, Params_order(params), ctx);
 
     BN_bn2bin(d_log, d_out);
     *d_len = BN_num_bytes(d_log);
@@ -259,14 +219,14 @@ void LogServer::VerifyProofAndSign(uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *ch
     //*sig_len = BN_num_bytes(out);
 
     *sessionCtr = rand();
-    BN_mod_mul(check_d, hints[auth_ctr].alpha, d, Params_order(params), ctx);
+    BN_mod_mul(check_d, clientMap[id]->hints[auth_ctr].alpha, d, Params_order(params), ctx);
     BN_mod_sub(check_d, auth_d_log, check_d, Params_order(params), ctx);
-    BN_mod_mul(check_e, hints[auth_ctr].alpha, e, Params_order(params), ctx);
+    BN_mod_mul(check_e, clientMap[id]->hints[auth_ctr].alpha, e, Params_order(params), ctx);
     BN_mod_sub(check_e, auth_e_log, check_e, Params_order(params), ctx);
     AuthState *state = new AuthState(check_d, check_e, out);
     saveMap[*sessionCtr] = state;
 
-    auth_ctr++;
+    clientMap[id]->auth_ctr++;
 
 /*    EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     EVP_MD_CTX_init(mdctx);
@@ -318,17 +278,6 @@ class LogServiceImpl final : public Log::Service {
             return Status::OK;
         }
 
-        Status SendReg(ServerContext *context, const RegRequest *req, RegResponse *resp) override {
-            //printf("Received registration request\n");
-            uint8_t x[P256_SCALAR_SIZE];
-            uint8_t y[P256_SCALAR_SIZE];
-            server->GenerateKeyPair(x, y);
-            resp->set_pk_x(x, P256_SCALAR_SIZE);
-            resp->set_pk_y(y, P256_SCALAR_SIZE);
-            //printf("Sending registration response\n");
-            return Status::OK;
-        }
-
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
             //printf("Received auth request\n");
             uint8_t prod[32];
@@ -348,7 +297,7 @@ class LogServiceImpl final : public Log::Service {
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server->VerifyProofAndSign(proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, &sessionCtr);
+            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, &sessionCtr);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
             resp->set_session_ctr(sessionCtr);

@@ -187,6 +187,7 @@ void Client::WriteToStorage() {
   fwrite(enc_key_comm, 32, 1, master_file);
   fwrite((uint8_t *)&auth_ctr, sizeof(uint32_t), 1, master_file);
   fwrite(seed, 16, 1, master_file);
+  fwrite((uint8_t *)&id, sizeof(uint32_t), 1, master_file);
   fclose(master_file);
  
   //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
@@ -272,6 +273,10 @@ void Client::ReadFromStorage() {
   if (fread((uint8_t *)&seed, 16, 1, master_file) != 1) {
     fprintf(stderr, "ERROR: seed not in file\n");
   }
+  if (fread((uint8_t *)&id, sizeof(uint32_t), 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: id not in file\n");
+  }
+
   //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
   fclose(master_file);
  
@@ -508,7 +513,10 @@ int Client::Initialize() {
         h->set_alpha(buf, BN_num_bytes(logHints[i].alpha));
     }
 
+    id = rand();
+
     req.set_key_comm(enc_key_comm, 32);
+    req.set_id(id);
     stub->SendInit(&client_ctx, req, &resp);
     logPk = Params_point_new(params);
     EC_POINT_oct2point(Params_group(params), logPk, (uint8_t *)resp.pk().c_str(), 33,
@@ -580,32 +588,6 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
 
 
   //fprintf(stderr, "det2f: generated key handle\n");
-
-  /* Output result. */
-
-  
-/*  Params_rand_point_exp(params, pk, exp);
-  pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
-  sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = exp;
-  EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
-  BN_bn2bin(x, pk_out->x);
-  BN_bn2bin(y, pk_out->y);
-  pk_out->format = UNCOMPRESSED_POINT;*/
-
-/*  stub->SendReg(&client_ctx, req, &resp);
-  memcpy(pk_out->x, resp.pk_x().c_str(), P256_SCALAR_SIZE);
-  memcpy(pk_out->y, resp.pk_y().c_str(), P256_SCALAR_SIZE);
-  fprintf(stderr, "det2f: x = ");
-  for (int i = 0; i < P256_SCALAR_SIZE; i++) {
-    fprintf(stderr, "%x", pk_out->x[i]);
-  }
-  fprintf(stderr, "\n");
-  fprintf(stderr, "det2f: y = ");
-  for (int i = 0; i < P256_SCALAR_SIZE; i++) {
-    fprintf(stderr, "%x", pk_out->y[i]);
-  }
-  fprintf(stderr, "\n");
-  pk_out->format = UNCOMPRESSED_POINT;*/
 
   //fprintf(stderr, "det2f: chose pub key\n");
 
@@ -763,6 +745,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
  
  
   req.set_digest(hash_out, 32);
+  req.set_id(id);
   GetPreprocessValueSet(auth_ctr, r, auth_r, a, b, c, f, g, h, alpha);
   BN_bin2bn(hash_out, 32, hash_bn);
   BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
