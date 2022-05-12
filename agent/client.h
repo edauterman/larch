@@ -46,7 +46,7 @@ class Client {
         * 0 on failure. */
         int Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                         uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
-                        uint8_t *sig_out, bool checkOnly = false);
+                        uint8_t *sig_out, bool noRegistration = false);
         void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req);
     private:
         Params params;

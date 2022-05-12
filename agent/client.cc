@@ -67,10 +67,14 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 #define NUM_ROUNDS 5
 
@@ -132,7 +136,8 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 
 Client::Client() {
     params = Params_new(P256);
-    logAddr = "127.0.0.1:12345";
+    logAddr = "13.59.107.196:12345";
+    //logAddr = "127.0.0.1:12345";
     //logAddr = "3.134.86.85:12345";
 }
 
@@ -785,7 +790,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
  * and a key handle obtained from registration. Returns length of signature. */
 int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
-                 uint8_t *sig_out, bool checkOnly) {
+                 uint8_t *sig_out, bool noRegistration) {
   int rv = ERROR;
   INIT_TIMER;
   START_TIMER;
@@ -834,6 +839,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t *e_buf;
   uint8_t *check_d_buf;
   uint8_t *check_e_buf;
+  BIGNUM *sk;
 
   unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
@@ -844,6 +850,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   ClientContext client_ctx2;
 
   CHECK_A (out = BN_new());
+  CHECK_A (sk = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (mdctx2 = EVP_MD_CTX_create());
   CHECK_A (mdctx3 = EVP_MD_CTX_create());
@@ -900,7 +907,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
-  ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+  if (!noRegistration) {
+    ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+  } else {
+    ThresholdSign(out, hash_out, sk, req);
+  }
   //INIT_TIMER;
   //START_TIMER;
 
