@@ -758,6 +758,8 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   check_e = BN_new();
   val = BN_new();
   ctx = BN_CTX_new();
+  INIT_TIMER;
+  START_TIMER;
  
  
   req.set_digest(hash_out, 32);
@@ -771,6 +773,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BN_bn2bin(e_client, e_buf);
   req.set_d(d_buf, BN_num_bytes(d_client));
   req.set_e(e_buf, BN_num_bytes(e_client));
+  STOP_TIMER("before send");
 
   stub->SendAuth(&client_ctx, req, &resp);
 
@@ -901,10 +904,12 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
 //  memset(enc_key, 0, 16);
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
-  aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0); 
+  aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
+  STOP_TIMER("setup garbage"); 
 
   //fprintf(stderr, "det2f: proving circuit\n");
   //req.set_digest(hash_out, 32);
+  START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
     //ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
@@ -915,6 +920,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
+  STOP_TIMER("Prover time");
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
   //req.set_proof(proof_buf, proof_buf_len);
   //fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
@@ -924,6 +930,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
+  START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
@@ -948,6 +955,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
   auth_ctr++;
+  fprintf(stderr, "about to return\n");
   STOP_TIMER("authenticate time");
 
 cleanup:

@@ -1,4 +1,4 @@
-bwlimit=375mbps
+bwlimit=3gbps
 delay=10ms
 
 if [ $# -lt 1 ]
