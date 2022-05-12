@@ -955,7 +955,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
   auth_ctr++;
-  fprintf(stderr, "about to return\n");
   STOP_TIMER("authenticate time");
 
 cleanup:
