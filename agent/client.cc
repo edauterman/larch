@@ -136,8 +136,8 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 
 Client::Client() {
     params = Params_new(P256);
-    logAddr = "13.59.107.196:12345";
-    //logAddr = "127.0.0.1:12345";
+    //logAddr = "13.59.107.196:12345";
+    logAddr = "127.0.0.1:12345";
     //logAddr = "3.134.86.85:12345";
 }
 
@@ -695,6 +695,35 @@ void Client::MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alph
     BN_CTX_free(ctx);
 }
 
+bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
+    EC_POINT *test = EC_POINT_new(Params_group(params));
+    EC_POINT *g_m = EC_POINT_new(Params_group(params));
+    EC_POINT *pk_client = EC_POINT_new(Params_group(params));
+    EC_POINT *pk = EC_POINT_new(Params_group(params));
+    BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *x = BN_new();
+    BIGNUM *y = BN_new();
+    BIGNUM *s_inv = BN_mod_inverse(NULL, s, Params_order(params), ctx);
+    Params_exp(params, pk_client, sk);
+    Params_mul(params, pk, pk_client, logPk);
+    Params_exp(params, g_m, m);
+    Params_exp_base(params, test, pk, r);
+    Params_mul(params, test, test, g_m);
+    Params_exp_base(params, test, test, s_inv);
+    EC_POINT_get_affine_coordinates(Params_group(params), test, x, y, ctx);
+    bool res = BN_cmp(x, r);
+
+    EC_POINT_free(test);
+    EC_POINT_free(g_m);
+    EC_POINT_free(pk_client);
+    EC_POINT_free(pk);
+    BN_CTX_free(ctx);
+    BN_free(x);
+    BN_free(y);
+    BN_free(s_inv);
+    return res;
+}
+
 void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
@@ -785,6 +814,10 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BN_bin2bn((uint8_t *)checkResp.out().c_str(), checkResp.out().size(), out_log);
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
+
+  if (!VerifySignature(sk, hash_bn, out, clientHints[auth_ctr].xcoord)) {
+    fprintf(stderr, "ERROR: signature fails\n");
+  }
  
 }
 
