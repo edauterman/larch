@@ -61,6 +61,7 @@ class Client {
         uint8_t enc_key_comm[32];
         uint32_t auth_ctr;
         uint32_t id;
+        uint8_t mac_key[16];
 
         const int NUM_AUTHS = 100;
         //const int NUM_AUTHS = 10000;

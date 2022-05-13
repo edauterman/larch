@@ -188,6 +188,7 @@ void Client::WriteToStorage() {
   fwrite((uint8_t *)&auth_ctr, sizeof(uint32_t), 1, master_file);
   fwrite(seed, 16, 1, master_file);
   fwrite((uint8_t *)&id, sizeof(uint32_t), 1, master_file);
+  fwrite(mac_key, 16, 1, master_file);
   fclose(master_file);
  
   //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
@@ -275,6 +276,9 @@ void Client::ReadFromStorage() {
   }
   if (fread((uint8_t *)&id, sizeof(uint32_t), 1, master_file) != 1) {
     fprintf(stderr, "ERROR: id not in file\n");
+  }
+  if (fread((uint8_t *)&mac_key, 16, 1, master_file) != 1) {
+    fprintf(stderr, "ERROR: mac_key not in file\n");
   }
 
   //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
@@ -514,6 +518,7 @@ int Client::Initialize() {
     }
 
     id = rand();
+    RAND_bytes(mac_key, 16);
 
     req.set_key_comm(enc_key_comm, 32);
     req.set_id(id);
@@ -876,6 +881,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t *check_d_buf;
   uint8_t *check_e_buf;
   BIGNUM *sk;
+  uint8_t tag[SHA256_DIGEST_LENGTH];
+  uint8_t mac_input[16 + 16 + SHA256_DIGEST_LENGTH];
 
   unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
@@ -946,6 +953,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
+  memcpy(mac_input, mac_key, 16);
+  memcpy(mac_input + 16, iv_raw, 16);
+  memcpy(mac_input + 32, ct, SHA256_DIGEST_LENGTH);
+  hash_to_bytes(tag, SHA256_DIGEST_LENGTH, mac_input, 32 + SHA256_DIGEST_LENGTH);
+  req.set_tag(tag, SHA256_DIGEST_LENGTH);
   //START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
