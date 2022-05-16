@@ -3,6 +3,7 @@
 #include <openssl/sha.h>
 #include "circuit.h"
 #include "circuit_utils.h"
+#include "../utils/timer.h"
 
 using namespace std;
 using namespace emp;
@@ -30,6 +31,8 @@ void hash_in_circuit(block output[], block input[], int len) {
 
 // TODO: some of this can be out-of-circuit info
 void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[], int m_len, block hash_in[], int in_len, block ct[], const __m128i iv, block key[], block key_comm[], block key_r[], block res[]) {
+    INIT_TIMER;
+    START_TIMER;
     //*res = ex->public_label(1);
     *res = CircuitExecution::circ_exec->public_label(1);
 
@@ -43,7 +46,6 @@ void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[],
         out = CircuitExecution::circ_exec->not_gate(out);
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
     }
-    //printf("num and = %d\n", ex->num_and());
 
     // Check hash matches
     for (int i = 0; i < 256; i++) {
@@ -53,13 +55,11 @@ void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[],
     }
 
     // H(key, key_r) ?= key_comm
-    block key_and_r[256];
-    memcpy((uint8_t *)key_and_r, (uint8_t *)key, 128 * sizeof(block));
-    memcpy((uint8_t *)key_and_r + 128 * sizeof(block), (uint8_t *)key_r, 128 * sizeof(block));
-    sha256(key_and_r, hash_out_calc, 256, ex);
+    AES_128_CTR_Calculator aes128_calc1 = AES_128_CTR_Calculator();
+    aes128_calc1.aes_128_ctr(key_r, makeBlock(0,0), key, hash_out_calc, 128, 0);
 
     // Check hash matches
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 128; i++) {
         block out = CircuitExecution::circ_exec->xor_gate(key_comm[i], hash_out_calc[i]);
         out = CircuitExecution::circ_exec->not_gate(out);
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
@@ -76,5 +76,6 @@ void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[],
         out = CircuitExecution::circ_exec->not_gate(out);
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
     }
+    STOP_TIMER("gen views");
     
 }
