@@ -52,6 +52,7 @@ message AuthRequest {
     bytes d = 6;
     bytes e = 7;
     uint32 id = 8;
+    bytes tag = 9;
 }
 
 message AuthResponse {

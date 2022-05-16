@@ -61,8 +61,9 @@ class Client {
         uint8_t enc_key_comm[32];
         uint32_t auth_ctr;
         uint32_t id;
+        uint8_t mac_key[16];
 
-        const int NUM_AUTHS = 10000;
+        const int NUM_AUTHS = 100;
         //const int NUM_AUTHS = 10000;
 
         void Preprocess(vector<Hint> &logHints);
@@ -74,6 +75,7 @@ class Client {
         int StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha);
         int FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha, BIGNUM *out, BIGNUM *auth_out);
         void MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alpha);
+        bool VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s);
 
 };
 
