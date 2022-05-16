@@ -67,14 +67,14 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 #define NUM_ROUNDS 5
 
