@@ -49,8 +49,7 @@ LogServer::LogServer(bool onlySigs_in) {
 
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     InitState *initSt = new InitState();
-    memset(initSt->enc_key_comm, 0, 32);
-    memcpy(initSt->enc_key_comm, req->key_comm().c_str(), 16);
+    memcpy(initSt->enc_key_comm, req->key_comm().c_str(), 32);
 
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;

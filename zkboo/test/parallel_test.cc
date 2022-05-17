@@ -34,9 +34,8 @@ int main() {
     uint8_t key[128 / 8];
     __m128i key_raw = makeBlock(0,0);
     __m128i iv = makeBlock(0,0);
-    __m128i r_raw = makeBlock(0,0);
     uint8_t r[128 / 8];
-    uint8_t comm[128 / 8];
+    uint8_t comm[256 / 8];
     uint8_t *m = (uint8_t *)malloc(m_len / 8);
     uint8_t *ct = (uint8_t *)malloc(m_len / 8);
     uint8_t *hash_in = (uint8_t *)malloc(in_len / 8);
@@ -54,12 +53,16 @@ int main() {
     EVP_DigestFinal(mdctx, hash_out, NULL);
 
     memset(r, 0xff, 128/8);
-    memcpy((uint8_t *)&r_raw, r, 128 / 8);
+    memset(comm_in, 0, 256 / 8);
+    memcpy(comm_in, key, 128 / 8);
+    memcpy(comm_in + (128 / 8), r, 128 / 8);
+    EVP_MD_CTX *mdctx2 = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
+    EVP_DigestUpdate(mdctx2, comm_in, 256/8);
+    EVP_DigestFinal(mdctx2, comm, NULL);
 
     memset(key, 0, 128/8);
     aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);
-
-    aes_128_ctr(r_raw, iv, key, comm, 128 / 8, 0);
 
     //printf("finished setup, starting proving with %d threads\n", omp_get_num_threads());
     INIT_TIMER;

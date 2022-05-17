@@ -67,14 +67,14 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 #define NUM_ROUNDS 5
 
@@ -472,6 +472,7 @@ int Client::Initialize() {
     ClientContext client_ctx;
     unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     vector<Hint> logHints;
+    uint8_t comm_in[64];
     
     uint8_t *buf = (uint8_t *)malloc(33);
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
@@ -479,16 +480,12 @@ int Client::Initialize() {
     RAND_bytes(enc_key, 16);
     RAND_bytes(r_open, 16);
 
-    __m128i r_open_raw;
-    memcpy((uint8_t *)&r_open_raw, r_open, 16);
-    memset(enc_key_comm, 0, 32);
-    aes_128_ctr(r_open_raw, makeBlock(0,0), enc_key, enc_key_comm, 16, 0);
-    /*memset(comm_in, 0, 64);
+    memset(comm_in, 0, 64);
     memcpy(comm_in, enc_key, 16);
     memcpy(comm_in + 16, r_open, 16);
     EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(mdctx, comm_in, 32);
-    EVP_DigestFinal(mdctx, enc_key_comm, NULL);*/
+    EVP_DigestFinal(mdctx, enc_key_comm, NULL);
 
     //fprintf(stderr, "det2f: going to do preprocessing\n");
     Preprocess(logHints);
@@ -523,7 +520,7 @@ int Client::Initialize() {
     id = rand();
     RAND_bytes(mac_key, 16);
 
-    req.set_key_comm(enc_key_comm, 16);
+    req.set_key_comm(enc_key_comm, 32);
     req.set_id(id);
     stub->SendInit(&client_ctx, req, &resp);
     logPk = Params_point_new(params);

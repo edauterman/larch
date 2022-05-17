@@ -31,14 +31,15 @@ void hash_in_circuit(block output[], block input[], int len) {
 
 // TODO: some of this can be out-of-circuit info
 void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[], int m_len, block hash_in[], int in_len, block ct[], const __m128i iv, block key[], block key_comm[], block key_r[], block res[]) {
-    INIT_TIMER;
-    START_TIMER;
+    //INIT_TIMER;
+    //START_TIMER;
     //*res = ex->public_label(1);
     *res = CircuitExecution::circ_exec->public_label(1);
 
     // H(hash_in) ?= hash_out
     block hash_out_calc[256];
     sha256(hash_in, hash_out_calc, in_len, ex);
+    //printf("and after sha256: %d\n", ex->num_and());
 
     // m in beginning of hash_in
     for (int i = 0; i < m_len; i++) {
@@ -55,20 +56,26 @@ void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[],
     }
 
     // H(key, key_r) ?= key_comm
-    AES_128_CTR_Calculator aes128_calc1 = AES_128_CTR_Calculator();
-    aes128_calc1.aes_128_ctr(key_r, makeBlock(0,0), key, hash_out_calc, 128, 0);
+    //printf("before sha 2: %d\n", ex->num_and());
+    block key_and_r[256];
+    memcpy((uint8_t *)key_and_r, (uint8_t *)key, 128 * sizeof(block));
+    memcpy((uint8_t *)key_and_r + 128 * sizeof(block), (uint8_t *)key_r, 128 * sizeof(block));
+    sha256(key_and_r, hash_out_calc, 256, ex);
+    //printf("after sha 2: %d\n", ex->num_and());
 
     // Check hash matches
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < 256; i++) {
         block out = CircuitExecution::circ_exec->xor_gate(key_comm[i], hash_out_calc[i]);
         out = CircuitExecution::circ_exec->not_gate(out);
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
     }
 
     // Enc(k, iv, m) ?= ct
+    //printf("before aes 2: %d\n", ex->num_and());
     block *ct_calc = new block[m_len];
     AES_128_CTR_Calculator aes128_calc = AES_128_CTR_Calculator();
     aes128_calc.aes_128_ctr(key, iv, m, ct_calc, m_len, 0);
+    //printf("after aes 2: %d\n", ex->num_and());
 
     // Check ciphertext matches
     for (int i = 0; i < m_len; i++) {
@@ -76,6 +83,7 @@ void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[],
         out = CircuitExecution::circ_exec->not_gate(out);
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
     }
-    STOP_TIMER("gen views");
+    //printf("total: %d\n", ex->num_and());
+    //STOP_TIMER("gen views");
     
 }
