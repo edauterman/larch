@@ -125,6 +125,9 @@ impl R1cs {
             }
             i += 1;
         }
+        println!("constraints = {}", self.constraints.len());
+        println!("witness = {}", self.witness.len());
+        println!("inputs = {}", self.inputs.len());
         Instance::new(
             self.constraints.len(),
             self.witness.len(),

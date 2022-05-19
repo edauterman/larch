@@ -33,6 +33,9 @@ fn main() {
     let circuitfn = args.get(3).unwrap();
     let inputsfn = args.get(4).unwrap();
     let witnessfn = args.get(5).unwrap();
+    println!("{}", circuitfn);
+    println!("{}", inputsfn);
+    println!("{}", witnessfn);
 
     let mut fh = File::open(inputsfn).unwrap();
     let mut bufh = Vec::new();
