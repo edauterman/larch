@@ -1,0 +1,299 @@
+\documentclass[a4paper,12pt]{article}
+%\documentclass[authoryear]{elsarticle}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{authblk}
+\usepackage[notes=true]{lib/dtrt}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{todonotes}
+\usepackage{listings}
+\usepackage{pxfonts}
+\usepackage[margin=1in]{geometry}
+
+\usepackage{lib/lang}  % include language definition for protobuf
+\usepackage{lib/style} % include custom style for proto declarations.	
+
+%\usepackage{sagetex}
+
+\makeatletter
+\newcommand{\subparhead}[1]{\smallskip \noindent {\itshape\ignorespaces \dt@MaybeAddPunct{#1}}\hskip 0.9em plus 0.3em minus 0.3em \dt@ignorespacesandimplicitepars}
+\makeatother
+
+% Auuthor notes (using dtrt's macros). Switch the dtrt package flag to notes=false to hide.
+\definecolor{darkgreen}{rgb}{0,0.6,0}
+\newcommand{\dnote}[1]{\dtcolornote[Daniel]{red}{#1}}
+\newcommand{\anote}[1]{\dtcolornote[Aurell]{blue}{#1}}
+\newcommand{\enote}[1]{\dtcolornote[Eran]{darkgreen}{#1}}
+
+\newcommand\dtodo[1]{\todo[color=red!20]{#1}}
+\newcommand\atodo[1]{\todo[color=green!20]{#1}}
+\newcommand\etodo[1]{\todo[color=blue!20]{#1}}
+\def\boxit#1{%
+	\smash{\color{red}\fboxrule=1pt\relax\fboxsep=-2pt\llap{\rlap{\fbox{\strut\makebox[#1]{}}}~}}\ignorespaces
+}
+
+% Style for identifiers.
+\newcommand{\textid}[1]{\texttt{#1}}
+% Note paragraphs.
+\newcommand{\noteparagraph}[1]{\textbf{#1}.}
+
+%\makeatletter
+%\def\BState{\State\hskip-\ALG@thistlm}
+%\makeatother
+
+\newenvironment{definition}{\parhead{Definition}}{} % XXX
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NP statements
+\definecolor{NPcolor}{rgb}{0,0.3,0}
+
+\newcommand{\NPstatement}[3]{
+{\color{NPcolor}
+\begin{itemize}[nosep]
+\item[] #1;
+\item[] #2;
+\item[] #3.
+\end{itemize}
+}
+}
+
+\newcommand{\NPstatementNOperiod}[3]{
+{\color{NPcolor}
+\begin{itemize}[nosep]
+\item[] #1;
+\item[] #2;
+\item[] #3
+\end{itemize}
+}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Messages
+
+\newcommand{\freevariableid}{\textid{free\_variable\_id}}
+
+% Constraint systems
+
+\newcommand{\defem}[1]{\emph{\textbf{#1}}}
+\newcommand{\enlargeparens}{{\rule{0pt}{2.2ex}}}
+\newcommand{\ip}[2]{\left\langle #1 , #2 \right\rangle}
+\newcommand{\bigip}[2]{\ip{\enlargeparens #1}{#2}}
+
+\newcommand{\FieldSize}{q}
+\newcommand{\FieldBits}{n}
+\newcommand{\Field}{\mathbb{F}_{\FieldSize}} %_\FieldSize
+\newcommand{\NumConstr}{n_{\mathsf{c}}}
+\newcommand{\NumWit}{{n_{\mathsf{w}}}}
+\newcommand{\NumInst}{{n_{\mathsf{x}}}}
+\newcommand{\NumConc}{{n_{\mathsf{z}}}}
+\newcommand{\inst}{x}
+\newcommand{\wit}{w}
+\newcommand{\conc}{z}
+\newcommand{\vinst}{\vec{\inst}}
+\newcommand{\vwit}{\vec{\wit}}
+\newcommand{\vconc}{\vec{z}}
+\newcommand{\lcoef}{a}
+\newcommand{\rcoef}{b}
+\newcommand{\ocoef}{c}
+\newcommand{\System}{\mathcal{S}}
+\newcommand{\Rel}{\mathcal{R}}
+\newcommand{\Lang}{\mathcal{L}}
+
+\newcommand{\zo}{\{0,1\}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\ZZ}{\mathbb{Z}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{zkInterface, a standard tool for zero-knowledge interoperability}
+
+\author[1]{Daniel Benarroch}
+\author[1]{Kobi Gurkan}
+\author[1]{Ron Kahat}
+\author[1]{Aurélien Nicolas}
+\author[2]{Eran Tromer}
+
+\affil[1]{QED-it}
+\affil[2]{QED-it, Columbia University, Tel Aviv University}
+
+
+\begin{document}
+\maketitle
+
+%\enote{Add abstract}
+
+
+\tableofcontents
+\pagebreak
+%=============================================================================
+\section{Overview}
+This standard, part of the ZKProof Standardization effort \cite{ZKProofSecurity, ZKProofImplementation, ZKProofApplications}, aims to facilitate interoperability between zero knowledge proof implementations, at the level of the low-constraint systems that are produced by frontends (and represent application-level statements) and consumed by cryptographic backends (which generate and verify the proofs). The high-level goal is to enable decoupling of frontends from backends, allowing application writers to choose the frontend most convenient for their functional and development needs and combine it with the backend that best matches their performance and security needs. This includes communicating constraint systems, communicating variable assignments (for production of proofs), and also construction of constraint systems out of smaller building blocks (gadgets) possibly implemented by different authors and frameworks.
+
+This first revision focuses on non-interactive proof systems (NIZKs) for general statements (i.e., NP relations) represented in the R1CS/QAP-style constraint system representation\footnote{See Appendix~\ref{sec:r1cs-def} for a definition of Rank 1 Constraint System}. This includes many, though not all, of the practical general-purpose ZKP schemes currently deployed. While this focus allows us to define concrete formats for interoperability, we recognize that additional constraint system representation styles (e.g., arithmetic and Boolean circuits and algebraic constraints) are in use, and are within scope of future revisions.
+
+An implementation of the zkInterface can be found in the following GitHub repository \href{https://github.com/QED-it/zkinterface}{QED-it/zkinterface}.
+%-----------------------------------------------------------------------------
+\subsection{Background}
+
+Zero-Knowledge Proofs \cite{GMR85zk} are cryptographic primitives that allow some entity (the prover) to prove to another party (the verifier) the validity of some statement or relation. Today there are many efficient constructions of NIZKs, each with different trade-offs, as well as several implementations of the proving systems. By standardizing zero-knowledge proofs, we aim to foster the proper use of the technology.
+
+Every proving system, as described in \cite{ZKProofImplementation}, can be divided into the backend, which is the portion of the software that contains the implementation of the underlying cryptographic protocol, and the frontend, which provides means to express statements in a convenient language, allowing to prove such statements in zero knowledge by compiling them into a low-level representation of the statement.
+
+The backend of a proving system consists of the key generation, proving and verification algorithms. It proves statements where the instance and witness are expressed as variable assignments, and relations are expressed via low-level languages. Some of these languages include arithmetic circuits \cite{GKR08,wahby2018doubly,cryptoeprint:2018:280,mallersonic}, Boolean circuits \cite{giacomelli2016zkboo,chase2017post,ames2017ligero}, R1CS/QAP constraint systems \cite{GGPR13qsp,PHGR13pinocchio,BCGTV13csnark-eprint,BCTV13von,Groth16size,ben2018aurora, kosba2015c,wu2018dizk,bunz2018bulletproofs}, and arithmetic constraint satisfaction problems \cite{ben2013fast,ben2018scalable}, among others. There are numerous such backends, including implementations of many of the schemes discussed in the Security Track proceeding \cite{ZKProofSecurity}.
+
+The frontend consists of the following:
+\begin{itemize}
+	\item The specification of a high-level language for expressing statements.
+	\item A compiler that converts relations expressed in the high-level language into the low-level relations suitable for some backend(s). For example, this may produce an R1CS constraint system.
+	\item Instance reduction: conversion of the instance in a high-level statement to a low-level instance (e.g., assignment to R1CS instance variables).
+	\item Witness reduction: conversion of the witness to a high-level statement to a low-level witness (e.g., assignment to witness variables).
+	\item Typically, a library of "gadgets" consisting of useful and hand-optimized building blocks for statements.
+\end{itemize}
+
+Since the offerings and features of backends and frontends evolve rapidly, we refer the reader to the curated taxonomy at \href{https://zkp.science}{zkp.science} for the latest information.  
+
+ 
+
+\subsection{Motivation}
+
+Currently, existing frontends are implemented to work best with their corresponding backend, the proving system is usually built end-to-end.
+
+The frontend compiles a statement into the native representation used by the cryptographic protocol in the backend, in many cases without explicitly exposing the constraint system compilation to the user. Moreover, if the compilers can output intermediary files and configurations, they are usually in a non-standard format. In practice this means that
+\begin{itemize}
+	\item There is no portability between different backends and frontends, and
+	\item It is not possible to generate a constraint system using different frontends
+\end{itemize}   
+
+With this proposal we aim to solve this by creating an interface between frontends and backends, as seen in Figure \ref{interface}. We add an explicit formatting layer between the frontends and backends that allows the user to ``pick-and-chose'' which existing frontend and backend they prefer. Furthermore, given the programmatic design of our interface, a specific gadget, can itself call a sub-gadget from a different frontend. This enables the use of more than one frontend to generate the complete statement. At present this format is tailored for the R1CS statement representation, defined in Appendix~\ref{sec:r1cs-def} and discussed below.
+
+\begin{figure}[h!]
+	\includegraphics[width=\linewidth]{graphics/interop.png}
+	\caption{Interoperability between frontends and backends with zkInterface. For further reference, see \href{https://zkp.science}{zkp.science}.}
+	\label{interface}
+\end{figure}
+
+%-----------------------------------------------------------------------------
+\subsection{Terminology}
+The terminology follows the Implementation Track proceeding \cite{ZKProofImplementation}, and any new terms and concepts will be defined accordingly. The R1CS statement representation is introduced and defined in Appendix~\ref{sec:r1cs-def}.
+
+\subsection{Goals} 
+\label{goals}
+
+There are several forms of interoperability and we set some of these as goals for this standard. One such form is between different implementations of the same backend construction, providing an interoperable format for the proving and verification keys, as well as the proof. Another form is between backends and frontends, which is the focus of this standard. The following are stronger forms of the latter kind of interoperability which have been identified as desirable by practitioners \cite{ZKProofImplementation}.
+
+\parhead{Statement instance and witness formats} 
+Specifying a standard format for the statement instance and witness enables users to have their choice of frameworks (frontends and backends) and streaming for storage and communication, and facilitate creation of benchmark test cases that could be executed by any backend accepting these formats.
+ 
+Crucially, analogous formats are desired for constraint system languages other than R1CS.
+
+\parhead{Statement semantics, variable representation and mapping}
+
+Beyond the above, there’s a need for different implementations to coordinate the semantics of the statement (instance) representation of constraint systems. For example, a high-level protocol may have an RSA signature as part of the statement, leaving ambiguity on how big integers modulo a constant are represented as a sequence of variables over a smaller field, and at what indices these variables are placed in the actual R1CS instance.
+
+Precise specification of statement semantics, in terms of higher-level abstraction, is needed for interoperability of constraint systems that are invoked by several different implementations of the instance reduction (from high-level statement to the actual input required by the ZKP prover and verifier). One may go further and try to reuse the actual implementation of the instance reduction, taking a high-level and possibly domain-specific representation of values (e.g., big  integers) and converting it into low-level variables. This raises questions of language and platform incompatibility, as well as proper modularization and packaging.
+
+Note that correct statement semantics is crucial for security. Two implementations that use the same high-level protocol, same constraint system and compatible backends may still fail to correctly interoperate if their instance reductions are incompatible -- both in completeness (proofs don’t verify) or soundness (causing false but convincing proofs, implying a security vulnerability). Moreover, semantics are a requisite for verification and helpful for debugging. Beyond interoperability, some low-level building blocks (e.g., finite field and elliptic curve arithmetic) are needed by many or all implementations, and suitable libraries can be reused.
+
+Some backends can exploit uniformity or regularity in the constraint system (e.g., repeating patterns or algebraic structure), and could thus take advantage of formats and semantics that convey the requisite information.
+
+Given the typical complexity level of today’s constraint systems, it is often acceptable to handle all of the above manually, by fresh re-implementation based on informal specifications and inspection of prior implementation. Our goal, however, is for the interface to handle the semantics of the gadgets, reducing the predisposition to error as application complexity grows. The following paragraphs expand on how the semantics should be considered for interoperability of gadgets.
+
+\parhead{Witness reduction}
+Similar considerations arise for the witness reduction, mapping a high-level witness representation for a given statement into the assignment to witness variables (as defined by the instance). For example, a high-level protocol may use Merkle trees of particular depth with a particular hash function, and a high-level instance may include a Merkle authentication path. The witness reduction would need to convert these into witness variables, that contain all of the Merkle authentication path data encoded by some particular convention into field elements and assigned in some particular order. Moreover, it would also need to convert the numerous additional witness variables that occur in the constraints that evaluate the hash function, ensure consistency and Booleanity, among others.
+
+\parhead{Gadgets interoperability}
+Beyond using fixed, monolithic constraint systems and their assignments, there is a need for sharing subcircuits and gadgets. For example, libsnark offers a rich library of R1CS gadgets, which developers of several front-end compilers would like to reuse in the context of their own constraint-system construction framework. 
+
+While porting chunks of constraints across frameworks is relatively straightforward, there are challenges in coordinating the semantics of the externally-visible variables of the gadget, analogous to but more difficult than those mentioned above for full constraint systems. Mainly, there is a need to coordinate or reuse the semantics of a gadget’s externally-visible variables (those accessible by other gadgets), as well as the witness reduction function of imported gadgets in order to assign a witness into the internal variables of the gadget.
+
+As for instance semantics, well-defined gadget semantics is crucial for soundness, completeness and verification, and is helpful for debugging.
+
+\parhead{Procedural interoperability}
+An attractive approach to the aforementioned needs for instance and witness reductions (both at the level of whole constraint systems and at the gadget level) is to enable one implementation to invoke the instance/witness reductions of another, even across frameworks and programming languages.
+
+This requires communication not of mere data, but invocation of procedural code. Suggested approaches to this include linking against executable code (e.g., .so files or .dll), using some elegant and portable high-level language with its associated portable, or using a low-level portable executable format such as WebAssembly. All of these require suitable calling conventions (e.g., how are field elements represented?), usage guidelines and examples.
+
+
+\subsection{Desiderata}
+The following are requirements that guided our design, within the large space of possibilities for achieving the above goals.
+
+\begin{enumerate}
+	\item Interoperability across frontend frameworks and programming languages.
+	\item Ability to write gadgets that can be consumed by different frontends and backends.
+	\item Minimize copying and duplication of data.
+	\item The overhead of the R1CS construction and witness reduction should be low (and in particular, linear) compared to a native implementation of the same gadgets in existing frameworks.
+	\item Expose details of the backend's interface that are necessary for performance (e.g., constraint system representation and algebraic fields).
+	\item The approach can be extended to support constraint systems beyond R1CS.
+\end{enumerate}
+
+\subsection{Scope, limitations and possible extensions}
+
+Within the set of specifications to be standardized that enable the use of an interface between zero-knowledge proof systems, we have identified the minimal items needed to create a standard interface that meets the goals and desired requirements. The following list forms the scope of our proposed standard.
+
+\begin{itemize}
+	\item Standard defined messages that the caller and callee exchange.
+	\item The serialization of the messages.
+	\item A protocol to build a constraint system from gadget composition.
+	\item Technical recommendations for implementation.
+\end{itemize}
+
+Some limitations of the standard, with respect to interoperability, are the following.
+
+\parhead{Limitations.}
+The following are not addressed by this standard:
+
+\subparhead{Backend interoperability} We do not aim to standardize the proof algorithms, the format of the proofs generated by a backend, or the format of the proving and verification keys -- all of which would be required to achieve interoperability between backends. (See ``Proof interoperability'' and ``Common reference strings'' in \cite{ZKProofImplementation}.
+
+\subparhead{Programming language and frontend frameworks} We are intentionally agnostic about, and do not aim to standardize, the programming language and programming framework used by frontends.
+
+\parhead{Extensions.}
+The following are not covered by the present revision of the standard, but should be covered by future extensions. Thus, the standard should be flexible enough and easy to extend in a backward-compatible fashion, to achieve the following:
+
+\subparhead{Other constraint system representations.}
+Going beyond R1CS, we plan on supporting other constraint system representations that are native to some ZK backends. These include Boolean circuits, arithmetic circuits, and algebraic constraint systems.
+
+\subparhead{Uniform constraint systems}
+Some backends can take advantage of uniformity in the constraint system (e.g., when some elements are repeated many times). Support the expression of such uniformity in the constraint system representation, so backends can utilize it.
+
+\subparhead{Packaging} Describe self-contained packaging of a gadget would allow for portable execution of the gadgets on different platforms.
+
+\subparhead{Typing} Enforcing properties of variables using a type system (e.g., a ``boolean variable'' type that ensures a variable is 0 or 1 even when working over a large field).
+
+\input{design.tex}
+
+
+\subsection{Interface Definition}
+
+A copy of the messages definition is hosted at \\
+\href{https://github.com/QED-it/zkinterface/blob/master/zkinterface.fbs}{https://github.com/QED-it/zkinterface/blob/master/zkinterface.fbs}
+
+\lstinputlisting[
+	caption=Messages Definition,
+	language=flatbuffers2,style=protobuf,
+	label=zkinterface.fbs]{../zkinterface.fbs}
+
+
+\input{execution.tex}
+
+\lstinputlisting[
+	caption=zkinterface.h - C Interface,
+	language=C++,style=protobuf,
+	label=zkinterface.h]{../cpp/zkinterface.h}
+
+
+\bibliographystyle{alphaurl}
+\bibliography{references}
+ 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+
+\input{r1cs-def}
+
+\end{document}
