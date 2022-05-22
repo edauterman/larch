@@ -15,7 +15,9 @@ int main(int argc, char *argv[]) {
     c->ReadFromStorage();
     INIT_TIMER;
     START_TIMER;
-    c->ThresholdSign(out, digest, sk, req);
-    STOP_TIMER("signature");
+    for (int i = 0; i < 100; i++) {
+        c->ThresholdSign(out, digest, sk, req);
+    }
+    STOP_TIMER("signature (100 reps)");
     c->WriteToStorage();
 }

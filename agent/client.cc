@@ -67,14 +67,14 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 #define NUM_ROUNDS 5
 
@@ -137,8 +137,9 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 Client::Client() {
     params = Params_new(P256);
     //logAddr = "13.59.107.196:12345";
-    logAddr = "127.0.0.1:12345";
+    logAddr = "18.191.21.50:12345";
     //logAddr = "3.134.86.85:12345";
+    stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
 }
 
 /* Write agent state to file, including root public keys and map of key handles
@@ -438,7 +439,7 @@ int Client::Initialize() {
     InitRequest req;
     InitResponse resp;
     ClientContext client_ctx;
-    unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+    //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     vector<Hint> logHints;
     uint8_t comm_in[64];
     
@@ -515,7 +516,7 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   EVP_PKEY *anon_pkey;
   string str;
   BN_CTX *ctx;
-  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   RegRequest req;
   RegResponse resp;
   ClientContext client_ctx;
@@ -738,7 +739,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BIGNUM *out_client, *out_log;
   BIGNUM *val;
   BIGNUM *zero;
-  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthCheckRequest checkReq;
   AuthResponse resp;
   AuthCheckResponse checkResp;
@@ -873,7 +874,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t tag[SHA256_DIGEST_LENGTH];
   uint8_t mac_input[16 + 16 + SHA256_DIGEST_LENGTH];
 
-  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
   AuthCheckRequest checkReq;
   AuthResponse resp;

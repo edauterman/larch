@@ -7,6 +7,7 @@
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
+#include <grpcpp/grpcpp.h>
 
 #include "u2f.h"
 #include "../crypto/params.h"
@@ -62,6 +63,7 @@ class Client {
         uint32_t auth_ctr;
         uint32_t id;
         uint8_t mac_key[16];
+        unique_ptr<Log::Stub> stub;
 
         const int NUM_AUTHS = 100;
         //const int NUM_AUTHS = 10000;
