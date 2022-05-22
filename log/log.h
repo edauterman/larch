@@ -7,6 +7,8 @@
 
 #include "../crypto/params.h"
 
+#define NUM_ROUNDS 5
+
 class AuthState {
     public:
         BIGNUM *check_d;
@@ -32,7 +34,7 @@ class LogServer {
         LogServer(bool onlySigs);
         void Initialize(const InitRequest *req, uint8_t *pkBuf);
         void GenerateKeyPair(uint8_t *x_out, uint8_t *y_out);
-        void VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr);
+        void VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *sig_out, unsigned int *sig_len);
         void FinishSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_e_buf, unsigned int check_e_len, uint8_t *out, unsigned int *out_len);
 
     private:

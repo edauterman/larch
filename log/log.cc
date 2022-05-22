@@ -20,8 +20,6 @@
 
 #include "log.h"
 
-#define NUM_ROUNDS 5
-
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -54,16 +52,10 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
         h.xcoord = BN_bin2bn((uint8_t *)req->hints(i).xcoord().c_str(), req->hints(i).xcoord().size(), NULL);
-        h.auth_xcoord = BN_bin2bn((uint8_t *)req->hints(i).auth_xcoord().c_str(), req->hints(i).auth_xcoord().size(), NULL);
         h.r = BN_bin2bn((uint8_t *)req->hints(i).r().c_str(), req->hints(i).r().size(), NULL);
-        h.auth_r = BN_bin2bn((uint8_t *)req->hints(i).auth_r().c_str(), req->hints(i).auth_r().size(), NULL);
         h.a = BN_bin2bn((uint8_t *)req->hints(i).a().c_str(), req->hints(i).a().size(), NULL);
         h.b = BN_bin2bn((uint8_t *)req->hints(i).b().c_str(), req->hints(i).b().size(), NULL);
         h.c = BN_bin2bn((uint8_t *)req->hints(i).c().c_str(), req->hints(i).c().size(), NULL);
-        h.f = BN_bin2bn((uint8_t *)req->hints(i).f().c_str(), req->hints(i).f().size(), NULL);
-        h.g = BN_bin2bn((uint8_t *)req->hints(i).g().c_str(), req->hints(i).g().size(), NULL);
-        h.h = BN_bin2bn((uint8_t *)req->hints(i).h().c_str(), req->hints(i).h().size(), NULL);
-        h.alpha = BN_bin2bn((uint8_t *)req->hints(i).alpha().c_str(), req->hints(i).alpha().size(), NULL);
         initSt->hints.push_back(h);
     }
     //printf("done copying in hints\n");
@@ -82,25 +74,18 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     //printf("done choosing log key\n");
 }
 
-void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr) {
+void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *sig_out, unsigned int *sig_len) {
     Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
     BIGNUM *d_log = BN_new();
     BIGNUM *e_log = BN_new();
-    BIGNUM *auth_d_log = BN_new();
-    BIGNUM *auth_e_log = BN_new();
     BIGNUM *d = BN_new();
     BIGNUM *e = BN_new();
     BIGNUM *hash_bn = BN_new();
-    BIGNUM *auth_hash_bn = BN_new();
     BIGNUM *val = BN_new();
-    BIGNUM *auth_val = BN_new();
     BIGNUM *out = BN_new();
-    BIGNUM *auth_out = BN_new();
     BIGNUM *prod = BN_new();
-    BIGNUM *check_d = BN_new();
-    BIGNUM *check_e = BN_new();
     BN_CTX *ctx = BN_CTX_new();
     //proof.Deserialize(proof_bytes, numRands);
     
@@ -172,16 +157,9 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     //printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
     //printf("val = %s\n", BN_bn2hex(val));
     
-    BN_mod_mul(auth_hash_bn, hash_bn, clientMap[id]->hints[auth_ctr].alpha, Params_order(params), ctx);
-    BN_mod_mul(auth_val, clientMap[id]->hints[auth_ctr].auth_xcoord, clientMap[id]->sk, Params_order(params), ctx);
-    BN_mod_add(auth_val, auth_val, auth_hash_bn, Params_order(params), ctx);
-
     BN_mod_sub(d_log, clientMap[id]->hints[auth_ctr].r, clientMap[id]->hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_sub(e_log, val, clientMap[id]->hints[auth_ctr].b, Params_order(params), ctx);
     //printf("computed d and e\n");
-
-    BN_mod_sub(auth_d_log, clientMap[id]->hints[auth_ctr].auth_r, clientMap[id]->hints[auth_ctr].f, Params_order(params), ctx);
-    BN_mod_sub(auth_e_log, auth_val, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
@@ -199,32 +177,22 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     //printf("computed s\n");
     //printf("share of s = %s\n", BN_bn2hex(out));
 
-    // authenticated value
-    // de.\alpha + d[g] + e[f] + [h]
-    BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
-    BN_mod_mul(auth_out, auth_out, clientMap[id]->hints[auth_ctr].alpha, Params_order(params), ctx);
-    BN_mod_mul(prod, d, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_mul(prod, e, clientMap[id]->hints[auth_ctr].f, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, clientMap[id]->hints[auth_ctr].h, Params_order(params), ctx);
-
     BN_bn2bin(d_log, d_out);
     *d_len = BN_num_bytes(d_log);
 
     BN_bn2bin(e_log, e_out);
     *e_len = BN_num_bytes(e_log);
 
-    //BN_bn2bin(out, sig_out);
-    //*sig_len = BN_num_bytes(out);
+    BN_bn2bin(out, sig_out);
+    *sig_len = BN_num_bytes(out);
 
-    *sessionCtr = rand();
+    /**sessionCtr = rand();
     BN_mod_mul(check_d, clientMap[id]->hints[auth_ctr].alpha, d, Params_order(params), ctx);
     BN_mod_sub(check_d, auth_d_log, check_d, Params_order(params), ctx);
     BN_mod_mul(check_e, clientMap[id]->hints[auth_ctr].alpha, e, Params_order(params), ctx);
     BN_mod_sub(check_e, auth_e_log, check_e, Params_order(params), ctx);
     AuthState *state = new AuthState(check_d, check_e, out);
-    saveMap[*sessionCtr] = state;
+    saveMap[*sessionCtr] = state;*/
 
     clientMap[id]->auth_ctr++;
 
@@ -286,7 +254,6 @@ class LogServiceImpl final : public Log::Service {
             unsigned int e_len = 0;
             uint8_t d[32];
             uint8_t e[32];
-            uint32_t sessionCtr;
             uint8_t *proof_bytes[NUM_ROUNDS];
             if (!onlySigs) {
                 for (int i = 0; i < NUM_ROUNDS; i++) {
@@ -297,10 +264,10 @@ class LogServiceImpl final : public Log::Service {
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, &sessionCtr);
+            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, prod, &prod_len);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
-            resp->set_session_ctr(sessionCtr);
+            resp->set_prod(prod, prod_len);
             //printf("Sending auth response\n");
             return Status::OK;
         }

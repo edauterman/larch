@@ -7,6 +7,7 @@ use bellman::groth16::{
     Parameters,
 };
 use bellman::{Circuit, ConstraintSystem, LinearCombination, SynthesisError, Variable};
+//use pairing::ed25519::{Ed25519, Fr};
 use pairing::bn256::{Bn256, Fr};
 use std::collections::BTreeMap;
 use zokrates_field::field::{Field, FieldPrime};
