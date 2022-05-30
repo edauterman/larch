@@ -1,4 +1,3 @@
-
 //
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file or at
@@ -67,16 +66,16 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
-#define NUM_ROUNDS 5
+#define NUM_ROUNDS 5 
 
 using namespace std;
 using namespace nlohmann;
@@ -137,7 +136,7 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 Client::Client() {
     params = Params_new(P256);
     //logAddr = "13.59.107.196:12345";
-    logAddr = "18.191.21.50:12345";
+    logAddr = "54.183.214.211:12345";
     //logAddr = "3.134.86.85:12345";
     stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
 }
@@ -442,6 +441,8 @@ int Client::Initialize() {
     //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     vector<Hint> logHints;
     uint8_t comm_in[64];
+    INIT_TIMER;
+    START_TIMER;
     
     uint8_t *buf = (uint8_t *)malloc(33);
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
@@ -483,12 +484,14 @@ int Client::Initialize() {
 
     req.set_key_comm(enc_key_comm, 32);
     req.set_id(id);
+    STOP_TIMER("client init");
     stub->SendInit(&client_ctx, req, &resp);
     logPk = Params_point_new(params);
     EC_POINT_oct2point(Params_group(params), logPk, (uint8_t *)resp.pk().c_str(), 33,
                            Params_ctx(params));
 
     auth_ctr = 0;
+    STOP_TIMER("total init");
  
 }
 
@@ -881,6 +884,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   AuthCheckResponse checkResp;
   ClientContext client_ctx;
   ClientContext client_ctx2;
+  INIT_TIMER;
 
   CHECK_A (out = BN_new());
   CHECK_A (sk = BN_new());
@@ -922,17 +926,17 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   //fprintf(stderr, "det2f: proving circuit\n");
   //req.set_digest(hash_out, 32);
-  //START_TIMER;
+  START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
     //ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
   }
-
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
+  //STOP_TIMER("Proof gen");
   //STOP_TIMER("Prover time");
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
   //req.set_proof(proof_buf, proof_buf_len);
@@ -948,12 +952,13 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy(mac_input + 32, ct, SHA256_DIGEST_LENGTH);
   hash_to_bytes(tag, SHA256_DIGEST_LENGTH, mac_input, 32 + SHA256_DIGEST_LENGTH);
   req.set_tag(tag, SHA256_DIGEST_LENGTH);
-  //START_TIMER;
+  START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
     ThresholdSign(out, hash_out, sk, req);
   }
+  //STOP_TIMER("threshold sig");
   //INIT_TIMER;
   //START_TIMER;
 

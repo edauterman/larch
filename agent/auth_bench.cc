@@ -19,9 +19,10 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "det2f: starting initialize\n");
     INIT_TIMER;
     START_TIMER;
-    c->Authenticate(app_id, 32, challenge, key_handle, &flags, &ctr, sig_out, true);
-    printf("returned\n");
-    STOP_TIMER("auth time");
+    for (int i = 0; i < 10; i++) {
+        c->Authenticate(app_id, 32, challenge, key_handle, &flags, &ctr, sig_out, true);
+    }
+    STOP_TIMER("auth time (100)");
     fprintf(stderr, "det2f: finished initialize\n");
     c->WriteToStorage();
 }

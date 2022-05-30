@@ -65,7 +65,7 @@ class Client {
         uint8_t mac_key[16];
         unique_ptr<Log::Stub> stub;
 
-        const int NUM_AUTHS = 100;
+        const int NUM_AUTHS = 100000;
         //const int NUM_AUTHS = 10000;
 
         void Preprocess(vector<Hint> &logHints);
