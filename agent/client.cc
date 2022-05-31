@@ -133,12 +133,14 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
   memcpy(y, buf + 1 + 32, 32);
 }
 
-Client::Client() {
+Client::Client(bool startConn) {
     params = Params_new(P256);
     //logAddr = "13.59.107.196:12345";
     logAddr = "54.183.214.211:12345";
     //logAddr = "3.134.86.85:12345";
-    stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+    if (startConn) {
+        stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+    }
 }
 
 /* Write agent state to file, including root public keys and map of key handles
@@ -819,7 +821,6 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
  
 }
 
-
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
 int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
@@ -967,6 +968,145 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   //asn1_sigp(sig_out, r, s);
   asn1_sigp(sig_out, clientHints[auth_ctr].xcoord, out);
+  len_byte = sig_out[1];
+  sig_len = len_byte + 2;
+  //STOP_TIMER("ECDSA sign");
+
+  /* Output message from device. */
+  *flags_out = flags;
+  *ctr_out = ctr32;
+  //memcpy(ctr_out, ctr, sizeof(uint32_t));
+  //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
+
+  auth_ctr++;
+  //STOP_TIMER("authenticate time");
+
+cleanup:
+  if (mdctx) EVP_MD_CTX_destroy(mdctx);
+  //fprintf(stderr, "det2f: sig_len = %d vs %d\n", sig_len, MAX_ECDSA_SIG_SIZE);
+  return rv == OKAY ? sig_len : ERROR;
+}
+
+/* Authenticate at origin specified by app_id given a challenge from the origin
+ * and a key handle obtained from registration. Returns length of signature. */
+int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
+                 uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
+                 uint8_t *sig_out, bool noRegistration) {
+  int rv = ERROR;
+  //INIT_TIMER;
+  //START_TIMER;
+  
+  BIGNUM *out = NULL;
+  BIGNUM *r, *r_inv, *x_coord, *y_coord, *val, *hash_bn, *sk;
+  EC_POINT *R;
+  EVP_MD_CTX *mdctx;
+  EVP_MD_CTX *mdctx2;
+  EVP_MD_CTX *mdctx3;
+  uint8_t message[SHA256_DIGEST_LENGTH];
+  uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
+  ECDSA_SIG *sig = NULL;
+  unsigned int sig_len = 0;
+  //size_t sig_len_sizet = 0;
+  //uint8_t flags = 5;
+  uint8_t flags = 0x01;
+  uint8_t ctr[4];
+  EC_KEY *key;
+  memset(ctr, 0, 4 * sizeof(uint8_t));
+  uint32_t ctr32 = 11;
+  ctr[0] = 0xFF & ctr32 >> 24;
+  ctr[1] = 0xFF & ctr32 >> 16;
+  ctr[2] = 0xFF & ctr32 >> 8;
+  ctr[3] = 0xFF & ctr32;
+  BN_CTX *ctx;
+  int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
+  uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
+  uint8_t len_byte;
+  uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
+  EVP_PKEY *pkey;
+  //uint8_t r_open[16];
+  //uint8_t enc_key_comm[32];
+  uint8_t hash_out[32];
+  uint8_t comm_in[64];
+  uint8_t ct[SHA256_DIGEST_LENGTH];
+  __m128i iv = makeBlock(0,0);
+  __m128i enc_key_128 = makeBlock(0,0);
+  //uint8_t enc_key[16];
+  Proof proof[NUM_ROUNDS];
+  int numRands = 116916;
+  int proof_buf_len;
+  uint8_t iv_raw[16];
+  uint8_t tag[SHA256_DIGEST_LENGTH];
+  uint8_t mac_input[16 + 16 + SHA256_DIGEST_LENGTH];
+
+
+  CHECK_A (out = BN_new());
+  CHECK_A (hash_bn = BN_new());
+  CHECK_A (val = BN_new());
+  CHECK_A (r = BN_new());
+  CHECK_A (r_inv = BN_new());
+  CHECK_A (x_coord = BN_new());
+  CHECK_A (y_coord = BN_new());
+  CHECK_A (sk = BN_new());
+  CHECK_A (mdctx = EVP_MD_CTX_create());
+  CHECK_A (mdctx2 = EVP_MD_CTX_create());
+  CHECK_A (ctx = BN_CTX_new());
+  CHECK_A (sig = ECDSA_SIG_new());
+  CHECK_A (key = EC_KEY_new());
+  pkey = EVP_PKEY_new();
+  R = EC_POINT_new(Params_group(params));
+
+  //fprintf(stderr, "det2f: going to hash app id\n");
+  //fprintf(stderr, "det2f: hashed app id\n");
+
+  /* Compute signed message: hash of appId, user presence, counter, and
+   * challenge. */
+  memcpy(message_buf, app_id, SHA256_DIGEST_LENGTH);
+  memcpy(message_buf + SHA256_DIGEST_LENGTH, &flags, sizeof(flags));
+  memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
+  memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
+  /*fprintf(stderr, "det2f: AUTH DATA: ");
+  for (int i = 0; i < message_buf_len; i++) {
+    fprintf(stderr, "%d ", message_buf[i]);
+  }
+  fprintf(stderr, "\n");*/
+
+  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
+  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
+  EVP_DigestFinal(mdctx2, hash_out, NULL);
+
+  //RAND_bytes(iv_raw, 16);
+  //memcpy((uint8_t *)&iv, iv_raw, 16);
+
+//  memset(enc_key, 0, 16);
+  //memcpy((uint8_t *)&enc_key_128, enc_key, 16);
+  //aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
+  //STOP_TIMER("setup garbage"); 
+
+  /*req.set_ct(ct, SHA256_DIGEST_LENGTH);
+  req.set_iv(iv_raw, 16);*/
+  /*memcpy(mac_input, mac_key, 16);
+  memcpy(mac_input + 16, iv_raw, 16);
+  memcpy(mac_input + 32, ct, SHA256_DIGEST_LENGTH);
+  hash_to_bytes(tag, SHA256_DIGEST_LENGTH, mac_input, 32 + SHA256_DIGEST_LENGTH);*/
+  //req.set_tag(tag, SHA256_DIGEST_LENGTH);
+  
+  //stub->SendAuthBaseline(&client_ctx, req, &resp);
+
+  Params_rand_exponent(params, sk);
+  BN_bin2bn(hash_out, 32, hash_bn);
+  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+  Params_rand_point_exp(params, R, r);
+  r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
+  EC_POINT_get_affine_coordinates_GFp(Params_group(params), R, x_coord, y_coord, NULL);
+  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
+  BN_mod_add(val, hash_bn, val, Params_order(params), ctx);
+  BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
+
+  /* Output signature. */
+  //fprintf(stderr, "encoding sig\n");
+  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
+  //asn1_sigp(sig_out, r, s);
+  asn1_sigp(sig_out, x_coord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
   //STOP_TIMER("ECDSA sign");

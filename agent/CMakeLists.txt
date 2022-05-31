@@ -96,3 +96,13 @@ target_link_libraries(throughput_bench
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(baseline_bench baseline_bench.cc)
+target_link_libraries(baseline_bench
+    Prover
+    Base
+    Utils
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})

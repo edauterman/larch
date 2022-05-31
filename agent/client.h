@@ -28,7 +28,7 @@ class KeyHandle {
 
 class Client {
     public:
-        Client();
+        Client(bool startConn=true);
         void ReadFromStorage();
         void WriteToStorage();
 
@@ -46,6 +46,9 @@ class Client {
         * sanitized signature from the device. Returns the length of the signature, or
         * 0 on failure. */
         int Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
+                        uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
+                        uint8_t *sig_out, bool noRegistration = false);
+        int BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                         uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool noRegistration = false);
         void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req);
