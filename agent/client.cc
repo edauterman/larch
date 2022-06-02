@@ -491,7 +491,12 @@ int Client::Initialize() {
 
     id = rand();
     auth_key = BN_new();
+    EC_POINT *auth_pk = EC_POINT_new(Params_group(params));
     Params_rand_exponent(params, auth_key);
+    Params_exp(params, auth_pk, auth_key);
+    EC_POINT_point2oct(Params_group(params), auth_pk, POINT_CONVERSION_COMPRESSED,
+                buf, 33, Params_ctx(params));
+    req.set_auth_pk(buf, 33);
 
     req.set_key_comm(enc_key_comm, 32);
     req.set_id(id);
@@ -956,7 +961,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   req.set_iv(iv_raw, 16);
   memcpy(auth_input, iv_raw, 16);
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
-  Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
+  EC_KEY_set_group(key, Params_group(params));
+  EC_KEY_set_private_key(key, auth_key);
+  ECDSA_sign(0, auth_input, 48, auth_sig, &auth_sig_len, key);
+  //Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
   req.set_tag(auth_sig, auth_sig_len);
   START_TIMER;
   if (!noRegistration) {
@@ -1076,8 +1084,11 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
     fprintf(stderr, "%d ", message_buf[i]);
   }
   fprintf(stderr, "\n");*/
-
-  Sign(message_buf, message_buf_len, sk, sig_out, &sig_len);
+  EC_KEY_set_group(key, Params_group(params));
+  EC_KEY_set_private_key(key, sk);
+  ECDSA_sign(0, message_buf, message_buf_len, sig_out, &sig_len, key);
+ 
+  //Sign(message_buf, message_buf_len, sk, sig_out, &sig_len);
 
   /* Output message from device. */
   *flags_out = flags;

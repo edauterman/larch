@@ -26,6 +26,7 @@ class InitState {
         vector<Hint> hints;
         uint8_t enc_key_comm[32];
         uint32_t auth_ctr;
+        EC_POINT *auth_pk;
 
         InitState();
 };

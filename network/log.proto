@@ -22,7 +22,8 @@ message HintMsg {
 message InitRequest {
     bytes key_comm = 1;
     uint32 id = 2;
-    repeated HintMsg hints = 3;
+    bytes auth_pk = 3;
+    repeated HintMsg hints = 4;
 }
 
 message InitResponse {

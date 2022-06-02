@@ -61,6 +61,8 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
         initSt->hints.push_back(h);
     }
     //printf("done copying in hints\n");
+    initSt->auth_pk = EC_POINT_new(Params_group(params));
+    EC_POINT_oct2point(Params_group(params), initSt->auth_pk, (uint8_t *)req->auth_pk().c_str(), 33, Params_ctx(params));
 
     initSt->pk = EC_POINT_new(Params_group(params));
     initSt->sk = BN_new();
@@ -211,6 +213,17 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     if (!onlySigs) {
         Token *token = new Token(ct, iv_bytes, auth_sig, auth_sig_len);
         saveMap[id] = token;
+
+        // TODO move earlier to abort if check fails
+        uint8_t auth_input[48];
+        memcpy(auth_input, iv_bytes, 16);
+        memcpy(auth_input + 16, ct, 32);
+        EC_KEY *key = EC_KEY_new();
+        EC_KEY_set_group(key, Params_group(params));
+        EC_KEY_set_public_key(key, clientMap[id]->auth_pk);
+        if (ECDSA_verify(0, auth_input, 48, auth_sig, auth_sig_len, key) != 1) {
+            printf("SIG VERIFICATION FAILED\n");
+        }
     }
 };
 
