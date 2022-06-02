@@ -12,7 +12,7 @@ service Log {
 }
 
 message HintMsg {
-    bytes xcoord = 1;
+    bytes big_r = 1;
     bytes r = 2;
     bytes a = 3;
     bytes b = 4;

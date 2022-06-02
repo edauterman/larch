@@ -172,8 +172,10 @@ void Client::WriteToStorage() {
 
   FILE *hint_file = fopen(HINT_FILE, "w");
   for (int i = 0; i < clientHints.size(); i++) {
-      BN_bn2bin(clientHints[i].xcoord, buf);
-      fwrite(buf, 32, 1, hint_file);
+     EC_POINT_point2oct(Params_group(params), clientHints[i].R,
+                       POINT_CONVERSION_COMPRESSED, pt, 33,
+                       Params_ctx(params));
+      fwrite(pt, 33, 1, hint_file);
   }
   fclose(hint_file);
 
@@ -237,13 +239,16 @@ void Client::ReadFromStorage() {
   }
 
   FILE *hint_file = fopen(HINT_FILE, "r");
-  uint8_t long_buf[64];
+  uint8_t long_buf[33];
   if (hint_file != NULL) {
-    BIGNUM *xcoord;
-    while (fread(long_buf, 32, 1, hint_file) == 1) {
-      xcoord = BN_new();
-      BN_bin2bn(long_buf, 32, xcoord);
-      clientHints.push_back(ShortHint(xcoord));
+    EC_POINT *R;
+    while (fread(long_buf, 33, 1, hint_file) == 1) {
+      R = EC_POINT_new(Params_group(params));
+      if (EC_POINT_oct2point(Params_group(params), R, long_buf, 33,
+                             Params_ctx(params)) != OKAY) {
+          fprintf(stderr, "ERROR: hint not in valid format\n");
+      }
+      clientHints.push_back(ShortHint(R));
     }
     fclose(kh_file);
   }
@@ -379,8 +384,6 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_A (a = BN_new());
         CHECK_A (b = BN_new());
         CHECK_A (c = BN_new());
-        CHECK_A (xcoord = BN_new());
-        CHECK_A (ycoord = BN_new());
         //CHECK_A (auth_xcoord = BN_new());
         CHECK_A (R = EC_POINT_new(Params_group(params)));
 
@@ -408,8 +411,8 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_C (BN_mod_sub(g2, g, g1, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(h2, h, h1, Params_order(params), ctx));*/
 
-        EC_POINT_get_affine_coordinates_GFp(params->group, R, xcoord, ycoord, NULL);
-        CHECK_C (BN_mod(xcoord, xcoord, Params_order(params), ctx));
+        //EC_POINT_get_affine_coordinates_GFp(params->group, R, xcoord, ycoord, NULL);
+        //CHECK_C (BN_mod(xcoord, xcoord, Params_order(params), ctx));
 
 
         
@@ -424,8 +427,8 @@ void Client::Preprocess(vector<Hint> &logHints) {
         printf("r1 = %s\n", BN_bn2hex(r1));
         printf("c2 = %s\n", BN_bn2hex(c2));*/
 
-        clientHints.push_back(ShortHint(xcoord));
-        logHints.push_back(Hint(xcoord, r2, a2, b2, c2));
+        clientHints.push_back(ShortHint(R));
+        logHints.push_back(Hint(R, r2, a2, b2, c2));
         BN_free(r);
         BN_free(r1);
         BN_free(a1);
@@ -469,8 +472,9 @@ int Client::Initialize() {
 
     for (int i = 0; i < NUM_AUTHS; i++) {
         HintMsg *h = req.add_hints();
-        BN_bn2bin(logHints[i].xcoord, buf);
-        h->set_xcoord(buf, BN_num_bytes(logHints[i].xcoord));
+        EC_POINT_point2oct(Params_group(params), logHints[i].R, POINT_CONVERSION_COMPRESSED,
+                buf, 33, Params_ctx(params));
+        h->set_big_r(buf, 33);
         //BN_bn2bin(logHints[i].auth_xcoord, buf);
         //h->set_auth_xcoord(buf, BN_num_bytes(logHints[i].auth_xcoord));
         BN_bn2bin(logHints[i].r, buf);
@@ -604,47 +608,20 @@ cleanup:
   return cert_len + sig_len;
 }
 
-int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e) {
+int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *z, BIGNUM *x_coord) {
   BN_CTX *ctx;
   int rv = OKAY;
   BIGNUM *auth_val = BN_new();
-  BIGNUM *auth_hash = BN_new();
-
   ctx = BN_CTX_new();
 
   //fprintf(stderr, "det2f: x_coord = %s\n", BN_bn2hex(clientHints[auth_ctr].xcoord));
-  BN_mod_mul(val, clientHints[auth_ctr].xcoord, sk, Params_order(params), ctx);
+  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
   BN_mod_add(val, val, msg_hash, Params_order(params), ctx);
   //fprintf(stderr, "det2f: COMPUTED VAL = %s\n", BN_bn2hex(val));
   //fprintf(stderr, "det2f: multiplying by r^-1 = %s\n", BN_bn2hex(r));
 
   BN_mod_sub(d, r, a, Params_order(params), ctx);
   BN_mod_sub(e, val, b, Params_order(params), ctx);
-
-cleanup:
-  return rv;
-}
-
-int Client::StartSigningAuth(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
-  BN_CTX *ctx;
-  int rv = OKAY;
-  BIGNUM *auth_val = BN_new();
-  BIGNUM *auth_hash = BN_new();
-
-  ctx = BN_CTX_new();
-
-  //fprintf(stderr, "det2f: x_coord = %s\n", BN_bn2hex(clientHints[auth_ctr].xcoord));
-  BN_mod_mul(val, clientHints[auth_ctr].xcoord, sk, Params_order(params), ctx);
-  BN_mod_add(val, val, msg_hash, Params_order(params), ctx);
-  //fprintf(stderr, "det2f: COMPUTED VAL = %s\n", BN_bn2hex(val));
-  //fprintf(stderr, "det2f: multiplying by r^-1 = %s\n", BN_bn2hex(r));
-
-  BN_mod_sub(d, r, a, Params_order(params), ctx);
-  BN_mod_sub(e, val, b, Params_order(params), ctx);
-
-  BN_mod_sub(auth_d, auth_r, f, Params_order(params), ctx);
-  BN_mod_sub(auth_e, auth_val, g, Params_order(params), ctx);
-  //fprintf(stderr, "det2f: finished start signing procedure\n");
 
 cleanup:
   return rv;
@@ -666,37 +643,6 @@ int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, c, Params_order(params), ctx);
     //fprintf(stderr, "det2f: * share of s = %s\n", BN_bn2hex(out));
-
-cleanup:
-    return rv;
-}
-
-int Client::FinishSigningAuth(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha, BIGNUM *out, BIGNUM *auth_out) {
-    BIGNUM *prod = NULL;
-    BN_CTX *ctx;
-    int rv = OKAY;
-
-    prod = BN_new();
-    ctx = BN_CTX_new();
-
-    // de + d[b] + e[a] + [c]
-    BN_mod_mul(out, d, e, Params_order(params), ctx);
-    BN_mod_mul(prod, d, b, Params_order(params), ctx);
-    BN_mod_add(out, out, prod, Params_order(params), ctx);
-    BN_mod_mul(prod, e, a, Params_order(params), ctx);
-    BN_mod_add(out, out, prod, Params_order(params), ctx);
-    BN_mod_add(out, out, c, Params_order(params), ctx);
-    //fprintf(stderr, "det2f: * share of s = %s\n", BN_bn2hex(out));
-
-    // authenticated value
-    // de.\alpha + d[g] + e[f] + [h]
-    BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
-    BN_mod_mul(auth_out, auth_out, alpha, Params_order(params), ctx);
-    BN_mod_mul(prod, d, g, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_mul(prod, e, f, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, h, Params_order(params), ctx);
 
 cleanup:
     return rv;
@@ -784,7 +730,7 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   *sig_len = len_byte + 2;
 }
 
-void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
+void Client::ThresholdSign(BIGNUM *out, BIGNUM *x_coord, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *d;
   BIGNUM *e_client, *e_log, *e;
@@ -795,6 +741,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BIGNUM *out_client, *out_log;
   BIGNUM *val;
   BIGNUM *zero;
+  BIGNUM *z;
   //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthCheckRequest checkReq;
   AuthResponse resp;
@@ -819,6 +766,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   hash_bn = BN_new();
   val = BN_new();
   ctx = BN_CTX_new();
+  z = BN_new();
   //INIT_TIMER;
   //START_TIMER;
  
@@ -828,7 +776,8 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   GetPreprocessValueSet(auth_ctr, r, a, b, c);
   BN_bin2bn(hash_out, 32, hash_bn);
   BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-  StartSigning(hash_bn, sk, val, r, a, b, c, d_client, e_client);
+  RerandomizePresig(params, r, clientHints[auth_ctr].R, hash_bn, z, x_coord);
+  StartSigning(hash_bn, sk, val, r, a, b, c, d_client, e_client, z, x_coord);
   d_buf = (uint8_t *)malloc(BN_num_bytes(d_client));
   e_buf = (uint8_t *)malloc(BN_num_bytes(e_client));
   BN_bn2bin(d_client, d_buf);
@@ -866,8 +815,10 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
 
-  if (!VerifySignature(sk, hash_bn, out, clientHints[auth_ctr].xcoord)) {
+  if (!VerifySignature(sk, hash_bn, out, x_coord)) {
     fprintf(stderr, "ERROR: signature fails\n");
+  } else {
+    fprintf(stderr, "signature verifies\n");
   }
  
 }
@@ -882,6 +833,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //START_TIMER;
   
   BIGNUM *out = NULL;
+  BIGNUM *x_coord = NULL;
   EC_POINT *R;
   EVP_MD_CTX *mdctx;
   EVP_MD_CTX *mdctx2;
@@ -942,6 +894,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   CHECK_A (out = BN_new());
   CHECK_A (sk = BN_new());
+  CHECK_A (x_coord = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (mdctx2 = EVP_MD_CTX_create());
   CHECK_A (mdctx3 = EVP_MD_CTX_create());
@@ -1007,9 +960,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   req.set_tag(auth_sig, auth_sig_len);
   START_TIMER;
   if (!noRegistration) {
-    ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+    fprintf(stderr, "use registration key\n");
+    ThresholdSign(out, x_coord, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
-    ThresholdSign(out, hash_out, sk, req);
+    fprintf(stderr, "use random key\n");
+    ThresholdSign(out, x_coord, hash_out, sk, req);
   }
   //STOP_TIMER("threshold sig");
   //INIT_TIMER;
@@ -1019,7 +974,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //fprintf(stderr, "encoding sig\n");
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   //asn1_sigp(sig_out, r, s);
-  asn1_sigp(sig_out, clientHints[auth_ctr].xcoord, out);
+  asn1_sigp(sig_out, x_coord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
   //STOP_TIMER("ECDSA sign");

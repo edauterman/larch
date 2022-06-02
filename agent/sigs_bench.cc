@@ -9,6 +9,7 @@
 int main(int argc, char *argv[]) {
     Client *c = new Client();
     BIGNUM *out = BN_new();
+    BIGNUM *x_coord = BN_new();
     uint8_t digest[32];
     BIGNUM *sk = BN_new();
     AuthRequest req;
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]) {
     INIT_TIMER;
     START_TIMER;
     for (int i = 0; i < 1; i++) {
-        c->ThresholdSign(out, digest, sk, req);
+        c->ThresholdSign(out, x_coord, digest, sk, req);
     }
     STOP_TIMER("signature (100 reps)");
     c->WriteToStorage();

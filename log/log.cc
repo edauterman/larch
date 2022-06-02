@@ -52,7 +52,8 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
 
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
-        h.xcoord = BN_bin2bn((uint8_t *)req->hints(i).xcoord().c_str(), req->hints(i).xcoord().size(), NULL);
+        h.R = Params_point_new(params);
+        EC_POINT_oct2point(Params_group(params), h.R, (uint8_t *)req->hints(i).big_r().c_str(), 33, Params_ctx(params));
         h.r = BN_bin2bn((uint8_t *)req->hints(i).r().c_str(), req->hints(i).r().size(), NULL);
         h.a = BN_bin2bn((uint8_t *)req->hints(i).a().c_str(), req->hints(i).a().size(), NULL);
         h.b = BN_bin2bn((uint8_t *)req->hints(i).b().c_str(), req->hints(i).b().size(), NULL);
@@ -88,6 +89,8 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     BIGNUM *out = BN_new();
     BIGNUM *prod = BN_new();
     BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *x_coord = BN_new();
+    BIGNUM *z = BN_new();
     //proof.Deserialize(proof_bytes, numRands);
     
     uint32_t auth_ctr = clientMap[id]->auth_ctr;
@@ -147,18 +150,19 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     // TODO make sure that digest lines up with value in serialized proof
     BN_bin2bn(digest, 32, hash_bn);
     BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+    RerandomizePresig(params, clientMap[id]->hints[auth_ctr].r, clientMap[id]->hints[auth_ctr].R, hash_bn, z, x_coord);
     //printf("converted hash to bn\n");
     //printf("message hash bn = %s\n", BN_bn2hex(hash_bn));
 
     //printf("auth ctr = %d\n", auth_ctr);
     //printf("x_coord = %s\n", BN_bn2hex(hints[auth_ctr].xcoord));
-    BN_mod_mul(val, clientMap[id]->hints[auth_ctr].xcoord, clientMap[id]->sk, Params_order(params), ctx);
+    BN_mod_mul(val, x_coord, clientMap[id]->sk, Params_order(params), ctx);
     //BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
     //printf("got sig mul value\n");
     //printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
     //printf("val = %s\n", BN_bn2hex(val));
     
-    BN_mod_sub(d_log, clientMap[id]->hints[auth_ctr].r, clientMap[id]->hints[auth_ctr].a, Params_order(params), ctx);
+    BN_mod_sub(d_log, z, clientMap[id]->hints[auth_ctr].a, Params_order(params), ctx);
     BN_mod_sub(e_log, val, clientMap[id]->hints[auth_ctr].b, Params_order(params), ctx);
     //printf("computed d and e\n");
 
@@ -203,9 +207,11 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     printf("challenge len = %d\n", challenge_len / 8);
     EVP_SignUpdate(mdctx, challenge, challenge_len / 8);
     EVP_SignFinal(mdctx, sig_out, sig_len, pkey);*/
-
-    Token *token = new Token(ct, iv_bytes, auth_sig, auth_sig_len);
-    saveMap[id] = token;
+    
+    if (!onlySigs) {
+        Token *token = new Token(ct, iv_bytes, auth_sig, auth_sig_len);
+        saveMap[id] = token;
+    }
 };
 
 

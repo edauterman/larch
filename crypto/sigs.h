@@ -8,23 +8,27 @@
 
 #include <vector>
 
+#include "params.h"
+
 class ShortHint {
     public:
-        ShortHint(BIGNUM *xcoord);
+        ShortHint(EC_POINT *R);
 
-        BIGNUM *xcoord;
+        EC_POINT *R;
 };
 
 class Hint {
     public:
         Hint();
-        Hint(BIGNUM *xcoord_in, BIGNUM *r_in, BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in);
+        Hint(EC_POINT *R_in, BIGNUM *r_in, BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in);
 
-        BIGNUM *xcoord;
+        EC_POINT *R;
         BIGNUM *r;
         BIGNUM *a;
         BIGNUM *b;
         BIGNUM *c;
 };
+
+void RerandomizePresig(Params params, BIGNUM *r, EC_POINT *R, BIGNUM *m, BIGNUM *z, BIGNUM *x_coord);
 
 #endif
