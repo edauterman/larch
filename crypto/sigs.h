@@ -8,27 +8,30 @@
 
 #include <vector>
 
-#include "params.h"
-
 class ShortHint {
     public:
-        ShortHint(EC_POINT *R);
+        ShortHint(BIGNUM *xcoord, BIGNUM *auth_xcoord);
 
-        EC_POINT *R;
+        BIGNUM *xcoord;
+        BIGNUM *auth_xcoord;
 };
 
 class Hint {
     public:
         Hint();
-        Hint(EC_POINT *R_in, BIGNUM *r_in, BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in);
+        Hint(BIGNUM *xcoord_in, BIGNUM *auth_xcoord_in, BIGNUM *r_in, BIGNUM *auth_r_in, BIGNUM *a_in, BIGNUM *b_in, BIGNUM *c_in, BIGNUM *f_in, BIGNUM *g_in, BIGNUM *h_in, BIGNUM *alpha_in);
 
-        EC_POINT *R;
+        BIGNUM *xcoord;
+        BIGNUM *auth_xcoord;
         BIGNUM *r;
+        BIGNUM *auth_r;
         BIGNUM *a;
         BIGNUM *b;
         BIGNUM *c;
+        BIGNUM *f;
+        BIGNUM *g;
+        BIGNUM *h;
+        BIGNUM *alpha;
 };
-
-void ProcessPresig(Params params, BIGNUM *r, EC_POINT *R, BIGNUM *z, BIGNUM *x_coord);
 
 #endif

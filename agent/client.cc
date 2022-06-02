@@ -172,10 +172,10 @@ void Client::WriteToStorage() {
 
   FILE *hint_file = fopen(HINT_FILE, "w");
   for (int i = 0; i < clientHints.size(); i++) {
-     EC_POINT_point2oct(Params_group(params), clientHints[i].R,
-                       POINT_CONVERSION_COMPRESSED, pt, 33,
-                       Params_ctx(params));
-      fwrite(pt, 33, 1, hint_file);
+      BN_bn2bin(clientHints[i].xcoord, buf);
+      fwrite(buf, 32, 1, hint_file);
+      BN_bn2bin(clientHints[i].auth_xcoord, buf);
+      fwrite(buf, 32, 1, hint_file);
   }
   fclose(hint_file);
 
@@ -239,16 +239,15 @@ void Client::ReadFromStorage() {
   }
 
   FILE *hint_file = fopen(HINT_FILE, "r");
-  uint8_t long_buf[33];
+  uint8_t long_buf[64];
   if (hint_file != NULL) {
-    EC_POINT *R;
-    while (fread(long_buf, 33, 1, hint_file) == 1) {
-      R = EC_POINT_new(Params_group(params));
-      if (EC_POINT_oct2point(Params_group(params), R, long_buf, 33,
-                             Params_ctx(params)) != OKAY) {
-          fprintf(stderr, "ERROR: hint not in valid format\n");
-      }
-      clientHints.push_back(ShortHint(R));
+    BIGNUM *xcoord, *auth_xcoord;
+    while (fread(long_buf, 64, 1, hint_file) == 1) {
+      xcoord = BN_new();
+      auth_xcoord = BN_new();
+      BN_bin2bn(long_buf, 32, xcoord);
+      BN_bin2bn(long_buf + 32, 32, auth_xcoord);
+      clientHints.push_back(ShortHint(xcoord, auth_xcoord));
     }
     fclose(kh_file);
   }
@@ -315,25 +314,30 @@ void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret) {
     GetPreprocessValue(ctx, bn_ctx, ctr, ret);
 }
 
-void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
-    uint64_t ctr = i * 4;
+void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
+    uint64_t ctr = i * 9;
     GetPreprocessValue(ctx, bn_ctx, ctr, r);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 1, a);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 2, b);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 3, c);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 1, auth_r);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 2, a);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 3, b);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 4, c);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 5, f);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 6, g);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 7, h);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 8, alpha);
 }
 
-void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c) {
-    uint64_t ctr = i * 4;
+void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
+    uint64_t ctr = i * 9;
     GetPreprocessValue(ctr, r);
-    //GetPreprocessValue(ctr + 1, auth_r);
-    GetPreprocessValue(ctr + 1, a);
-    GetPreprocessValue(ctr + 2, b);
-    GetPreprocessValue(ctr + 3, c);
-    //GetPreprocessValue(ctr + 5, f);
-    //GetPreprocessValue(ctr + 6, g);
-    //GetPreprocessValue(ctr + 7, h);
-    //GetPreprocessValue(ctr + 8, alpha);
+    GetPreprocessValue(ctr + 1, auth_r);
+    GetPreprocessValue(ctr + 2, a);
+    GetPreprocessValue(ctr + 3, b);
+    GetPreprocessValue(ctr + 4, c);
+    GetPreprocessValue(ctr + 5, f);
+    GetPreprocessValue(ctr + 6, g);
+    GetPreprocessValue(ctr + 7, h);
+    GetPreprocessValue(ctr + 8, alpha);
 }
 
 // TODO compress r1 or r2 with PRG
@@ -345,7 +349,12 @@ void Client::Preprocess(vector<Hint> &logHints) {
     BIGNUM *a1, *b1, *c1;
     BIGNUM *a2, *b2, *c2;
     BIGNUM *a, *b, *c;
-    BIGNUM *xcoord, *ycoord;
+    BIGNUM *f1, *g1, *h1;
+    BIGNUM *f2, *g2, *h2;
+    BIGNUM *f, *g, *h;
+    BIGNUM *alpha1, *alpha2, *alpha;
+    BIGNUM *auth_r1, *auth_r2, *auth_r;
+    BIGNUM *xcoord, *ycoord, *auth_xcoord;
     BIGNUM *zero = NULL;
     BIGNUM *neg_one = NULL;
     EC_POINT *R = NULL;
@@ -371,9 +380,9 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_A (r = BN_new());
         //CHECK_A (r_inv = BN_new());
         CHECK_A (r1 = BN_new());
-        /*CHECK_A (auth_r1 = BN_new());
+        CHECK_A (auth_r1 = BN_new());
         CHECK_A (auth_r2 = BN_new());
-        CHECK_A (auth_r = BN_new());*/
+        CHECK_A (auth_r = BN_new());
         CHECK_A (r2 = BN_new());
         CHECK_A (a1 = BN_new());
         CHECK_A (b1 = BN_new());
@@ -384,10 +393,24 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_A (a = BN_new());
         CHECK_A (b = BN_new());
         CHECK_A (c = BN_new());
-        //CHECK_A (auth_xcoord = BN_new());
+        CHECK_A (f1 = BN_new());
+        CHECK_A (g1 = BN_new());
+        CHECK_A (h1 = BN_new());
+        CHECK_A (f2 = BN_new());
+        CHECK_A (g2 = BN_new());
+        CHECK_A (h2 = BN_new());
+        CHECK_A (f = BN_new());
+        CHECK_A (g = BN_new());
+        CHECK_A (h = BN_new());
+        CHECK_A (alpha1 = BN_new());
+        CHECK_A (alpha2 = BN_new());
+        CHECK_A (alpha = BN_new());
+        CHECK_A (xcoord = BN_new());
+        CHECK_A (ycoord = BN_new());
+        CHECK_A (auth_xcoord = BN_new());
         CHECK_A (R = EC_POINT_new(Params_group(params)));
 
-        GetPreprocessValueSet(i, r1, a1, b1, c1);
+        GetPreprocessValueSet(i, r1, auth_r1, a1, b1, c1, f1, g1, h1, alpha1);
         //GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
         //CHECK_C (Params_rand_exponent(params, r2));
         //CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
@@ -404,18 +427,24 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_C (BN_mod_mul(c, a, b, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(c2, c, c1, Params_order(params), ctx));
 
-        /*CHECK_C (BN_mod_mul(f, a, alpha, Params_order(params), ctx));
+        CHECK_C (Params_rand_exponent(params, alpha2));
+        CHECK_C (BN_mod_add(alpha, alpha1, alpha2, Params_order(params), ctx));
+
+        CHECK_C (BN_mod_mul(f, a, alpha, Params_order(params), ctx));
         CHECK_C (BN_mod_mul(g, b, alpha, Params_order(params), ctx));
         CHECK_C (BN_mod_mul(h, c, alpha, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(f2, f, f1, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(g2, g, g1, Params_order(params), ctx));
-        CHECK_C (BN_mod_sub(h2, h, h1, Params_order(params), ctx));*/
+        CHECK_C (BN_mod_sub(h2, h, h1, Params_order(params), ctx));
 
-        //EC_POINT_get_affine_coordinates_GFp(params->group, R, xcoord, ycoord, NULL);
-        //CHECK_C (BN_mod(xcoord, xcoord, Params_order(params), ctx));
+        EC_POINT_get_affine_coordinates_GFp(params->group, R, xcoord, ycoord, NULL);
+        CHECK_C (BN_mod(xcoord, xcoord, Params_order(params), ctx));
+        CHECK_C (BN_mod_mul(auth_xcoord, xcoord, alpha, Params_order(params), ctx));
+        CHECK_C (BN_mod_mul(auth_r, r_inv, alpha, Params_order(params), ctx));
+        CHECK_C (BN_mod_sub(auth_r2, auth_r, auth_r1, Params_order(params), ctx));
 
 
-        
+
  /*       BN_zero(a2);
         BN_zero(b2);
         BN_zero(r2);
@@ -427,8 +456,8 @@ void Client::Preprocess(vector<Hint> &logHints) {
         printf("r1 = %s\n", BN_bn2hex(r1));
         printf("c2 = %s\n", BN_bn2hex(c2));*/
 
-        clientHints.push_back(ShortHint(R));
-        logHints.push_back(Hint(R, r2, a2, b2, c2));
+        clientHints.push_back(ShortHint(xcoord, auth_xcoord));
+        logHints.push_back(Hint(xcoord, auth_xcoord, r2, auth_r2, a2, b2, c2, f2, g2, h2, alpha2));
         BN_free(r);
         BN_free(r1);
         BN_free(a1);
@@ -472,21 +501,28 @@ int Client::Initialize() {
 
     for (int i = 0; i < NUM_AUTHS; i++) {
         HintMsg *h = req.add_hints();
-        EC_POINT_point2oct(Params_group(params), logHints[i].R, POINT_CONVERSION_COMPRESSED,
-                buf, 33, Params_ctx(params));
-        h->set_big_r(buf, 33);
-        //BN_bn2bin(logHints[i].auth_xcoord, buf);
-        //h->set_auth_xcoord(buf, BN_num_bytes(logHints[i].auth_xcoord));
+        BN_bn2bin(logHints[i].xcoord, buf);
+        h->set_xcoord(buf, BN_num_bytes(logHints[i].xcoord));
+        BN_bn2bin(logHints[i].auth_xcoord, buf);
+        h->set_auth_xcoord(buf, BN_num_bytes(logHints[i].auth_xcoord));
         BN_bn2bin(logHints[i].r, buf);
         h->set_r(buf, BN_num_bytes(logHints[i].r));
-        //BN_bn2bin(logHints[i].auth_r, buf);
-        //h->set_auth_r(buf, BN_num_bytes(logHints[i].auth_r));
+        BN_bn2bin(logHints[i].auth_r, buf);
+        h->set_auth_r(buf, BN_num_bytes(logHints[i].auth_r));
         BN_bn2bin(logHints[i].a, buf);
         h->set_a(buf, BN_num_bytes(logHints[i].a));
         BN_bn2bin(logHints[i].b, buf);
         h->set_b(buf, BN_num_bytes(logHints[i].b));
         BN_bn2bin(logHints[i].c, buf);
         h->set_c(buf, BN_num_bytes(logHints[i].c));
+        BN_bn2bin(logHints[i].f, buf);
+        h->set_f(buf, BN_num_bytes(logHints[i].f));
+        BN_bn2bin(logHints[i].g, buf);
+        h->set_g(buf, BN_num_bytes(logHints[i].g));
+        BN_bn2bin(logHints[i].h, buf);
+        h->set_h(buf, BN_num_bytes(logHints[i].h));
+        BN_bn2bin(logHints[i].alpha, buf);
+        h->set_alpha(buf, BN_num_bytes(logHints[i].alpha));
     }
 
     id = rand();
@@ -613,26 +649,36 @@ cleanup:
   return cert_len + sig_len;
 }
 
-int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *z, BIGNUM *x_coord) {
+int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
   BN_CTX *ctx;
   int rv = OKAY;
   BIGNUM *auth_val = BN_new();
+  BIGNUM *auth_hash = BN_new();
+
   ctx = BN_CTX_new();
 
   //fprintf(stderr, "det2f: x_coord = %s\n", BN_bn2hex(clientHints[auth_ctr].xcoord));
-  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
+  BN_mod_mul(val, clientHints[auth_ctr].xcoord, sk, Params_order(params), ctx);
   BN_mod_add(val, val, msg_hash, Params_order(params), ctx);
   //fprintf(stderr, "det2f: COMPUTED VAL = %s\n", BN_bn2hex(val));
   //fprintf(stderr, "det2f: multiplying by r^-1 = %s\n", BN_bn2hex(r));
 
+  BN_mod_mul(auth_val, clientHints[auth_ctr].auth_xcoord, sk, Params_order(params), ctx);
+  BN_mod_mul(auth_hash, msg_hash, alpha, Params_order(params), ctx);
+  BN_mod_add(auth_val, auth_val, auth_hash, Params_order(params), ctx);
+
   BN_mod_sub(d, r, a, Params_order(params), ctx);
   BN_mod_sub(e, val, b, Params_order(params), ctx);
+
+  BN_mod_sub(auth_d, auth_r, f, Params_order(params), ctx);
+  BN_mod_sub(auth_e, auth_val, g, Params_order(params), ctx);
+  //fprintf(stderr, "det2f: finished start signing procedure\n");
 
 cleanup:
   return rv;
 }
 
-int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *out) {
+int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha, BIGNUM *out, BIGNUM *auth_out) {
     BIGNUM *prod = NULL;
     BN_CTX *ctx;
     int rv = OKAY;
@@ -648,6 +694,16 @@ int Client::FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, c, Params_order(params), ctx);
     //fprintf(stderr, "det2f: * share of s = %s\n", BN_bn2hex(out));
+
+    // authenticated value
+    // de.\alpha + d[g] + e[f] + [h]
+    BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
+    BN_mod_mul(auth_out, auth_out, alpha, Params_order(params), ctx);
+    BN_mod_mul(prod, d, g, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
+    BN_mod_mul(prod, e, f, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, h, Params_order(params), ctx);
 
 cleanup:
     return rv;
@@ -735,25 +791,24 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   *sig_len = len_byte + 2;
 }
 
-void Client::ThresholdSign(BIGNUM *out, BIGNUM *x_coord, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
+void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
   BIGNUM *a, *b, *c;
-  BIGNUM *d_client, *d_log, *d;
-  BIGNUM *e_client, *e_log, *e;
+  BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
+  BIGNUM *e_client, *e_log, *auth_e, *e, *check_e;
   BIGNUM *f, *g, *h;
   BIGNUM *alpha;
-  BIGNUM *r;
+  BIGNUM *auth_r, *r;
   BIGNUM *hash_bn = NULL;
-  BIGNUM *out_client, *out_log;
+  BIGNUM *out_client, *out_log, *auth_out_client;
   BIGNUM *val;
   BIGNUM *zero;
-  BIGNUM *z;
-  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthCheckRequest checkReq;
   AuthResponse resp;
   AuthCheckResponse checkResp;
   ClientContext client_ctx;
   ClientContext client_ctx2;
-  uint8_t *d_buf, *e_buf;
+  uint8_t *d_buf, *e_buf, *check_d_buf, *check_e_buf;
   BN_CTX *ctx;
 
   a = BN_new();
@@ -765,24 +820,32 @@ void Client::ThresholdSign(BIGNUM *out, BIGNUM *x_coord, uint8_t *hash_out, BIGN
   e_client = BN_new();
   e_log = BN_new();
   e = BN_new();
+  auth_d = BN_new();
+  auth_e = BN_new();
+  f = BN_new();
+  g = BN_new();
+  h = BN_new();
+  alpha = BN_new();
   r = BN_new();
+  auth_r = BN_new();
   out_log = BN_new();
   out_client = BN_new();
+  auth_out_client = BN_new();
   hash_bn = BN_new();
+  check_d = BN_new();
+  check_e = BN_new();
   val = BN_new();
   ctx = BN_CTX_new();
-  z = BN_new();
   //INIT_TIMER;
   //START_TIMER;
- 
- 
+
+
   req.set_digest(hash_out, 32);
   req.set_id(id);
-  GetPreprocessValueSet(auth_ctr, r, a, b, c);
+  GetPreprocessValueSet(auth_ctr, r, auth_r, a, b, c, f, g, h, alpha);
   BN_bin2bn(hash_out, 32, hash_bn);
   BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-  ProcessPresig(params, r, clientHints[auth_ctr].R, z, x_coord);
-  StartSigning(hash_bn, sk, val, r, a, b, c, d_client, e_client, z, x_coord);
+  StartSigning(hash_bn, sk, val, r, auth_r, a, b, c, d_client, e_client, auth_d, auth_e, f, g, h, alpha);
   d_buf = (uint8_t *)malloc(BN_num_bytes(d_client));
   e_buf = (uint8_t *)malloc(BN_num_bytes(e_client));
   BN_bn2bin(d_client, d_buf);
@@ -796,13 +859,12 @@ void Client::ThresholdSign(BIGNUM *out, BIGNUM *x_coord, uint8_t *hash_out, BIGN
   BN_bin2bn((uint8_t *)resp.d().c_str(), resp.d().size(), d_log);
   BN_bin2bn((uint8_t *)resp.e().c_str(), resp.e().size(), e_log);
   BN_bin2bn((uint8_t *)resp.prod().c_str(), resp.prod().size(), out_log);
-  
+
   BN_mod_add(d, d_client, d_log, Params_order(params), ctx);
   BN_mod_add(e, e_client, e_log, Params_order(params), ctx);
 
-  FinishSigning(val, r, a, b, c, d, e, out_client);
+  FinishSigning(val, r, a, b, c, d, e, f, g, h, alpha, out_client, auth_out_client);
 
-  /*
   MakeCheckVal(check_d, d, auth_d, alpha);
   MakeCheckVal(check_e, e, auth_e, alpha);
 
@@ -816,16 +878,14 @@ void Client::ThresholdSign(BIGNUM *out, BIGNUM *x_coord, uint8_t *hash_out, BIGN
 
   stub->SendAuthCheck(&client_ctx2, checkReq, &checkResp);
 
-  BN_bin2bn((uint8_t *)checkResp.out().c_str(), checkResp.out().size(), out_log);*/
+  BN_bin2bn((uint8_t *)checkResp.out().c_str(), checkResp.out().size(), out_log);
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
 
-  if (!VerifySignature(sk, hash_bn, out, x_coord)) {
+  if (!VerifySignature(sk, hash_bn, out, clientHints[auth_ctr].xcoord)) {
     fprintf(stderr, "ERROR: signature fails\n");
-  } else {
-    fprintf(stderr, "signature verifies\n");
   }
- 
+
 }
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
@@ -969,10 +1029,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   START_TIMER;
   if (!noRegistration) {
     fprintf(stderr, "use registration key\n");
-    ThresholdSign(out, x_coord, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
+    ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
     fprintf(stderr, "use random key\n");
-    ThresholdSign(out, x_coord, hash_out, sk, req);
+    ThresholdSign(out, hash_out, sk, req);
   }
   //STOP_TIMER("threshold sig");
   //INIT_TIMER;
@@ -982,7 +1042,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //fprintf(stderr, "encoding sig\n");
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   //asn1_sigp(sig_out, r, s);
-  asn1_sigp(sig_out, x_coord, out);
+  asn1_sigp(sig_out, clientHints[auth_ctr].xcoord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
   //STOP_TIMER("ECDSA sign");

@@ -12,11 +12,17 @@ service Log {
 }
 
 message HintMsg {
-    bytes big_r = 1;
-    bytes r = 2;
-    bytes a = 3;
-    bytes b = 4;
-    bytes c = 5;
+    bytes xcoord = 1;
+    bytes auth_xcoord = 2;
+    bytes r = 3;
+    bytes auth_r = 4;
+    bytes a = 5;
+    bytes b = 6;
+    bytes c = 7;
+    bytes f = 8;
+    bytes g = 9;
+    bytes h = 10;
+    bytes alpha = 11;
 }
 
 message InitRequest {
@@ -54,6 +60,7 @@ message AuthResponse {
     bytes prod = 1;
     bytes d = 2;
     bytes e = 3;
+    int32 session_ctr = 4;
 }
 
 message AuthCheckRequest {
