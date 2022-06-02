@@ -776,7 +776,7 @@ void Client::ThresholdSign(BIGNUM *out, BIGNUM *x_coord, uint8_t *hash_out, BIGN
   GetPreprocessValueSet(auth_ctr, r, a, b, c);
   BN_bin2bn(hash_out, 32, hash_bn);
   BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-  RerandomizePresig(params, r, clientHints[auth_ctr].R, hash_bn, z, x_coord);
+  ProcessPresig(params, r, clientHints[auth_ctr].R, z, x_coord);
   StartSigning(hash_bn, sk, val, r, a, b, c, d_client, e_client, z, x_coord);
   d_buf = (uint8_t *)malloc(BN_num_bytes(d_client));
   e_buf = (uint8_t *)malloc(BN_num_bytes(e_client));

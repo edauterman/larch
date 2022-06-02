@@ -150,7 +150,7 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     // TODO make sure that digest lines up with value in serialized proof
     BN_bin2bn(digest, 32, hash_bn);
     BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-    RerandomizePresig(params, clientMap[id]->hints[auth_ctr].r, clientMap[id]->hints[auth_ctr].R, hash_bn, z, x_coord);
+    ProcessPresig(params, clientMap[id]->hints[auth_ctr].r, clientMap[id]->hints[auth_ctr].R, z, x_coord);
     //printf("converted hash to bn\n");
     //printf("message hash bn = %s\n", BN_bn2hex(hash_bn));
 

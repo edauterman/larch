@@ -29,6 +29,6 @@ class Hint {
         BIGNUM *c;
 };
 
-void RerandomizePresig(Params params, BIGNUM *r, EC_POINT *R, BIGNUM *m, BIGNUM *z, BIGNUM *x_coord);
+void ProcessPresig(Params params, BIGNUM *r, EC_POINT *R, BIGNUM *z, BIGNUM *x_coord);
 
 #endif
