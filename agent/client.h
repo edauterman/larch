@@ -51,6 +51,7 @@ class Client {
         int BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                         uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool noRegistration = false);
+        void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len);
         void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req);
     private:
         Params params;
@@ -65,7 +66,7 @@ class Client {
         uint8_t enc_key_comm[32];
         uint32_t auth_ctr;
         uint32_t id;
-        uint8_t mac_key[16];
+        BIGNUM *auth_key;
         unique_ptr<Log::Stub> stub;
 
         const int NUM_AUTHS = 100000;

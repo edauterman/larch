@@ -31,10 +31,11 @@ using grpc::Status;
 using namespace std;
 using namespace emp;
 
-AuthState::AuthState(BIGNUM *check_d_in, BIGNUM *check_e_in, BIGNUM *out_in) {
-    check_d = check_d_in;
-    check_e = check_e_in;
-    out = out_in;
+Token::Token(uint8_t *ct_in, uint8_t *iv_in, uint8_t *sig_in, unsigned int sig_len) {
+    memcpy(ct, ct_in, SHA256_DIGEST_LENGTH);
+    memcpy(iv, iv_in, 16);
+    memset(sig, 0, MAX_ECDSA_SIG_SIZE);
+    memcpy(sig, sig_in, sig_len);
 }
 
 InitState::InitState() {}
@@ -74,7 +75,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     //printf("done choosing log key\n");
 }
 
-void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *sig_out, unsigned int *sig_len) {
+void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *sig_out, unsigned int *sig_len) {
     Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
@@ -202,33 +203,11 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     printf("challenge len = %d\n", challenge_len / 8);
     EVP_SignUpdate(mdctx, challenge, challenge_len / 8);
     EVP_SignFinal(mdctx, sig_out, sig_len, pkey);*/
+
+    Token *token = new Token(ct, iv_bytes, auth_sig, auth_sig_len);
+    saveMap[id] = token;
 };
 
-void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_e_buf, unsigned int check_e_len, uint8_t *out, unsigned int *out_len) {
-    BIGNUM *check_d_client = BN_new();
-    BIGNUM *check_e_client = BN_new();
-    BIGNUM *sum = BN_new();
-    BN_CTX *ctx = BN_CTX_new();
-
-    BN_bin2bn(check_d_buf, check_d_len, check_d_client);
-    BN_bin2bn(check_e_buf, check_e_len, check_e_client);
-
-    BN_mod_add(sum, check_d_client, saveMap[sessionCtr]->check_d, Params_order(params), ctx);
-    if (!BN_is_zero(sum)) {
-        fprintf(stderr, "ERROR: MAC tag for d doesn't verify %s %s -> %s\n", BN_bn2hex(check_d_client), BN_bn2hex(saveMap[sessionCtr]->check_d), BN_bn2hex(sum));
-        *out_len = 0;
-        return;
-    }
-    BN_mod_add(sum, check_e_client, saveMap[sessionCtr]->check_e, Params_order(params), ctx);
-    if (!BN_is_zero(sum)) {
-        fprintf(stderr, "ERROR: MAC tag for e doesn't verify %s %s -> %s\n", BN_bn2hex(check_e_client), BN_bn2hex(saveMap[sessionCtr]->check_e), BN_bn2hex(sum));
-        *out_len = 0;
-        return;
-    }
-
-    BN_bn2bin(saveMap[sessionCtr]->out, out);
-    *out_len = BN_num_bytes(saveMap[sessionCtr]->out);
-}
 
 class LogServiceImpl final : public Log::Service {
     public:
@@ -264,7 +243,7 @@ class LogServiceImpl final : public Log::Service {
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
-            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, prod, &prod_len);
+            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, prod, &prod_len);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
             resp->set_prod(prod, prod_len);
@@ -272,13 +251,6 @@ class LogServiceImpl final : public Log::Service {
             return Status::OK;
         }
 
-        Status SendAuthCheck(ServerContext *context, const AuthCheckRequest *req, AuthCheckResponse *resp) override {
-            uint8_t out[32];
-            unsigned int out_len;
-            server->FinishSign(req->session_ctr(), (uint8_t *)req->check_d().c_str(), req->check_d().size(), (uint8_t *)req->check_e().c_str(), req->check_e().size(), out, &out_len);
-            resp->set_out(out, out_len);
-            return Status::OK;
-        }
 };
 
 void runServer(string bindAddr, bool onlySigs) {

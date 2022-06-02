@@ -136,7 +136,7 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 Client::Client(bool startConn) {
     params = Params_new(P256);
     //logAddr = "13.59.107.196:12345";
-    logAddr = "54.183.214.211:12345";
+    logAddr = "127.0.0.1:12345";
     //logAddr = "3.134.86.85:12345";
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
@@ -188,7 +188,8 @@ void Client::WriteToStorage() {
   fwrite((uint8_t *)&auth_ctr, sizeof(uint32_t), 1, master_file);
   fwrite(seed, 16, 1, master_file);
   fwrite((uint8_t *)&id, sizeof(uint32_t), 1, master_file);
-  fwrite(mac_key, 16, 1, master_file);
+  BN_bn2bin(auth_key, buf);
+  fwrite(buf, 32, 1, master_file);
   fclose(master_file);
  
   //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
@@ -275,9 +276,12 @@ void Client::ReadFromStorage() {
   if (fread((uint8_t *)&id, sizeof(uint32_t), 1, master_file) != 1) {
     fprintf(stderr, "ERROR: id not in file\n");
   }
-  if (fread((uint8_t *)&mac_key, 16, 1, master_file) != 1) {
+  uint8_t buf[32];
+  if (fread((uint8_t *)&buf, 32, 1, master_file) != 1) {
     fprintf(stderr, "ERROR: mac_key not in file\n");
   }
+  auth_key = BN_new();
+  BN_bin2bn(buf, 32, auth_key);
 
   //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
   fclose(master_file);
@@ -482,7 +486,8 @@ int Client::Initialize() {
     }
 
     id = rand();
-    RAND_bytes(mac_key, 16);
+    auth_key = BN_new();
+    Params_rand_exponent(params, auth_key);
 
     req.set_key_comm(enc_key_comm, 32);
     req.set_id(id);
@@ -733,6 +738,52 @@ bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
     return res;
 }
 
+void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len) {
+  int rv;
+  BIGNUM *out = NULL;
+  BIGNUM *r, *r_inv, *x_coord, *y_coord, *val, *hash_bn;
+  EC_POINT *R;
+  EVP_MD_CTX *mdctx2;
+  uint8_t message[SHA256_DIGEST_LENGTH];
+  BN_CTX *ctx;
+  uint8_t len_byte;
+  uint8_t hash_out[32];
+
+  out = BN_new();
+  hash_bn = BN_new();
+  val = BN_new();
+  r = BN_new();
+  r_inv = BN_new();
+  x_coord = BN_new();
+  y_coord = BN_new();
+  sk = BN_new();
+  mdctx2 = EVP_MD_CTX_create();
+  ctx = BN_CTX_new();
+  R = EC_POINT_new(Params_group(params));
+
+  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
+  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
+  EVP_DigestFinal(mdctx2, hash_out, NULL);
+
+  Params_rand_exponent(params, sk);
+  BN_bin2bn(hash_out, 32, hash_bn);
+  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
+  Params_rand_point_exp(params, R, r);
+  r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
+  EC_POINT_get_affine_coordinates_GFp(Params_group(params), R, x_coord, y_coord, NULL);
+  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
+  BN_mod_add(val, hash_bn, val, Params_order(params), ctx);
+  BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
+
+  /* Output signature. */
+  //fprintf(stderr, "encoding sig\n");
+  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
+  //asn1_sigp(sig_out, r, s);
+  asn1_sigp(sig_out, x_coord, out);
+  len_byte = sig_out[1];
+  *sig_len = len_byte + 2;
+}
+
 void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *d;
@@ -876,7 +927,9 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t *check_e_buf;
   BIGNUM *sk;
   uint8_t tag[SHA256_DIGEST_LENGTH];
-  uint8_t mac_input[16 + 16 + SHA256_DIGEST_LENGTH];
+  uint8_t auth_input[16 + SHA256_DIGEST_LENGTH];
+  uint8_t auth_sig[MAX_ECDSA_SIG_SIZE];
+  unsigned int auth_sig_len;
 
   //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
@@ -948,11 +1001,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   // TODO real IV
   //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
-  memcpy(mac_input, mac_key, 16);
-  memcpy(mac_input + 16, iv_raw, 16);
-  memcpy(mac_input + 32, ct, SHA256_DIGEST_LENGTH);
-  hash_to_bytes(tag, SHA256_DIGEST_LENGTH, mac_input, 32 + SHA256_DIGEST_LENGTH);
-  req.set_tag(tag, SHA256_DIGEST_LENGTH);
+  memcpy(auth_input, iv_raw, 16);
+  memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
+  Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
+  req.set_tag(auth_sig, auth_sig_len);
   START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
@@ -1070,46 +1122,7 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   }
   fprintf(stderr, "\n");*/
 
-  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
-  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
-  EVP_DigestFinal(mdctx2, hash_out, NULL);
-
-  //RAND_bytes(iv_raw, 16);
-  //memcpy((uint8_t *)&iv, iv_raw, 16);
-
-//  memset(enc_key, 0, 16);
-  //memcpy((uint8_t *)&enc_key_128, enc_key, 16);
-  //aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
-  //STOP_TIMER("setup garbage"); 
-
-  /*req.set_ct(ct, SHA256_DIGEST_LENGTH);
-  req.set_iv(iv_raw, 16);*/
-  /*memcpy(mac_input, mac_key, 16);
-  memcpy(mac_input + 16, iv_raw, 16);
-  memcpy(mac_input + 32, ct, SHA256_DIGEST_LENGTH);
-  hash_to_bytes(tag, SHA256_DIGEST_LENGTH, mac_input, 32 + SHA256_DIGEST_LENGTH);*/
-  //req.set_tag(tag, SHA256_DIGEST_LENGTH);
-  
-  //stub->SendAuthBaseline(&client_ctx, req, &resp);
-
-  Params_rand_exponent(params, sk);
-  BN_bin2bn(hash_out, 32, hash_bn);
-  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-  Params_rand_point_exp(params, R, r);
-  r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
-  EC_POINT_get_affine_coordinates_GFp(Params_group(params), R, x_coord, y_coord, NULL);
-  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
-  BN_mod_add(val, hash_bn, val, Params_order(params), ctx);
-  BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
-
-  /* Output signature. */
-  //fprintf(stderr, "encoding sig\n");
-  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
-  //asn1_sigp(sig_out, r, s);
-  asn1_sigp(sig_out, x_coord, out);
-  len_byte = sig_out[1];
-  sig_len = len_byte + 2;
-  //STOP_TIMER("ECDSA sign");
+  Sign(message_buf, message_buf_len, sk, sig_out, &sig_len);
 
   /* Output message from device. */
   *flags_out = flags;

@@ -6,16 +6,17 @@
 #include <emp-tool/emp-tool.h>
 
 #include "../crypto/params.h"
+#include "../agent/u2f.h"
 
 #define NUM_ROUNDS 5
 
-class AuthState {
+class Token {
     public:
-        BIGNUM *check_d;
-        BIGNUM *check_e;
-        BIGNUM *out;
+        uint8_t ct[SHA256_DIGEST_LENGTH];
+        uint8_t iv[16];
+        uint8_t sig[MAX_ECDSA_SIG_SIZE];
 
-        AuthState(BIGNUM *check_d, BIGNUM *check_e, BIGNUM *out);
+        Token(uint8_t *ct, uint8_t *iv, uint8_t *sig, unsigned int sig_len);
 };
 
 class InitState {
@@ -34,7 +35,7 @@ class LogServer {
         LogServer(bool onlySigs);
         void Initialize(const InitRequest *req, uint8_t *pkBuf);
         void GenerateKeyPair(uint8_t *x_out, uint8_t *y_out);
-        void VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *sig_out, unsigned int *sig_len);
+        void VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *sig_out, unsigned int *sig_len);
         void FinishSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_e_buf, unsigned int check_e_len, uint8_t *out, unsigned int *out_len);
 
     private:
@@ -51,7 +52,7 @@ class LogServer {
         uint8_t enc_key_comm[32];
         uint32_t auth_ctr;*/
         map<uint32_t, InitState *>clientMap;
-        map<uint32_t, AuthState *> saveMap;
+        map<uint32_t, Token *> saveMap;
 
         EVP_PKEY *pkey;
         EC_KEY *key;
