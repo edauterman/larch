@@ -290,17 +290,9 @@ class LogServiceImpl final : public Log::Service {
         LogServiceImpl(LogServer *server, bool onlySigs_in) : server(server), onlySigs(onlySigs_in) {}
 
         Status SendInit(ServerContext *context, const InitRequest *req, InitResponse *resp) override {
-<<<<<<< HEAD
-            printf("Received initialization request\n");
             uint8_t pkBuf[33];
             server->Initialize(req, pkBuf);
             resp->set_pk(pkBuf, 33);
-            printf("Sending initialization response: %s\n", resp->pk().c_str());
-=======
-            uint8_t pkBuf[33];
-            server->Initialize(req, pkBuf);
-            resp->set_pk(pkBuf, 33);
->>>>>>> 85933d9d9e8cc45de9934a7dc72dce016ac8d9b1
             return Status::OK;
         }
 
