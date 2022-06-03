@@ -69,8 +69,8 @@ class Client {
         BIGNUM *auth_key;
         unique_ptr<Log::Stub> stub;
 
-        const int NUM_AUTHS = 100000;
-        //const int NUM_AUTHS = 10000;
+        const int NUM_AUTHS = 1000;
+        //const int NUM_AUTHS = 100;
 
         void Preprocess(vector<Hint> &logHints);
         void GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret);

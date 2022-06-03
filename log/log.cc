@@ -82,11 +82,17 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     Params_rand_point_exp(params, initSt->pk, initSt->sk);
     //Params_rand_point_exp(params, pk, sk);
     //printf("chose key\n");
+    printf("log key = ");
+    memset(pkBuf, 0, 33);
     EC_POINT_point2oct(Params_group(params), initSt->pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
+    for (int i = 0; i < 33; i++) {
+        printf("%x", pkBuf[i]);
+    }
+    printf("\n");
     initSt->auth_ctr = 0;
 
     clientMap[req->id()] = initSt;
-    //printf("done choosing log key\n");
+    printf("done choosing log key\n");
 }
 
 void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr) {
@@ -281,11 +287,11 @@ class LogServiceImpl final : public Log::Service {
         LogServiceImpl(LogServer *server, bool onlySigs_in) : server(server), onlySigs(onlySigs_in) {}
 
         Status SendInit(ServerContext *context, const InitRequest *req, InitResponse *resp) override {
-            //printf("Received initialization request\n");
+            printf("Received initialization request\n");
             uint8_t pkBuf[33];
             server->Initialize(req, pkBuf);
             resp->set_pk(pkBuf, 33);
-            //printf("Sending initialization response\n");
+            printf("Sending initialization response: %s\n", resp->pk().c_str());
             return Status::OK;
         }
 
