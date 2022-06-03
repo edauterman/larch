@@ -17,6 +17,7 @@
 #include "../agent/u2f.h"
 #include "../zkboo/src/proof.h"
 #include "../zkboo/src/verifier.h"
+#include "../zkboo/utils/timer.h"
 
 #include "log.h"
 
@@ -82,11 +83,11 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     Params_rand_point_exp(params, initSt->pk, initSt->sk);
     //Params_rand_point_exp(params, pk, sk);
     //printf("chose key\n");
+    memset(pkBuf, 0, 33);
     EC_POINT_point2oct(Params_group(params), initSt->pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
     initSt->auth_ctr = 0;
 
     clientMap[req->id()] = initSt;
-    //printf("done choosing log key\n");
 }
 
 void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr) {
@@ -238,11 +239,19 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
         memcpy(auth_input, iv_bytes, 16);
         memcpy(auth_input + 16, ct, 32);
         EC_KEY *key = EC_KEY_new();
-        EC_KEY_set_group(key, Params_group(params));
+        EVP_PKEY *pkey = EVP_PKEY_new();
+        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+        EC_KEY_new_by_curve_name(415);
+        //EC_KEY_set_group(key, Params_group(params));
         EC_KEY_set_public_key(key, clientMap[id]->auth_pk);
-        if (ECDSA_verify(0, auth_input, 48, auth_sig, auth_sig_len, key) != 1) {
+        EVP_PKEY_assign_EC_KEY(pkey, key);
+        EVP_VerifyInit(mdctx, EVP_sha256());
+        EVP_VerifyUpdate(mdctx, auth_input, 48);
+        int ver = EVP_VerifyFinal(mdctx, auth_sig, auth_sig_len, pkey);
+        //printf("sig ver result = %d\n", ver);
+        /*if (ECDSA_verify(0, auth_input, 48, auth_sig, auth_sig_len, key) != 1) {
             printf("SIG VERIFICATION FAILED\n");
-        }
+        }*/
     }
 };
 
@@ -281,11 +290,9 @@ class LogServiceImpl final : public Log::Service {
         LogServiceImpl(LogServer *server, bool onlySigs_in) : server(server), onlySigs(onlySigs_in) {}
 
         Status SendInit(ServerContext *context, const InitRequest *req, InitResponse *resp) override {
-            //printf("Received initialization request\n");
             uint8_t pkBuf[33];
             server->Initialize(req, pkBuf);
             resp->set_pk(pkBuf, 33);
-            //printf("Sending initialization response\n");
             return Status::OK;
         }
 
@@ -307,6 +314,8 @@ class LogServiceImpl final : public Log::Service {
             string challengeStr = req->challenge();
             string ctStr = req->ct();
             string ivStr = req->iv();
+            INIT_TIMER;
+            START_TIMER;
             //server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, prod, &prod_len);
             server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, &sessionCtr);
             resp->set_d(d, d_len);
@@ -314,6 +323,7 @@ class LogServiceImpl final : public Log::Service {
             resp->set_session_ctr(sessionCtr);
             //resp->set_prod(prod, prod_len);
             //printf("Sending auth response\n");
+            //STOP_TIMER("verifier");
             return Status::OK;
         }
 
