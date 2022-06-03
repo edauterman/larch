@@ -290,7 +290,6 @@ class LogServiceImpl final : public Log::Service {
         }
 
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
-            printf("Received auth request\n");
             uint8_t prod[32];
             unsigned int prod_len = 0;
             unsigned int d_len = 0;
@@ -319,7 +318,6 @@ class LogServiceImpl final : public Log::Service {
         }
 
         Status SendAuthCheck(ServerContext *context, const AuthCheckRequest *req, AuthCheckResponse *resp) override {
-            printf("received auth check\n");
             uint8_t out[32];
             unsigned int out_len;
             server->FinishSign(req->session_ctr(), (uint8_t *)req->check_d().c_str(), req->check_d().size(), (uint8_t *)req->check_e().c_str(), req->check_e().size(), out, &out_len);

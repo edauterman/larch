@@ -1028,10 +1028,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   req.set_tag(auth_sig, auth_sig_len);
   START_TIMER;
   if (!noRegistration) {
-    fprintf(stderr, "use registration key\n");
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
-    fprintf(stderr, "use random key\n");
     ThresholdSign(out, hash_out, sk, req);
   }
   //STOP_TIMER("threshold sig");
