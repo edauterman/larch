@@ -66,14 +66,14 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+#define KH_FILE "/home/ec2-user/out/kh_file.txt"
+//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
+#define SK_FILE "/home/ec2-user/out/sk_file.txt"
+//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
+#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
+//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
+#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
+//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
 
 #define NUM_ROUNDS 5 
 
@@ -136,7 +136,7 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 Client::Client(bool startConn) {
     params = Params_new(P256);
     //logAddr = "13.59.107.196:12345";
-    logAddr = "127.0.0.1:12345";
+    logAddr = "18.216.153.114:12345";
     //logAddr = "3.134.86.85:12345";
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
@@ -822,7 +822,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BIGNUM *out_client, *out_log, *auth_out_client;
   BIGNUM *val;
   BIGNUM *zero;
-  unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
+  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthCheckRequest checkReq;
   AuthResponse resp;
   AuthCheckResponse checkResp;
@@ -906,6 +906,8 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
     fprintf(stderr, "ERROR: signature fails\n");
   }
 
+  auth_ctr++;
+
 }
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
@@ -919,7 +921,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   
   BIGNUM *out = NULL;
   BIGNUM *x_coord = NULL;
-  EC_POINT *R;
+  EC_POINT *R, *auth_pkey;
   EVP_MD_CTX *mdctx;
   EVP_MD_CTX *mdctx2;
   EVP_MD_CTX *mdctx3;
@@ -967,6 +969,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t auth_input[16 + SHA256_DIGEST_LENGTH];
   uint8_t auth_sig[MAX_ECDSA_SIG_SIZE];
   unsigned int auth_sig_len;
+  INIT_TIMER;
+  START_TIMER;
 
   //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
@@ -975,8 +979,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   AuthCheckResponse checkResp;
   ClientContext client_ctx;
   ClientContext client_ctx2;
-  INIT_TIMER;
-  START_TIMER;
 
   CHECK_A (out = BN_new());
   CHECK_A (sk = BN_new());
@@ -989,6 +991,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   CHECK_A (key = EC_KEY_new());
   pkey = EVP_PKEY_new();
   R = EC_POINT_new(Params_group(params));
+  auth_pkey = EC_POINT_new(Params_group(params));
 
   //fprintf(stderr, "det2f: going to hash app id\n");
   //fprintf(stderr, "det2f: hashed app id\n");
@@ -1030,8 +1033,8 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
-  STOP_TIMER("Proof gen");
-  //STOP_TIMER("Prover time");
+  //STOP_TIMER("Proof gen");
+  STOP_TIMER("Prover time");
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
   //req.set_proof(proof_buf, proof_buf_len);
   //fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
@@ -1043,11 +1046,20 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   req.set_iv(iv_raw, 16);
   memcpy(auth_input, iv_raw, 16);
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
+  /*key = EC_KEY_new_by_curve_name(415);
   EC_KEY_set_group(key, Params_group(params));
   EC_KEY_set_private_key(key, auth_key);
-  STOP_TIMER("before sign");
-  ECDSA_sign(0, auth_input, 48, auth_sig, &auth_sig_len, key);
-  //Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
+  Params_exp(params, auth_pkey, auth_key);
+  EC_KEY_set_public_key(key, auth_pkey);
+  EVP_PKEY_assign_EC_KEY(pkey, key);
+  EVP_MD_CTX_init(mdctx);
+  EVP_SignInit(mdctx, EVP_sha256());
+  EVP_SignUpdate(mdctx, auth_input, 48);
+  EVP_SignFinal(mdctx, auth_sig, &auth_sig_len, pkey);*/
+  //ECDSA_sign(0, auth_input, 32, auth_sig, &auth_sig_len, key);
+  //ECDSA_sign(0, auth_input, 48, auth_sig, &auth_sig_len, key);
+  Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
+>>>>>>> 012d76b56d7e013ec23d55d5045322ed0e33f27e
   req.set_tag(auth_sig, auth_sig_len);
   STOP_TIMER("prove");
   START_TIMER;
@@ -1064,7 +1076,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //fprintf(stderr, "encoding sig\n");
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
   //asn1_sigp(sig_out, r, s);
-  asn1_sigp(sig_out, clientHints[auth_ctr].xcoord, out);
+  asn1_sigp(sig_out, clientHints[auth_ctr - 1].xcoord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
   //STOP_TIMER("ECDSA sign");
@@ -1075,7 +1087,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //memcpy(ctr_out, ctr, sizeof(uint32_t));
   //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
-  auth_ctr++;
+  //auth_ctr++;
   //STOP_TIMER("authenticate time");
 
 cleanup:
