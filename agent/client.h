@@ -69,7 +69,7 @@ class Client {
         BIGNUM *auth_key;
         unique_ptr<Log::Stub> stub;
 
-        const int NUM_AUTHS = 1000;
+        const int NUM_AUTHS = 100000;
         //const int NUM_AUTHS = 100;
 
         void Preprocess(vector<Hint> &logHints);

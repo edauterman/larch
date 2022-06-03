@@ -136,7 +136,7 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 Client::Client(bool startConn) {
     params = Params_new(P256);
     //logAddr = "13.59.107.196:12345";
-    logAddr = "18.216.153.114:12345";
+    logAddr = "18.116.199.45:12345";
     //logAddr = "3.134.86.85:12345";
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));

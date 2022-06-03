@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "det2f: starting initialize\n");
     INIT_TIMER;
     START_TIMER;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         c->Authenticate(app_id, 32, challenge, key_handle, &flags, &ctr, sig_out, true);
     }
     STOP_TIMER("auth time (100)");
