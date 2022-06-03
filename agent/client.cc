@@ -179,6 +179,7 @@ void Client::WriteToStorage() {
   }
   fclose(hint_file);
 
+  printf("logPk = %s\n", EC_POINT_point2hex(Params_group(params), logPk, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
   FILE *master_file = fopen(MASTER_FILE, "w");
   EC_POINT_point2oct(Params_group(params), logPk,
                        POINT_CONVERSION_COMPRESSED, pt, 33,
@@ -258,6 +259,7 @@ void Client::ReadFromStorage() {
   if (fread(pt_buf, 33, 1, master_file) != 1) {
     fprintf(stderr, "ERROR: public key not in file\n");
   }
+  printf("logPk = %s\n", EC_POINT_point2hex(Params_group(params), logPk, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
   if (EC_POINT_oct2point(Params_group(params), logPk, pt_buf, 33,
                          Params_ctx(params)) != OKAY) {
        fprintf(stderr, "ERROR: public key in invalid format\n");
@@ -314,6 +316,16 @@ void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret) {
     GetPreprocessValue(ctx, bn_ctx, ctr, ret);
 }
 
+void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret, uint8_t *seed_in) {
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    BN_CTX *bn_ctx = BN_CTX_new();
+    EVP_CIPHER_CTX_init(ctx);
+    uint8_t iv[16];
+    memset(iv, 0, 16);
+    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed_in, iv);
+    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
+}
+
 void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
     uint64_t ctr = i * 9;
     GetPreprocessValue(ctx, bn_ctx, ctr, r);
@@ -325,6 +337,14 @@ void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t
     GetPreprocessValue(ctx, bn_ctx, ctr + 6, g);
     GetPreprocessValue(ctx, bn_ctx, ctr + 7, h);
     GetPreprocessValue(ctx, bn_ctx, ctr + 8, alpha);
+}
+
+void Client::GetPreprocessValueSetLog(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in) {
+    uint64_t ctr = i * 4;
+    GetPreprocessValue(ctr, r, seed_in);
+    GetPreprocessValue(ctr + 1, a, seed_in);
+    GetPreprocessValue(ctr + 2, b, seed_in);
+    GetPreprocessValue(ctr + 3, alpha, seed_in);
 }
 
 void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
@@ -341,7 +361,7 @@ void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM
 }
 
 // TODO compress r1 or r2 with PRG
-void Client::Preprocess(vector<Hint> &logHints) {
+void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
     BIGNUM *r = NULL;
     BIGNUM *r_inv = NULL;
     BIGNUM *r1 = NULL;
@@ -369,6 +389,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
     memset(iv, 0, 16);
     RAND_bytes(seed, 16);
     EVP_EncryptInit_ex(evp_ctx, EVP_aes_128_ctr(), NULL, seed, iv);
+    RAND_bytes(log_seed, 16);
 /*
     CHECK_A (zero = BN_new());
     CHECK_A (neg_one = BN_new());
@@ -411,23 +432,20 @@ void Client::Preprocess(vector<Hint> &logHints) {
         CHECK_A (R = EC_POINT_new(Params_group(params)));
 
         GetPreprocessValueSet(i, r1, auth_r1, a1, b1, c1, f1, g1, h1, alpha1);
+        GetPreprocessValueSetLog(i, r2, a2, b2, alpha2, log_seed);
         //GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
         //CHECK_C (Params_rand_exponent(params, r2));
         //CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
-        CHECK_C (Params_rand_exponent(params, r));
+        CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
         r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
         //CHECK_C (BN_mod_exp(r_inv, r, neg_one, Params_order(params), ctx));
-        CHECK_C (BN_mod_sub(r2, r_inv, r1, Params_order(params), ctx));
-        CHECK_C (Params_exp(params, R, r));
+        CHECK_C (Params_exp(params, R, r_inv));
 
-        CHECK_C (Params_rand_exponent(params, a2));
-        CHECK_C (Params_rand_exponent(params, b2));
         CHECK_C (BN_mod_add(a, a1, a2, Params_order(params), ctx));
         CHECK_C (BN_mod_add(b, b1, b2, Params_order(params), ctx));
         CHECK_C (BN_mod_mul(c, a, b, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(c2, c, c1, Params_order(params), ctx));
 
-        CHECK_C (Params_rand_exponent(params, alpha2));
         CHECK_C (BN_mod_add(alpha, alpha1, alpha2, Params_order(params), ctx));
 
         CHECK_C (BN_mod_mul(f, a, alpha, Params_order(params), ctx));
@@ -440,7 +458,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
         EC_POINT_get_affine_coordinates_GFp(params->group, R, xcoord, ycoord, NULL);
         CHECK_C (BN_mod(xcoord, xcoord, Params_order(params), ctx));
         CHECK_C (BN_mod_mul(auth_xcoord, xcoord, alpha, Params_order(params), ctx));
-        CHECK_C (BN_mod_mul(auth_r, r_inv, alpha, Params_order(params), ctx));
+        CHECK_C (BN_mod_mul(auth_r, r, alpha, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(auth_r2, auth_r, auth_r1, Params_order(params), ctx));
 
 
@@ -457,7 +475,7 @@ void Client::Preprocess(vector<Hint> &logHints) {
         printf("c2 = %s\n", BN_bn2hex(c2));*/
 
         clientHints.push_back(ShortHint(xcoord, auth_xcoord));
-        logHints.push_back(Hint(xcoord, auth_xcoord, r2, auth_r2, a2, b2, c2, f2, g2, h2, alpha2));
+        logHints.push_back(Hint(xcoord, auth_xcoord, auth_r2, c2, f2, g2, h2));
         BN_free(r);
         BN_free(r1);
         BN_free(a1);
@@ -479,6 +497,7 @@ int Client::Initialize() {
     //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     vector<Hint> logHints;
     uint8_t comm_in[64];
+    uint8_t log_seed[16];
     INIT_TIMER;
     START_TIMER;
     
@@ -496,7 +515,7 @@ int Client::Initialize() {
     EVP_DigestFinal(mdctx, enc_key_comm, NULL);
 
     //fprintf(stderr, "det2f: going to do preprocessing\n");
-    Preprocess(logHints);
+    Preprocess(logHints, log_seed);
     //fprintf(stderr, "det2f: done with preprocessing\n");
 
     for (int i = 0; i < NUM_AUTHS; i++) {
@@ -505,14 +524,14 @@ int Client::Initialize() {
         h->set_xcoord(buf, BN_num_bytes(logHints[i].xcoord));
         BN_bn2bin(logHints[i].auth_xcoord, buf);
         h->set_auth_xcoord(buf, BN_num_bytes(logHints[i].auth_xcoord));
-        BN_bn2bin(logHints[i].r, buf);
-        h->set_r(buf, BN_num_bytes(logHints[i].r));
+        //BN_bn2bin(logHints[i].r, buf);
+        //h->set_r(buf, BN_num_bytes(logHints[i].r));
         BN_bn2bin(logHints[i].auth_r, buf);
         h->set_auth_r(buf, BN_num_bytes(logHints[i].auth_r));
-        BN_bn2bin(logHints[i].a, buf);
-        h->set_a(buf, BN_num_bytes(logHints[i].a));
-        BN_bn2bin(logHints[i].b, buf);
-        h->set_b(buf, BN_num_bytes(logHints[i].b));
+        //BN_bn2bin(logHints[i].a, buf);
+        //h->set_a(buf, BN_num_bytes(logHints[i].a));
+        //BN_bn2bin(logHints[i].b, buf);
+        //h->set_b(buf, BN_num_bytes(logHints[i].b));
         BN_bn2bin(logHints[i].c, buf);
         h->set_c(buf, BN_num_bytes(logHints[i].c));
         BN_bn2bin(logHints[i].f, buf);
@@ -521,8 +540,8 @@ int Client::Initialize() {
         h->set_g(buf, BN_num_bytes(logHints[i].g));
         BN_bn2bin(logHints[i].h, buf);
         h->set_h(buf, BN_num_bytes(logHints[i].h));
-        BN_bn2bin(logHints[i].alpha, buf);
-        h->set_alpha(buf, BN_num_bytes(logHints[i].alpha));
+        //BN_bn2bin(logHints[i].alpha, buf);
+        //h->set_alpha(buf, BN_num_bytes(logHints[i].alpha));
     }
 
     id = rand();
@@ -533,6 +552,7 @@ int Client::Initialize() {
     EC_POINT_point2oct(Params_group(params), auth_pk, POINT_CONVERSION_COMPRESSED,
                 buf, 33, Params_ctx(params));
     req.set_auth_pk(buf, 33);
+    req.set_log_seed(log_seed, 16);
 
     req.set_key_comm(enc_key_comm, 32);
     req.set_id(id);
@@ -956,6 +976,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   ClientContext client_ctx;
   ClientContext client_ctx2;
   INIT_TIMER;
+  START_TIMER;
 
   CHECK_A (out = BN_new());
   CHECK_A (sk = BN_new());
@@ -1005,10 +1026,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   }
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
+    STOP_TIMER("worker finished");
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
-  //STOP_TIMER("Proof gen");
+  STOP_TIMER("Proof gen");
   //STOP_TIMER("Prover time");
   //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
   //req.set_proof(proof_buf, proof_buf_len);
@@ -1023,16 +1045,18 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
   EC_KEY_set_group(key, Params_group(params));
   EC_KEY_set_private_key(key, auth_key);
+  STOP_TIMER("before sign");
   ECDSA_sign(0, auth_input, 48, auth_sig, &auth_sig_len, key);
   //Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
   req.set_tag(auth_sig, auth_sig_len);
+  STOP_TIMER("prove");
   START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
     ThresholdSign(out, hash_out, sk, req);
   }
-  //STOP_TIMER("threshold sig");
+  STOP_TIMER("threshold sig");
   //INIT_TIMER;
   //START_TIMER;
 

@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < 10; i++) {
         c->Authenticate(app_id, 32, challenge, key_handle, &flags, &ctr, sig_out, true);
     }
-    STOP_TIMER("auth time (100)");
+    STOP_TIMER("auth time (10)");
     fprintf(stderr, "det2f: finished initialize\n");
     c->WriteToStorage();
 }

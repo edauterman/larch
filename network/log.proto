@@ -29,7 +29,8 @@ message InitRequest {
     bytes key_comm = 1;
     uint32 id = 2;
     bytes auth_pk = 3;
-    repeated HintMsg hints = 4;
+    bytes log_seed = 4;
+    repeated HintMsg hints = 5;
 }
 
 message InitResponse {
