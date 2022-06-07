@@ -9,6 +9,7 @@
 #include <openssl/ec.h>
 #include <openssl/sha.h>
 #include <openssl/ecdsa.h>
+#include <openssl/rand.h>
 
 #include "../network/log.grpc.pb.h"
 #include "../network/log.pb.h"
@@ -39,9 +40,10 @@ Token::Token(uint8_t *ct_in, uint8_t *iv_in, uint8_t *sig_in, unsigned int sig_l
     memcpy(sig, sig_in, sig_len);
 }
 
-AuthState::AuthState(BIGNUM *check_d_in, BIGNUM *check_e_in, BIGNUM *out_in) {
+AuthState::AuthState(BIGNUM *check_d_in, uint8_t *r_in, BIGNUM *out_in) {
     check_d = check_d_in;
-    check_e = check_e_in;
+    memcpy(r, r_in, 16);
+    //check_e = check_e_in;
     out = out_in;
 }
 
@@ -89,7 +91,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
         h.xcoord = BN_bin2bn((uint8_t *)req->hints(i).xcoord().c_str(), req->hints(i).xcoord().size(), NULL);
-        h.auth_xcoord = BN_bin2bn((uint8_t *)req->hints(i).auth_xcoord().c_str(), req->hints(i).auth_xcoord().size(), NULL);
+        //h.auth_xcoord = BN_bin2bn((uint8_t *)req->hints(i).auth_xcoord().c_str(), req->hints(i).auth_xcoord().size(), NULL);
         //h.r = BN_bin2bn((uint8_t *)req->hints(i).r().c_str(), req->hints(i).r().size(), NULL);
         h.auth_r = BN_bin2bn((uint8_t *)req->hints(i).auth_r().c_str(), req->hints(i).auth_r().size(), NULL);
         //h.a = BN_bin2bn((uint8_t *)req->hints(i).a().c_str(), req->hints(i).a().size(), NULL);
@@ -120,14 +122,14 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     clientMap[req->id()] = initSt;
 }
 
-void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint32_t *sessionCtr) {
+void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *cm_check_d, uint32_t *sessionCtr) {
     Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
     BIGNUM *d_log = BN_new();
     BIGNUM *e_log = BN_new();
     BIGNUM *auth_d_log = BN_new();
-    BIGNUM *auth_e_log = BN_new();
+    //BIGNUM *auth_e_log = BN_new();
     BIGNUM *d = BN_new();
     BIGNUM *e = BN_new();
     BIGNUM *hash_bn = BN_new();
@@ -138,7 +140,9 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     BIGNUM *auth_out = BN_new();
     BIGNUM *prod = BN_new();
     BIGNUM *check_d = BN_new();
-    BIGNUM *check_e = BN_new();
+    BIGNUM *term1 = BN_new();
+    BIGNUM *auth_term1 = BN_new();
+    //BIGNUM *check_e = BN_new();
     BIGNUM *r = BN_new();
     BIGNUM *a = BN_new();
     BIGNUM *b = BN_new();
@@ -204,22 +208,22 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
 
     //printf("auth ctr = %d\n", auth_ctr);
     //printf("x_coord = %s\n", BN_bn2hex(hints[auth_ctr].xcoord));
-    BN_mod_mul(val, clientMap[id]->hints[auth_ctr].xcoord, clientMap[id]->sk, Params_order(params), ctx);
+    //BN_mod_mul(val, clientMap[id]->hints[auth_ctr].xcoord, clientMap[id]->sk, Params_order(params), ctx);
     //BN_mod_add(val, val, hash_bn, Params_order(params), ctx);
     //printf("got sig mul value\n");
     //printf("r = %s, a = %s, b = %s, c = %s\n", BN_bn2hex(hints[auth_ctr].r), BN_bn2hex(hints[auth_ctr].a), BN_bn2hex(hints[auth_ctr].b), BN_bn2hex(hints[auth_ctr].c));
     //printf("val = %s\n", BN_bn2hex(val));
 
-    BN_mod_mul(auth_hash_bn, hash_bn, alpha, Params_order(params), ctx);
+    /*BN_mod_mul(auth_hash_bn, hash_bn, alpha, Params_order(params), ctx);
     BN_mod_mul(auth_val, clientMap[id]->hints[auth_ctr].auth_xcoord, clientMap[id]->sk, Params_order(params), ctx);
-    BN_mod_add(auth_val, auth_val, auth_hash_bn, Params_order(params), ctx);
+    BN_mod_add(auth_val, auth_val, auth_hash_bn, Params_order(params), ctx);*/
 
     BN_mod_sub(d_log, r, a, Params_order(params), ctx);
-    BN_mod_sub(e_log, val, b, Params_order(params), ctx);
+    BN_mod_sub(e_log, clientMap[id]->sk, b, Params_order(params), ctx);
     //printf("computed d and e\n");
 
     BN_mod_sub(auth_d_log, clientMap[id]->hints[auth_ctr].auth_r, clientMap[id]->hints[auth_ctr].f, Params_order(params), ctx);
-    BN_mod_sub(auth_e_log, auth_val, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
+    //BN_mod_sub(auth_e_log, auth_val, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
 
     BN_mod_add(d, d_log, d_client, Params_order(params),ctx);
     BN_mod_add(e, e_log, e_client, Params_order(params),ctx);
@@ -239,13 +243,20 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
 
     // authenticated value
     // de.\alpha + d[g] + e[f] + [h]
-    BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
+/*    BN_mod_mul(auth_out, d, e, Params_order(params), ctx);
     BN_mod_mul(auth_out, auth_out, alpha, Params_order(params), ctx);
     BN_mod_mul(prod, d, clientMap[id]->hints[auth_ctr].g, Params_order(params), ctx);
     BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
     BN_mod_mul(prod, e, clientMap[id]->hints[auth_ctr].f, Params_order(params), ctx);
     BN_mod_add(auth_out, auth_out, prod, Params_order(params), ctx);
-    BN_mod_add(auth_out, auth_out, clientMap[id]->hints[auth_ctr].h, Params_order(params), ctx);
+    BN_mod_add(auth_out, auth_out, clientMap[id]->hints[auth_ctr].h, Params_order(params), ctx);*/
+
+    // out
+    // [r].H(m) + x.[out]
+    BN_mod_mul(term1, hash_bn, r, Params_order(params), ctx);
+    BN_mod_mul(out, out, clientMap[id]->hints[auth_ctr].xcoord, Params_order(params), ctx);
+    BN_mod_add(out, out, term1, Params_order(params), ctx);
+
 
     BN_bn2bin(d_log, d_out);
     *d_len = BN_num_bytes(d_log);
@@ -259,9 +270,29 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     *sessionCtr = rand();
     BN_mod_mul(check_d, alpha, d, Params_order(params), ctx);
     BN_mod_sub(check_d, auth_d_log, check_d, Params_order(params), ctx);
-    BN_mod_mul(check_e, alpha, e, Params_order(params), ctx);
-    BN_mod_sub(check_e, auth_e_log, check_e, Params_order(params), ctx);
-    AuthState *state = new AuthState(check_d, check_e, out);
+    uint8_t r_buf[16];
+    uint8_t check_d_buf[32];
+    int len = BN_bn2bin(check_d, check_d_buf);
+    RAND_bytes(r_buf, 16);
+    Commit(cm_check_d, check_d_buf, len, r_buf);
+    printf("cm = ");
+    for (int i = 0; i < 32; i++) {
+        printf("%02x", cm_check_d[i]);
+    }
+    printf("\n");
+    printf("check_d = ");
+    for (int i = 0; i < len; i++) {
+        printf("%02x", check_d_buf[i]);
+    }
+    printf("\n");
+    printf("r = ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", r_buf[i]);
+    }
+    printf("\n");
+    //BN_mod_mul(check_e, alpha, e, Params_order(params), ctx);
+    //BN_mod_sub(check_e, auth_e_log, check_e, Params_order(params), ctx);
+    AuthState *state = new AuthState(check_d, r_buf, out);
     saveMap[*sessionCtr] = state;
 
     clientMap[id]->auth_ctr++;
@@ -291,30 +322,51 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     }
 };
 
-void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_e_buf, unsigned int check_e_len, uint8_t *out, unsigned int *out_len) {
+void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *check_d_buf_out, unsigned int *check_d_buf_len, uint8_t *check_d_open) {
+
+    memcpy(saveMap[sessionCtr]->other_cm_check_d, cm_check_d, 32);
+    //BN_bn2bin(saveMap[sessionCtr]->out, out);
+    //*out_len = BN_num_bytes(saveMap[sessionCtr]->out);
+    *check_d_buf_len = BN_bn2bin(saveMap[sessionCtr]->check_d, check_d_buf_out);
+    memcpy(check_d_open, saveMap[sessionCtr]->r, 16);
+}
+
+void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_d_open, uint8_t *final_out, unsigned int *final_out_len) {
     BIGNUM *check_d_client = BN_new();
-    BIGNUM *check_e_client = BN_new();
+    //BIGNUM *check_e_client = BN_new();
     BIGNUM *sum = BN_new();
     BN_CTX *ctx = BN_CTX_new();
+    printf("begin??\n");
 
     BN_bin2bn(check_d_buf, check_d_len, check_d_client);
-    BN_bin2bn(check_e_buf, check_e_len, check_e_client);
+    //BN_bin2bn(check_e_buf, check_e_len, check_e_client);
 
     BN_mod_add(sum, check_d_client, saveMap[sessionCtr]->check_d, Params_order(params), ctx);
+    printf("did sum\n");
     if (!BN_is_zero(sum)) {
         fprintf(stderr, "ERROR: MAC tag for d doesn't verify %s %s -> %s\n", BN_bn2hex(check_d_client), BN_bn2hex(saveMap[sessionCtr]->check_d), BN_bn2hex(sum));
-        *out_len = 0;
+        *final_out_len = 0;
         return;
     }
-    BN_mod_add(sum, check_e_client, saveMap[sessionCtr]->check_e, Params_order(params), ctx);
+
+    printf("about to do commit check\n");
+    uint8_t check_cm[32];
+    Commit(check_cm, check_d_buf, check_d_len, check_d_open);
+    if (memcmp(check_cm, saveMap[sessionCtr]->other_cm_check_d, 32) != 0) {
+        fprintf(stderr, "ERROR: commitment doesn't open correctly\n");
+        *final_out_len = 0;
+    }
+    printf("did commit check\n");
+    /*BN_mod_add(sum, check_e_client, saveMap[sessionCtr]->check_e, Params_order(params), ctx);
     if (!BN_is_zero(sum)) {
         fprintf(stderr, "ERROR: MAC tag for e doesn't verify %s %s -> %s\n", BN_bn2hex(check_e_client), BN_bn2hex(saveMap[sessionCtr]->check_e), BN_bn2hex(sum));
         *out_len = 0;
         return;
-    }
+    }*/
 
-    BN_bn2bin(saveMap[sessionCtr]->out, out);
-    *out_len = BN_num_bytes(saveMap[sessionCtr]->out);
+    //BN_bn2bin(saveMap[sessionCtr]->out, out);
+    //*out_len = BN_num_bytes(saveMap[sessionCtr]->out);
+    *final_out_len = BN_bn2bin(saveMap[sessionCtr]->out, final_out);
 }
 
 
@@ -333,12 +385,14 @@ class LogServiceImpl final : public Log::Service {
         }
 
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
+            printf("start send auth\n");
             uint8_t prod[32];
             unsigned int prod_len = 0;
             unsigned int d_len = 0;
             unsigned int e_len = 0;
             uint8_t d[32];
             uint8_t e[32];
+            uint8_t cm_check_d[32];
             uint32_t sessionCtr;
             uint8_t *proof_bytes[NUM_ROUNDS];
             if (!onlySigs) {
@@ -353,21 +407,36 @@ class LogServiceImpl final : public Log::Service {
             INIT_TIMER;
             START_TIMER;
             //server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, prod, &prod_len);
-            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, &sessionCtr);
+            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
+            resp->set_cm_check_d(cm_check_d, 32);
             resp->set_session_ctr(sessionCtr);
             //resp->set_prod(prod, prod_len);
-            //printf("Sending auth response\n");
+            printf("Sending auth response\n");
             //STOP_TIMER("verifier");
             return Status::OK;
         }
 
         Status SendAuthCheck(ServerContext *context, const AuthCheckRequest *req, AuthCheckResponse *resp) override {
+            printf("auth check start\n");
+            uint8_t check_d[32];
+            uint8_t check_d_open[16];
+            unsigned int len;
+            server->FinishSign(req->session_ctr(), (uint8_t *)req->cm_check_d().c_str(), check_d, &len, check_d_open);
+            resp->set_check_d(check_d, len);
+            resp->set_check_d_open(check_d_open, 16);
+            printf("auth check end\n");
+            return Status::OK;
+        }
+
+        Status SendAuthCheck2(ServerContext *context, const AuthCheck2Request *req, AuthCheck2Response *resp) override {
+            printf("auth check2 start\n");
             uint8_t out[32];
             unsigned int out_len;
-            server->FinishSign(req->session_ctr(), (uint8_t *)req->check_d().c_str(), req->check_d().size(), (uint8_t *)req->check_e().c_str(), req->check_e().size(), out, &out_len);
+            server->FinalSign(req->session_ctr(), (uint8_t *)req->check_d().c_str(), req->check_d().size(), (uint8_t *)req->check_d_open().c_str(), out, &out_len);
             resp->set_out(out, out_len);
+            printf("auth check2 end\n");
             return Status::OK;
         }
 

@@ -428,3 +428,12 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
         *x = *x | (val << bit);
     }
 }
+
+// cm 32 bytes, m 32 bytes, r 16 bytes
+void Commit(uint8_t *cm, uint8_t *m, int m_len, uint8_t *r) {
+    uint8_t *hash_in = (uint8_t *)malloc(m_len + 16);
+    memcpy(hash_in, m, m_len);
+    memcpy(hash_in + m_len, r, 16);
+    hash_to_bytes(cm, 32, hash_in, 32+16);
+    free(hash_in);
+}
