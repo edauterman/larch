@@ -275,21 +275,6 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     int len = BN_bn2bin(check_d, check_d_buf);
     RAND_bytes(r_buf, 16);
     Commit(cm_check_d, check_d_buf, len, r_buf);
-    printf("cm = ");
-    for (int i = 0; i < 32; i++) {
-        printf("%02x", cm_check_d[i]);
-    }
-    printf("\n");
-    printf("check_d = ");
-    for (int i = 0; i < len; i++) {
-        printf("%02x", check_d_buf[i]);
-    }
-    printf("\n");
-    printf("r = ");
-    for (int i = 0; i < 16; i++) {
-        printf("%02x", r_buf[i]);
-    }
-    printf("\n");
     //BN_mod_mul(check_e, alpha, e, Params_order(params), ctx);
     //BN_mod_sub(check_e, auth_e_log, check_e, Params_order(params), ctx);
     AuthState *state = new AuthState(check_d, r_buf, out);
@@ -336,27 +321,23 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     //BIGNUM *check_e_client = BN_new();
     BIGNUM *sum = BN_new();
     BN_CTX *ctx = BN_CTX_new();
-    printf("begin??\n");
 
     BN_bin2bn(check_d_buf, check_d_len, check_d_client);
     //BN_bin2bn(check_e_buf, check_e_len, check_e_client);
 
     BN_mod_add(sum, check_d_client, saveMap[sessionCtr]->check_d, Params_order(params), ctx);
-    printf("did sum\n");
     if (!BN_is_zero(sum)) {
         fprintf(stderr, "ERROR: MAC tag for d doesn't verify %s %s -> %s\n", BN_bn2hex(check_d_client), BN_bn2hex(saveMap[sessionCtr]->check_d), BN_bn2hex(sum));
         *final_out_len = 0;
         return;
     }
 
-    printf("about to do commit check\n");
     uint8_t check_cm[32];
     Commit(check_cm, check_d_buf, check_d_len, check_d_open);
     if (memcmp(check_cm, saveMap[sessionCtr]->other_cm_check_d, 32) != 0) {
         fprintf(stderr, "ERROR: commitment doesn't open correctly\n");
         *final_out_len = 0;
     }
-    printf("did commit check\n");
     /*BN_mod_add(sum, check_e_client, saveMap[sessionCtr]->check_e, Params_order(params), ctx);
     if (!BN_is_zero(sum)) {
         fprintf(stderr, "ERROR: MAC tag for e doesn't verify %s %s -> %s\n", BN_bn2hex(check_e_client), BN_bn2hex(saveMap[sessionCtr]->check_e), BN_bn2hex(sum));
@@ -385,7 +366,6 @@ class LogServiceImpl final : public Log::Service {
         }
 
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
-            printf("start send auth\n");
             uint8_t prod[32];
             unsigned int prod_len = 0;
             unsigned int d_len = 0;
@@ -413,30 +393,25 @@ class LogServiceImpl final : public Log::Service {
             resp->set_cm_check_d(cm_check_d, 32);
             resp->set_session_ctr(sessionCtr);
             //resp->set_prod(prod, prod_len);
-            printf("Sending auth response\n");
             //STOP_TIMER("verifier");
             return Status::OK;
         }
 
         Status SendAuthCheck(ServerContext *context, const AuthCheckRequest *req, AuthCheckResponse *resp) override {
-            printf("auth check start\n");
             uint8_t check_d[32];
             uint8_t check_d_open[16];
             unsigned int len;
             server->FinishSign(req->session_ctr(), (uint8_t *)req->cm_check_d().c_str(), check_d, &len, check_d_open);
             resp->set_check_d(check_d, len);
             resp->set_check_d_open(check_d_open, 16);
-            printf("auth check end\n");
             return Status::OK;
         }
 
         Status SendAuthCheck2(ServerContext *context, const AuthCheck2Request *req, AuthCheck2Response *resp) override {
-            printf("auth check2 start\n");
             uint8_t out[32];
             unsigned int out_len;
             server->FinalSign(req->session_ctr(), (uint8_t *)req->check_d().c_str(), req->check_d().size(), (uint8_t *)req->check_d_open().c_str(), out, &out_len);
             resp->set_out(out, out_len);
-            printf("auth check2 end\n");
             return Status::OK;
         }
 
