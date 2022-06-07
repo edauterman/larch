@@ -81,6 +81,7 @@ int Params_hash_point(const_Params p, EVP_MD_CTX *mdctx, const uint8_t *tag,
 int Params_hash_to_point (const_Params p, EC_POINT *point,
     const uint8_t *str, int strlen);
 
+void Commit(uint8_t *cm, uint8_t *m, int m_len, uint8_t *r);
 //static inline bool GetBit(uint32_t x, int bit);
 //static inline void SetBit(uint32_t *x, int bit, bool val);
 
