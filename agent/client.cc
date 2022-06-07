@@ -1,4 +1,3 @@
-//
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file or at
 // https://developers.google.com/open-source/licenses/bsd
@@ -911,7 +910,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   uint8_t test_cm[32];
   Commit(test_cm, (uint8_t *)checkResp.check_d().c_str(), checkResp.check_d().size(), (uint8_t *)checkResp.check_d_open().c_str());
   if (memcmp(test_cm, other_cm_check_d, 32) != 0) {
-    fprintf(stderr, "ERROR: Commit does not open to correct value\n");
+    fprintf(stderr, "ERROR: Commit does not open to correct value %d\n", checkResp.check_d().size());
   }
 
   check2Req.set_check_d(check_d_buf, check_d_len);

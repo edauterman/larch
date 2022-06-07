@@ -335,7 +335,7 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     uint8_t check_cm[32];
     Commit(check_cm, check_d_buf, check_d_len, check_d_open);
     if (memcmp(check_cm, saveMap[sessionCtr]->other_cm_check_d, 32) != 0) {
-        fprintf(stderr, "ERROR: commitment doesn't open correctly\n");
+        fprintf(stderr, "ERROR: commitment doesn't open correctly = %s\n", check_d_len);
         *final_out_len = 0;
     }
     /*BN_mod_add(sum, check_e_client, saveMap[sessionCtr]->check_e, Params_order(params), ctx);
