@@ -426,6 +426,7 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
 
 cleanup:
     if (ctx) BN_CTX_free(ctx);
+    if (evp_ctx) EVP_CIPHER_CTX_free(evp_ctx);
 }
 
 int Client::Initialize() {
@@ -489,6 +490,10 @@ int Client::Initialize() {
 
     auth_ctr = 0;
     STOP_TIMER("total init");
+
+    if (mdctx) EVP_MD_CTX_free(mdctx);
+    free(buf);
+    EC_POINT_free(auth_pk);
  
 }
 
@@ -505,8 +510,6 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   int cert_len = 0;
   int sig_len = 0;
   uint8_t reg_id = U2F_REGISTER_HASH_ID;
-  const BIGNUM *r = NULL;
-  const BIGNUM *s = NULL;
   BIGNUM *sk;
   BIGNUM *x;
   BIGNUM *y;
@@ -525,8 +528,6 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   CHECK_A(anon_key = EC_KEY_new());
   CHECK_A(evpctx = EVP_MD_CTX_create());
   CHECK_A(sk = BN_new());
-  CHECK_A(r = BN_new());
-  CHECK_A(s = BN_new());
   CHECK_A(x = BN_new());
   CHECK_A(y = BN_new());
   CHECK_A(exp = BN_new());
@@ -537,7 +538,6 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
 
   /* Generate key handle. */
   generate_key_handle(app_id, U2F_APPID_SIZE, key_handle_out, MAX_KH_SIZE);
-  // NEW 2PC SIGS
   CHECK_C (Params_rand_exponent(params, sk));
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = sk;
   CHECK_C (Params_exp(params, pk, sk));
@@ -576,6 +576,10 @@ cleanup:
   if (cert) X509_free(cert);
   if (anon_pkey) EVP_PKEY_free(anon_pkey);
   if (evpctx) EVP_MD_CTX_destroy(evpctx);
+  if (x) BN_free(x);
+  if (y) BN_free(y);
+  if (exp) BN_free(exp);
+  if (ctx) BN_CTX_free(ctx);
   return cert_len + sig_len;
 }
 
