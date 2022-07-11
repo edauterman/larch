@@ -2,9 +2,9 @@
 
 ### Setup
 Dependencies
-* OpenSSL
-* gRPC
-* emp-toolkit (install in same directory where `larch/` is installed)
+* OpenSSL 1.1
+* [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
+* [emp-toolkit](https://github.com/emp-toolkit) (install in same directory where `larch/` is installed)
 
 Make an `out/` folder.
 

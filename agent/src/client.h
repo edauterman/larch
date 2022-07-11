@@ -70,7 +70,6 @@ class Client {
         unique_ptr<Log::Stub> stub;
 
         const int NUM_AUTHS = 100;
-        //const int NUM_AUTHS = 100;
 
         void Preprocess(vector<Hint> &logHints, uint8_t *seed);
         void GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret);
