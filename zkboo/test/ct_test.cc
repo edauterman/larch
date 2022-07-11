@@ -44,32 +44,19 @@ int main() {
     memset(hash_in, 0xff, in_len/8);
     memset(hash_in, 0, m_len/8);
     memset(key, 0, 128/8);
-    //sha3_256(hash_out, hash_in, in_len / 8);
     EVP_MD_CTX *mdctx = EVP_MD_CTX_create();
     EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
     EVP_DigestUpdate(mdctx, hash_in, in_len/8);
     EVP_DigestFinal(mdctx, hash_out, NULL);
 
     memset(r, 0xff, 128/8);
-    memset(comm_in, 0, 512 / 8);
-//    memcpy(comm_in, key, 128 / 8);
-//    memcpy(comm_in + (128 / 8), r, 128 / 8);
+    memset(comm_in, 0, 256 / 8);
+    memcpy(comm_in, key, 128 / 8);
+    memcpy(comm_in + (128 / 8), r, 128 / 8);
     EVP_MD_CTX *mdctx2 = EVP_MD_CTX_create();
     EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
-    EVP_DigestUpdate(mdctx2, comm_in, 512/8);
-    //EVP_DigestUpdate(mdctx2, comm_in, 256/8);
+    EVP_DigestUpdate(mdctx2, comm_in, 256/8);
     EVP_DigestFinal(mdctx2, comm, NULL);
-    printf("zeros = %d: ");
-    for (int i = 0; i < 256; i++) {
-        printf("0, ");
-    }
-    printf("\ncomm = ");
-    for (int i = 0; i < 32; i++) {
-        for (int j = 0; j < 8; j++) {
-            printf("%d, ", (comm[i] & (1 << j)) >> j);
-        }
-    }
-    printf("\n");
 
     memset(key, 0, 128/8);
     aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);
