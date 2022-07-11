@@ -42,6 +42,7 @@
 #include "../../zkboo/utils/colors.h"
 #include "../../network/log.grpc.pb.h"
 #include "../../network/log.pb.h"
+#include "../../config.h"
 
 // Used to define JSON messages.
 #define ID "agent-det2f"
@@ -65,14 +66,10 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-//#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-//#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-//#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-//#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+#define KH_FILE (string(OUT_DIR) + string("/kh_file.txt")).c_str()
+#define SK_FILE (string(OUT_DIR) + string("/sk_file.txt")).c_str()
+#define MASTER_FILE (string(OUT_DIR) + string("/master_file.txt")).c_str()
+#define HINT_FILE (string(OUT_DIR) + string("/hint_file.txt")).c_str()
 
 #define NUM_ROUNDS 5 
 
@@ -134,9 +131,8 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 
 Client::Client(bool startConn) {
     params = Params_new(P256);
-    //logAddr = "13.59.107.196:12345";
-    logAddr = "127.0.0.1:12345";
-    //logAddr = "3.134.86.85:12345";
+    logAddr = LOG_IP_ADDR;
+    //logAddr = "127.0.0.1:12345";
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     }

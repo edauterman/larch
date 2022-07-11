@@ -19,6 +19,7 @@
 #include "../zkboo/src/proof.h"
 #include "../zkboo/src/verifier.h"
 #include "../zkboo/utils/timer.h"
+#include "../config.h"
 
 #include "log.h"
 
@@ -437,7 +438,7 @@ int main(int argc, char *argv[]) {
     json config;
     config_stream >> config;*/
 
-    string bindAddr = "0.0.0.0:12345"; // + string(config[PORT]);
+    string bindAddr = LOG_BIND_ADDR; // + string(config[PORT]);
 
     cout << "going to bind to " << bindAddr << endl;
     bool onlySigs = (argc > 1) && (strcmp(argv[1], "sigs") == 0);
