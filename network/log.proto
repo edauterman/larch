@@ -9,6 +9,7 @@ service Log {
     rpc SendReg (RegRequest) returns (RegResponse) {}
     rpc SendAuth (AuthRequest) returns (AuthResponse) {}
     rpc SendAuthCheck (AuthCheckRequest) returns (AuthCheckResponse) {}
+    rpc SendAuthCheck2 (AuthCheck2Request) returns (AuthCheck2Response) {}
 }
 
 message HintMsg {
@@ -29,7 +30,8 @@ message InitRequest {
     bytes key_comm = 1;
     uint32 id = 2;
     bytes auth_pk = 3;
-    repeated HintMsg hints = 4;
+    bytes log_seed = 4;
+    repeated HintMsg hints = 5;
 }
 
 message InitResponse {
@@ -61,15 +63,28 @@ message AuthResponse {
     bytes d = 2;
     bytes e = 3;
     int32 session_ctr = 4;
+    bytes cm_check_d = 5;
 }
 
 message AuthCheckRequest {
-    bytes check_d = 1;
-    bytes check_e = 2;
-    int32 session_ctr = 3;
+    bytes cm_check_d = 1;
+    int32 session_ctr = 2;
+    uint32 id = 3;
 }
 
 message AuthCheckResponse {
+    bytes check_d = 1;
+    bytes check_d_open = 2;
+}
+
+message AuthCheck2Request {
+    bytes check_d = 1;
+    bytes check_d_open = 2;
+    int32 session_ctr = 3;
+    uint32 id = 4;
+}
+
+message AuthCheck2Response {
     bytes out = 1;
 }
 

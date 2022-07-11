@@ -7,7 +7,7 @@
 #include "../../zkboo/utils/timer.h"
 
 int main(int argc, char *argv[]) {
-    Client *c = new Client();
+    Client *c = new Client(true);
     BIGNUM *out = BN_new();
     uint8_t digest[32];
     BIGNUM *sk = BN_new();
@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     c->ReadFromStorage();
     INIT_TIMER;
     START_TIMER;
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 100; i++) {
         c->ThresholdSign(out, digest, sk, req);
     }
     STOP_TIMER("signature (100 reps)");
