@@ -14,7 +14,7 @@
 #include "../network/log.pb.h"
 #include "../crypto/params.h"
 #include "../crypto/sigs.h"
-#include "../agent/u2f.h"
+#include "../agent/src/u2f.h"
 #include "../zkboo/src/proof.h"
 #include "../zkboo/src/verifier.h"
 

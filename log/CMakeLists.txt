@@ -45,12 +45,11 @@ set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.pb.cc")
 set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.grpc.pb.h")
 set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.grpc.pb.cc")
 
-add_executable(log log.cc ../zkboo/src/verifier.cc ../zkboo/src/proof.cc ../zkboo/src/view.cc ../zkboo/src/circuit.cc ../zkboo/src/circuit_utils.cc ${hw_proto_srcs} ${hw_grpc_srcs})
+add_executable(log log.cc ../zkboo/src/verifier.cc ../zkboo/src/proof.cc ../zkboo/src/view.cc ../zkboo/src/circuit.cc ../zkboo/src/circuit_utils.cc ../crypto/sigs.cc ${hw_proto_srcs} ${hw_grpc_srcs})
 
 target_link_libraries(log
     Prover
     Base
-    Utils
 	${_REFLECTION}
 	${_GRPC_GRPCPP}
 	${_PROTOBUF_LIBPROTOBUF})
