@@ -24,7 +24,6 @@ class AuthState {
         BIGNUM *check_d;
         uint8_t r[16];
         uint8_t other_cm_check_d[32];
-        //BIGNUM *check_e;
         BIGNUM *out;
 
         AuthState(BIGNUM *check_d, uint8_t *r, BIGNUM *out);
@@ -62,12 +61,6 @@ class LogServer {
 
         bool onlySigs;
 
-        /*BIGNUM *sk;
-        EC_POINT *pk;
-        vector<Hint> hints;
-        map<uint32_t, AuthState *> saveMap;
-        uint8_t enc_key_comm[32];
-        uint32_t auth_ctr;*/
         map<uint32_t, InitState *>clientMap;
         map<uint32_t, AuthState *> saveMap;
         map<uint32_t, Token *> tokenMap;
@@ -76,8 +69,6 @@ class LogServer {
         EC_KEY *key;
         Params params;
         int port;
-
-
 };
 
 #endif
