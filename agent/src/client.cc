@@ -45,7 +45,7 @@
 #include "../../config.h"
 
 // Used to define JSON messages.
-#define ID "agent-det2f"
+#define ID "agent-larch"
 #define AUTH_REQ "sign_helper_request"
 #define AUTH_RESP "sign_helper_reply"
 #define REG_REQ "enroll_helper_request"
@@ -323,7 +323,7 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
     BIGNUM *f, *g, *h;
     BIGNUM *alpha1, *alpha2, *alpha;
     BIGNUM *auth_r1, *auth_r2, *auth_r;
-    BIGNUM *xcoord, *ycoord, *auth_xcoord;
+    BIGNUM *xcoord, *ycoord;
     BIGNUM *zero = NULL;
     BIGNUM *neg_one = NULL;
     EC_POINT *R = NULL;
@@ -370,7 +370,6 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
         CHECK_A (alpha = BN_new());
         CHECK_A (xcoord = BN_new());
         CHECK_A (ycoord = BN_new());
-        CHECK_A (auth_xcoord = BN_new());
         CHECK_A (R = EC_POINT_new(Params_group(params)));
 
         GetPreprocessValueSet(i, r1, auth_r1, a1, b1, c1, f1, g1, h1, alpha1);
@@ -402,12 +401,27 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
         logHints.push_back(Hint(xcoord, auth_r2, c2, f2, g2, h2));
         BN_free(r);
         BN_free(r1);
+        BN_free(auth_r1);
+        BN_free(auth_r);
         BN_free(a1);
+        BN_free(a2);
         BN_free(a);
         BN_free(b1);
+        BN_free(b2);
         BN_free(b);
         BN_free(c1);
         BN_free(c);
+        BN_free(f1);
+        BN_free(f);
+        BN_free(g1);
+        BN_free(g);
+        BN_free(h1);
+        BN_free(h);
+        BN_free(alpha);
+        BN_free(alpha1);
+        BN_free(alpha2);
+        BN_free(ycoord);
+        EC_POINT_free(R);
     }
 
 cleanup:
