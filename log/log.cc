@@ -53,35 +53,12 @@ LogServer::LogServer(bool onlySigs_in) {
     onlySigs = onlySigs_in;
 };
 
-void LogServer::GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret) {
-    uint8_t pt[16];
-    uint8_t out[16];
-    int len;
-    memset(pt, 0, 16);
-    memcpy(pt, (uint8_t *)&ctr, sizeof(uint64_t));
-    EVP_EncryptUpdate(ctx, out, &len, pt, 16);
-    BN_bin2bn(out, len, ret);
-    BN_mod(ret, ret, Params_order(params), bn_ctx);
-}
-
-void LogServer::GetPreprocessValue(uint64_t ctr, BIGNUM *ret, uint8_t *seed_in) {
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    BN_CTX *bn_ctx = BN_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
-    uint8_t iv[16];
-    memset(iv, 0, 16);
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed_in, iv);
-    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
-    if (ctx) EVP_CIPHER_CTX_free(ctx);
-    if (bn_ctx) BN_CTX_free(bn_ctx);
-}
-
 void LogServer::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in) {
     uint64_t ctr = i * 4; 
-    GetPreprocessValue(ctr, r, seed_in);
-    GetPreprocessValue(ctr + 1, a, seed_in);
-    GetPreprocessValue(ctr + 2, b, seed_in);
-    GetPreprocessValue(ctr + 3, alpha, seed_in);
+    GetPreprocessValue(ctr, r, seed_in, params);
+    GetPreprocessValue(ctr + 1, a, seed_in, params);
+    GetPreprocessValue(ctr + 2, b, seed_in, params);
+    GetPreprocessValue(ctr + 3, alpha, seed_in, params);
 }
 
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {

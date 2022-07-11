@@ -137,7 +137,6 @@ Client::Client(bool startConn) {
 
 /* Write agent state to file, including root public keys and map of key handles
  * to public keys. Should be called when creating a new agent. */
-// TODO: error checking
 void Client::WriteToStorage() {
   /* Write map of key handles to public keys. */
   FILE *kh_file = fopen(KH_FILE, "w");
@@ -276,70 +275,38 @@ void Client::ReadFromStorage() {
  
 }
 
-// TODO 32 bytes and mod order
-void Client::GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret) {
-    uint8_t pt[16];
-    uint8_t out[16];
-    int len;
-    memset(pt, 0, 16);
-    memcpy(pt, (uint8_t *)&ctr, sizeof(uint64_t));
-    EVP_EncryptUpdate(ctx, out, &len, pt, 16);
-    BN_bin2bn(out, len, ret);
-    BN_mod(ret, ret, Params_order(params), bn_ctx);
-}
-
-void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret) {
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    BN_CTX *bn_ctx = BN_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
-    uint8_t iv[16];
-    memset(iv, 0, 16);
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
-    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
-}
-
-void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret, uint8_t *seed_in) {
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    BN_CTX *bn_ctx = BN_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
-    uint8_t iv[16];
-    memset(iv, 0, 16);
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed_in, iv);
-    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
-}
-
 void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
     uint64_t ctr = i * 9;
-    GetPreprocessValue(ctx, bn_ctx, ctr, r);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 1, auth_r);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 2, a);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 3, b);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 4, c);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 5, f);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 6, g);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 7, h);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 8, alpha);
+    GetPreprocessValue(ctx, bn_ctx, ctr, r, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 1, auth_r, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 2, a, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 3, b, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 4, c, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 5, f, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 6, g, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 7, h, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 8, alpha, params);
 }
 
 void Client::GetPreprocessValueSetLog(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in) {
     uint64_t ctr = i * 4;
-    GetPreprocessValue(ctr, r, seed_in);
-    GetPreprocessValue(ctr + 1, a, seed_in);
-    GetPreprocessValue(ctr + 2, b, seed_in);
-    GetPreprocessValue(ctr + 3, alpha, seed_in);
+    GetPreprocessValue(ctr, r, seed_in, params);
+    GetPreprocessValue(ctr + 1, a, seed_in, params);
+    GetPreprocessValue(ctr + 2, b, seed_in, params);
+    GetPreprocessValue(ctr + 3, alpha, seed_in, params);
 }
 
 void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
     uint64_t ctr = i * 9;
-    GetPreprocessValue(ctr, r);
-    GetPreprocessValue(ctr + 1, auth_r);
-    GetPreprocessValue(ctr + 2, a);
-    GetPreprocessValue(ctr + 3, b);
-    GetPreprocessValue(ctr + 4, c);
-    GetPreprocessValue(ctr + 5, f);
-    GetPreprocessValue(ctr + 6, g);
-    GetPreprocessValue(ctr + 7, h);
-    GetPreprocessValue(ctr + 8, alpha);
+    GetPreprocessValue(ctr, r, seed, params);
+    GetPreprocessValue(ctr + 1, auth_r, seed, params);
+    GetPreprocessValue(ctr + 2, a, seed, params);
+    GetPreprocessValue(ctr + 3, b, seed, params);
+    GetPreprocessValue(ctr + 4, c, seed, params);
+    GetPreprocessValue(ctr + 5, f, seed, params);
+    GetPreprocessValue(ctr + 6, g, seed, params);
+    GetPreprocessValue(ctr + 7, h, seed, params);
+    GetPreprocessValue(ctr + 8, alpha, seed, params);
 }
 
 // TODO compress r1 or r2 with PRG
