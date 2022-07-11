@@ -30,7 +30,6 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-//using json = nlohmann::json;
 using namespace std;
 using namespace emp;
 
@@ -73,6 +72,8 @@ void LogServer::GetPreprocessValue(uint64_t ctr, BIGNUM *ret, uint8_t *seed_in) 
     memset(iv, 0, 16);
     EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed_in, iv);
     GetPreprocessValue(ctx, bn_ctx, ctr, ret);
+    if (ctx) EVP_CIPHER_CTX_free(ctx);
+    if (bn_ctx) BN_CTX_free(bn_ctx);
 }
 
 void LogServer::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in) {
@@ -121,15 +122,10 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     BIGNUM *d = BN_new();
     BIGNUM *e = BN_new();
     BIGNUM *hash_bn = BN_new();
-    BIGNUM *auth_hash_bn = BN_new();
-    BIGNUM *val = BN_new();
-    BIGNUM *auth_val = BN_new();
     BIGNUM *out = BN_new();
-    BIGNUM *auth_out = BN_new();
     BIGNUM *prod = BN_new();
     BIGNUM *check_d = BN_new();
     BIGNUM *term1 = BN_new();
-    BIGNUM *auth_term1 = BN_new();
     BIGNUM *r = BN_new();
     BIGNUM *a = BN_new();
     BIGNUM *b = BN_new();
@@ -230,6 +226,23 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
         EVP_VerifyUpdate(mdctx, auth_input, 48);
         int ver = EVP_VerifyFinal(mdctx, auth_sig, auth_sig_len, pkey);
     }
+
+    if (d_client) BN_free(d_client);
+    if (e_client) BN_free(e_client);
+    if (d_log) BN_free(d_log);
+    if (e_log) BN_free(e_log);
+    if (auth_d_log) BN_free(auth_d_log);
+    if (d) BN_free(d);
+    if (e) BN_free(e);
+    if (hash_bn) BN_free(hash_bn);
+    if (prod) BN_free(prod);
+    if (term1) BN_free(term1);
+    if (r) BN_free(r);
+    if (a) BN_free(a);
+    if (b) BN_free(b);
+    if (alpha) BN_free(alpha);
+    if (ctx) BN_CTX_free(ctx);
+
 };
 
 void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *check_d_buf_out, unsigned int *check_d_buf_len, uint8_t *check_d_open) {
@@ -261,6 +274,10 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     }
     
     *final_out_len = BN_bn2bin(saveMap[sessionCtr]->out, final_out);
+    
+    if (check_d_client) BN_free(check_d_client);
+    if (sum) BN_free(sum);
+    if (ctx) BN_CTX_free(ctx);
 }
 
 
