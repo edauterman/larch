@@ -143,8 +143,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
             memcpy(proof->openings[i][j], openings[(proof->idx[j] + i) % 3][j], 16);
         }
     }
-    //proof->w[0] = w_tmp[proof->idx];
-    //proof->w[1] = w_tmp[(proof->idx + 1) % 3];
     
     for (int i = 0; i < 3; i++) {
         proof->pubInShares[i] = (uint32_t *)malloc((m_len + 256 + 256) * sizeof(uint32_t));
@@ -159,7 +157,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         }
     }
 
-    // TODO run randomness tape on verifier
     for (int i = 0; i < 2; i++) {
         uint8_t seeds_tmp[32][16];
         for (int j = 0; j < 32; j++) {
@@ -167,8 +164,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         }
         proof->rands[i] = new RandomSource(seeds_tmp, numRands);
     }
-    //proof->rands[0] = new RandomSource(seeds[proof->idx], numRands);
-    //proof->rands[1] = new RandomSource(seeds[(proof->idx+1)%3], numRands);
 
     proof->outLen = 1;
     bool b;
