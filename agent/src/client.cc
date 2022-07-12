@@ -513,7 +513,6 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   BIGNUM *sk;
   BIGNUM *x;
   BIGNUM *y;
-  BIGNUM *exp;
   uint8_t signed_data[1 + U2F_APPID_SIZE + U2F_NONCE_SIZE + MAX_KH_SIZE +
       P256_POINT_SIZE];
   EVP_PKEY *anon_pkey;
@@ -530,7 +529,6 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   CHECK_A(sk = BN_new());
   CHECK_A(x = BN_new());
   CHECK_A(y = BN_new());
-  CHECK_A(exp = BN_new());
   CHECK_A(ctx = BN_CTX_new());
   CHECK_A(anon_pkey = EVP_PKEY_new());
   pk = Params_point_new(params);
@@ -578,7 +576,6 @@ cleanup:
   if (evpctx) EVP_MD_CTX_destroy(evpctx);
   if (x) BN_free(x);
   if (y) BN_free(y);
-  if (exp) BN_free(exp);
   if (ctx) BN_CTX_free(ctx);
   return cert_len + sig_len;
 }
@@ -586,8 +583,6 @@ cleanup:
 int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
   BN_CTX *ctx;
   int rv = OKAY;
-  BIGNUM *auth_val = BN_new();
-  BIGNUM *auth_hash = BN_new();
 
   ctx = BN_CTX_new();
 
@@ -597,6 +592,7 @@ int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, B
   BN_mod_sub(auth_d, auth_r, f, Params_order(params), ctx);
 
 cleanup:
+  BN_CTX_free(ctx);
   return rv;
 }
 
@@ -634,6 +630,9 @@ int Client::FinishSigning(BIGNUM *hash_bn, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGN
     BN_mod_add(out, out, term1, Params_order(params), ctx);
 
 cleanup:
+    BN_free(prod);
+    BN_free(term1);
+    BN_CTX_free(ctx);
     return rv;
 }
 
@@ -644,6 +643,8 @@ void Client::MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alph
     BN_CTX_free(ctx);
 }
 
+// TODO: test more thoroughly or get signature format correct to use OpenSSL
+// ECDSA signature verification directly.
 bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
     EC_POINT *test = EC_POINT_new(Params_group(params));
     EC_POINT *g_m = EC_POINT_new(Params_group(params));
@@ -673,6 +674,8 @@ bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
     return res;
 }
 
+// TODO: test more thoroughly or get signature format correct to use OpenSSL
+// ECDSA signing directly.
 void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len) {
   int rv;
   BIGNUM *out = NULL;
@@ -715,12 +718,23 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   asn1_sigp(sig_out, x_coord, out);
   len_byte = sig_out[1];
   *sig_len = len_byte + 2;
+
+  BN_free(hash_bn);
+  BN_free(val);
+  BN_free(r);
+  BN_free(r_inv);
+  BN_free(x_coord);
+  BN_free(y_coord);
+  BN_free(sk);
+  EVP_MD_CTX_free(mdctx2);
+  BN_CTX_free(ctx);
+  EC_POINT_free(R);
 }
 
 void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
-  BIGNUM *e_client, *e_log, *auth_e, *e, *check_e;
+  BIGNUM *e_client, *e_log, *auth_e, *e;
   BIGNUM *f, *g, *h;
   BIGNUM *alpha;
   BIGNUM *auth_r, *r;
@@ -827,6 +841,33 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
 
   auth_ctr++;
 
+  BN_free(a);
+  BN_free(b);
+  BN_free(c);
+  BN_free(d_client);
+  BN_free(d_log);
+  BN_free(auth_d);
+  BN_free(d);
+  BN_free(check_d);
+  BN_free(e_client);
+  BN_free(e_log);
+  BN_free(auth_e);
+  BN_free(e);
+  BN_free(f);
+  BN_free(g);
+  BN_free(h);
+  BN_free(alpha);
+  BN_free(r);
+  BN_free(auth_r);
+  BN_free(out_log);
+  BN_free(out_client);
+  BN_free(auth_out_client);
+  BN_free(hash_bn);
+  BN_free(val);
+  BN_CTX_free(ctx);
+  free(d_buf);
+  free(e_buf);
+  free(check_d_buf);
 }
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
@@ -838,13 +879,9 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   
   BIGNUM *out = NULL;
   BIGNUM *x_coord = NULL;
-  EC_POINT *R, *auth_pkey;
   EVP_MD_CTX *mdctx;
-  EVP_MD_CTX *mdctx2;
-  EVP_MD_CTX *mdctx3;
   uint8_t message[SHA256_DIGEST_LENGTH];
   uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
-  ECDSA_SIG *sig = NULL;
   unsigned int sig_len = 0;
   uint8_t flags = 0x01;
   uint8_t ctr[4];
@@ -859,7 +896,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
   uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
   uint8_t len_byte;
-  uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
   EVP_PKEY *pkey;
   uint8_t hash_out[32];
   uint8_t comm_in[64];
@@ -872,10 +908,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   thread workers[NUM_ROUNDS];
   int proof_buf_len;
   uint8_t iv_raw[16];
-  uint8_t *d_buf;
-  uint8_t *e_buf;
-  uint8_t *check_d_buf;
-  uint8_t *check_e_buf;
   BIGNUM *sk;
   uint8_t tag[SHA256_DIGEST_LENGTH];
   uint8_t auth_input[16 + SHA256_DIGEST_LENGTH];
@@ -895,14 +927,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   CHECK_A (sk = BN_new());
   CHECK_A (x_coord = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
-  CHECK_A (mdctx2 = EVP_MD_CTX_create());
-  CHECK_A (mdctx3 = EVP_MD_CTX_create());
   CHECK_A (ctx = BN_CTX_new());
-  CHECK_A (sig = ECDSA_SIG_new());
-  CHECK_A (key = EC_KEY_new());
-  pkey = EVP_PKEY_new();
-  R = EC_POINT_new(Params_group(params));
-  auth_pkey = EC_POINT_new(Params_group(params));
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
@@ -911,9 +936,9 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
 
-  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
-  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
-  EVP_DigestFinal(mdctx2, hash_out, NULL);
+  EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+  EVP_DigestUpdate(mdctx, message_buf, message_buf_len);
+  EVP_DigestFinal(mdctx, hash_out, NULL);
 
   RAND_bytes(iv_raw, 16);
   memcpy((uint8_t *)&iv, iv_raw, 16);
@@ -927,7 +952,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   }
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
-    STOP_TIMER("worker finished");
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
@@ -960,6 +984,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
 cleanup:
   if (mdctx) EVP_MD_CTX_destroy(mdctx);
+  if (out) BN_free(out);
+  if (sk) BN_free(sk);
+  if (x_coord) BN_free(x_coord);
+  if (ctx) BN_CTX_free(ctx);
   return rv == OKAY ? sig_len : ERROR;
 }
 
@@ -970,14 +998,8 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
                  uint8_t *sig_out, bool noRegistration) {
   int rv = ERROR;
   
-  BIGNUM *out = NULL;
-  BIGNUM *r, *r_inv, *x_coord, *y_coord, *val, *hash_bn, *sk;
-  EC_POINT *R;
-  EVP_MD_CTX *mdctx;
-  EVP_MD_CTX *mdctx2;
-  EVP_MD_CTX *mdctx3;
+  BIGNUM *sk;
   uint8_t message[SHA256_DIGEST_LENGTH];
-  uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
   ECDSA_SIG *sig = NULL;
   unsigned int sig_len = 0;
   uint8_t flags = 0x01;
@@ -989,40 +1011,14 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   ctr[1] = 0xFF & ctr32 >> 16;
   ctr[2] = 0xFF & ctr32 >> 8;
   ctr[3] = 0xFF & ctr32;
-  BN_CTX *ctx;
+  EVP_PKEY *pkey;
   int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
   uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
-  uint8_t len_byte;
-  uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
-  EVP_PKEY *pkey;
-  uint8_t hash_out[32];
-  uint8_t comm_in[64];
-  uint8_t ct[SHA256_DIGEST_LENGTH];
-  __m128i iv = makeBlock(0,0);
-  __m128i enc_key_128 = makeBlock(0,0);
-  Proof proof[NUM_ROUNDS];
-  int numRands = 116916;
-  int proof_buf_len;
-  uint8_t iv_raw[16];
-  uint8_t tag[SHA256_DIGEST_LENGTH];
-  uint8_t mac_input[16 + 16 + SHA256_DIGEST_LENGTH];
 
-
-  CHECK_A (out = BN_new());
-  CHECK_A (hash_bn = BN_new());
-  CHECK_A (val = BN_new());
-  CHECK_A (r = BN_new());
-  CHECK_A (r_inv = BN_new());
-  CHECK_A (x_coord = BN_new());
-  CHECK_A (y_coord = BN_new());
   CHECK_A (sk = BN_new());
-  CHECK_A (mdctx = EVP_MD_CTX_create());
-  CHECK_A (mdctx2 = EVP_MD_CTX_create());
-  CHECK_A (ctx = BN_CTX_new());
   CHECK_A (sig = ECDSA_SIG_new());
   CHECK_A (key = EC_KEY_new());
   pkey = EVP_PKEY_new();
-  R = EC_POINT_new(Params_group(params));
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
@@ -1031,6 +1027,7 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
   EC_KEY_set_group(key, Params_group(params));
+  //Params_rand_exponent(params, sk);
   EC_KEY_set_private_key(key, sk);
   ECDSA_sign(0, message_buf, message_buf_len, sig_out, &sig_len, key);
  
@@ -1041,7 +1038,10 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   auth_ctr++;
 
 cleanup:
-  if (mdctx) EVP_MD_CTX_destroy(mdctx);
+  if (sk) BN_free(sk);
+  if (sig) ECDSA_SIG_free(sig);
+  if (key) EC_KEY_free(key);
+  if (pkey) EVP_PKEY_free(pkey);
   return rv == OKAY ? sig_len : ERROR;
 }
 
