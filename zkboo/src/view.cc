@@ -25,4 +25,5 @@ void CircuitView::Commit(CircuitComm &comm, int idx, uint8_t *opening) {
     }
     memcpy(data + wires.size() / 8 + 1, opening, 16);
     hash_to_bytes(comm.digest, SHA256_DIGEST_LENGTH, (const uint8_t *)data, len);
+    free(data);
 }

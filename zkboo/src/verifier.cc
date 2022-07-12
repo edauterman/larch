@@ -178,16 +178,25 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
     AssembleShares(proof->pubInShares[0] + 512, proof->pubInShares[1] + 512, proof->pubInShares[2] + 512, ctTest, m_len);
     if (memcmp(hashOutTest, hashOutRaw, 256 / 8) != 0) {
         *ret = false;
+        free(hashOutTest);
+        free(ctTest);
+        free(keyCommTest);
         return false;
     }
+    free(hashOutTest);
     if (memcmp(keyCommTest, keyCommRaw, 256 / 8) != 0) {
         *ret = false;
+        free(keyCommTest);
+        free(ctTest);
         return false;
     }
+    free(keyCommTest);
     if (memcmp(ctTest, ctRaw, m_len / 8) != 0) {
         *ret = false;
+        free(ctTest);
         return false;
     }
+    free(ctTest);
     uint32_t outTest = (proof->outShares[0][0] + proof->outShares[1][0] + proof->outShares[2][0]) % 2;
     for (int i = 0; i < 32; i++) {
         uint32_t res = ((GetBit(proof->outShares[0][0], i) + GetBit(proof->outShares[1][0], i) + GetBit(proof->outShares[2][0], i)) % 2);

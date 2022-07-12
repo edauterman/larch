@@ -9,6 +9,7 @@ class RandomSource {
         uint8_t *randomness[32];
 
         RandomSource(uint8_t seeds[32][16], int numRands);
+        ~RandomSource();
         uint8_t GetRand(int idx, int gate);
         //uint8_t GetRand(int gate, int wireIdx);
 };
@@ -32,6 +33,8 @@ class Proof {
         uint32_t outLen;
         uint32_t idx[32];
 
+        Proof();
+        ~Proof();
         uint8_t *Serialize(int *out_len);
         void Deserialize(uint8_t *buf, int numRands);
     private:

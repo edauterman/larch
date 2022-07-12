@@ -179,5 +179,9 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     proof->out = (uint8_t *)malloc(1);
     proof->out[0] = b;
 
+    for (int i = 0; i < 3; i++) {
+        free(w_tmp[i]);
+    }
+
 }
 

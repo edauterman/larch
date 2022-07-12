@@ -43,6 +43,12 @@ RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
     }
 }
 
+RandomSource::~RandomSource() {
+    for (int i = 0; i < 32; i++) {
+        free(randomness[i]);
+    }
+}
+
 uint8_t RandomSource::GetRand(int idx, int gate) {
     return GetBit((uint32_t)randomness[idx][gate/8], gate%8);
 }
@@ -63,6 +69,33 @@ uint8_t RandomOracle::GetRand(CircuitComm &in0, CircuitComm &in1, CircuitComm &i
         }
     }
     return out;
+}
+
+Proof::Proof() {
+    for (int i = 0; i < 2; i++) {
+        w[i] = NULL;
+        rands[i] = NULL;
+    }
+    for (int i = 0; i < 3; i++) {
+        pubInShares[i] = NULL;
+        outShares[i] = NULL;
+    }
+    out = NULL;
+}
+
+Proof::~Proof() {
+    for (int i = 0; i < 2; i++) {
+        if (w[i]) free(w[i]);
+        if (rands[i]) delete rands[i];
+        /*for (int j = 0; j < 32; j++) {
+            if (rands[i]->randomness[j]) free(rands[i]->randomness[j]);
+        }*/
+    }
+    for (int i = 0; i < 3; i++) {
+        if (pubInShares[i]) free(pubInShares[i]);
+        if (outShares[i]) free(outShares[i]);
+    }
+    if (out) free(out);
 }
 
 void Proof::SerializeInt32(uint32_t x, uint8_t **buf) {
