@@ -22,10 +22,8 @@ int main() {
     Proof pi;
     Proof pi2;
     int numRands = 81543;
-    //int numRands = 89984;
 
     int m_len = 256;
-    //int in_len = 512;
     int in_len = 552;
     uint8_t key[128 / 8];
     __m128i key_raw = makeBlock(0,0);
@@ -68,7 +66,6 @@ int main() {
     uint8_t *buf = pi.Serialize(&buf_len);
     pi2.Deserialize(buf, numRands);
     START_TIMER;
-    //bool check = VerifyCtCircuit(pi, iv, m_len, in_len);
     bool check;
     VerifyCtCircuit(&pi2, iv, m_len, in_len, hash_out, comm, ct, &check);
     STOP_TIMER("Verifier time");

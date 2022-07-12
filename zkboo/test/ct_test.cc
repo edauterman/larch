@@ -4,7 +4,6 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <emp-tool/emp-tool.h>
-//#include "omp.h"
 
 #include "../src/view.h"
 #include "../src/prover.h"
@@ -24,10 +23,8 @@ int main() {
 
     Proof pi[NUM_ROUNDS];
     int numRands = 81543;
-    //int numRands = 89984;
 
     int m_len = 256;
-    //int in_len = 512;
     int in_len = 552;
     uint8_t key[128 / 8];
     __m128i key_raw = makeBlock(0,0);
@@ -61,15 +58,13 @@ int main() {
     memset(key, 0, 128/8);
     aes_128_ctr(key_raw, iv, m, ct, m_len / 8, 0);
 
-    //printf("finished setup, starting proving with %d threads\n", omp_get_num_threads());
     INIT_TIMER;
     START_TIMER;
-    //#pragma omp parallel for
     for (int i = 0; i < 1; i++) {
     //for (int i = 0; i < NUM_ROUNDS; i++) {
         ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, &pi[i]);
     }
-    STOP_TIMER("Prover time (100)");
+    STOP_TIMER("Prover time (1)");
     cout << "Finished proving" << endl; 
     START_TIMER;
     bool check;
