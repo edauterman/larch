@@ -21,7 +21,6 @@ RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
     for (int i = 0; i < 32; i++) {
         memcpy(seeds[i], in_seeds[i], 16);
     }
-    //RAND_bytes(seed, 16);
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_CIPHER_CTX_init(ctx);
@@ -46,14 +45,6 @@ RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
 
 uint8_t RandomSource::GetRand(int idx, int gate) {
     return GetBit((uint32_t)randomness[idx][gate/8], gate%8);
-    /*return 1;
-    int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
-    buf[0] = gate;
-    //buf[1] = wireIdx % 3;
-    memcpy((uint8_t *)(buf + 1), seed, SHA256_DIGEST_LENGTH);
-    uint8_t out;
-    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, sizeof(int) + SHA256_DIGEST_LENGTH);
-    return (out) % 2;*/
 }
 
 uint8_t RandomOracle::GetRand(CircuitComm &in0, CircuitComm &in1, CircuitComm &in2) {
@@ -83,9 +74,6 @@ void Proof::SerializeInt32(uint32_t x, uint8_t **buf) {
 }
 
 void Proof::SerializeBit(uint32_t x, uint8_t **buf, int *idx) {
-/*    if (x != 0 && x != 1) {
-        printf("ERROR: serializing %d as bit\n", x);
-    }*/
     if (x & 1 == 1) {
         (*buf)[0] = (*buf)[0] | (1 << *idx);
     }

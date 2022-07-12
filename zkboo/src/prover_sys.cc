@@ -12,7 +12,6 @@
 #include "prover.h"
 #include "proof.h"
 #include "emp_prover.h"
-//#include "common.h"
 #include "prover_sys.h"
 #include "../utils/timer.h"
 #include "../../crypto/params.h"
@@ -66,7 +65,6 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ setval;
         for (int j = 0; j < 3; j++) {
-            //SetWireNum(&indivShares[j][i], i + offset);
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             dst[j][i + offset] = indivShares[j][i];
         }

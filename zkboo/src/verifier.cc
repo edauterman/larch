@@ -23,8 +23,6 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
     *x = *x | (val << bit);
 }
 
-// QUESTION: should we just be checking out0???? or is it checking that both inputs used correctly????
-
 Verifier::Verifier(RandomSource *in_rands[], uint32_t *in_idx) {
     rands[0] = in_rands[0];
     rands[1] = in_rands[1];
@@ -45,11 +43,8 @@ Verifier::Verifier(RandomSource *in_rands[], uint32_t *in_idx) {
 
 inline void Verifier::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
-    //uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 2; i++) {
-        //uint32_t setalpha = (alpha == 0) ? 0xffffffff ^ one_mask[i] : one_mask[i];
         out[i] = 0xffffffff ^ a[i];
-        //out[i] = setalpha ^ a[i];
     }
 }
 
@@ -67,7 +62,6 @@ inline void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
         masks[i] = 0; 
         for (int j = 0; j < 32; j++) {
             masks[i] = masks[i] | (GetBit(rands[i]->randomness[j][numAnds/8], numAnds%8) << j);
-            //masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
         }
     }
     out[0] = ((a[0] & b[0]) ^ (a[1] & b[0]) ^ (a[0] & b[1])
@@ -78,16 +72,11 @@ inline void Verifier::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
 void AssembleShares(uint32_t *in0, uint32_t *in1, uint32_t *in2, uint8_t *out, int num_blocks) {
     bool *bs = new bool[num_blocks];
     for (int i = 0; i < num_blocks; i++) {
-        /*for (int j = 0; j < 3; j++) {
-            memcpy((uint8_t *)&shares[j], ((uint8_t *)&in[i]) + (j * sizeof(uint32_t)), sizeof(uint32_t));
-            //memcpy((uint8_t *)&shares[j], ((uint8_t *)&in[i]) + (j * sizeof(uint32_t)), sizeof(uint32_t));
-        }*/
         bs[i] = in0[i] ^ in1[i] ^ in2[i];
     }
     from_bool(bs, out, num_blocks);
 }
 
-//bool VerifyCtCircuit(Proof &proof, __m128i iv, int m_len, int in_len) {
 bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw, bool *ret) {
     for (int i = 0; i < 32; i++) {
         CircuitComm c;
@@ -99,7 +88,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
         }
     }
 
-    // Need to check that views chosen randomly correctly?
     RandomOracle oracle;
     for (int i = 0; i < 32; i++) {
         uint8_t idx_check = oracle.GetRand(proof->comms[0][i], proof->comms[1][i], proof->comms[2][i]);
@@ -110,7 +98,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
         }
     }
 
-    //int m_len = (proof.wLen - 256 - 128 - 128 - 256) / 2;
     block *m = new block[m_len];
     block *hashOut = new block[256];
     block *ct = new block[m_len];
@@ -119,8 +106,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
     block *keyComm = new block[256];
     block *hashIn = new block[in_len];
     block *out = new block[1];
-
-    // TODO: check hashOut, keyComm, and ct
 
     for (int i = 0; i < m_len; i++) {
         memcpy((uint8_t *)&m[i], (uint8_t *)&proof->w[0][i], sizeof(uint32_t));
@@ -138,7 +123,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
                     return false;
                 }
             }
-            //if (memcmp(((uint8_t *)&hashOut[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i], sizeof(uint32_t)) != 0) return false;
         }
     }
 
@@ -154,7 +138,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
                 }
             }
  
-            //if (memcmp(((uint8_t *)&ct[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256 + 256], sizeof(uint32_t)) != 0) return false;
         }
     }
 
@@ -179,7 +162,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
                     return false;
                 }
             }
-            //if (memcmp(((uint8_t *)&keyComm[i]) + (j * sizeof(uint32_t)), (uint8_t *)&proof.pubInShares[(j + proof.idx) % 3][i + 256], sizeof(uint32_t)) != 0) return false;
         }
     }
 
@@ -188,9 +170,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
         memcpy((uint8_t *)&hashIn[i] + sizeof(uint32_t), (uint8_t *)&proof->w[1][i + m_len + 256 + m_len + 128 + 128 + 256], sizeof(uint32_t));
     }
     
-    //memcpy((uint8_t *)&out[0], (uint8_t *)&proof.outShares[proof.idx][0], sizeof(uint32_t));
-    //memcpy((uint8_t *)&out[0] + sizeof(uint32_t), (uint8_t *)&proof.outShares[(proof.idx + 1) % 3][0], sizeof(uint32_t));
-
     uint8_t *hashOutTest = (uint8_t *)malloc(256 / 8);
     uint8_t *keyCommTest = (uint8_t *)malloc(256 / 8);
     uint8_t *ctTest = (uint8_t *)malloc(m_len / 8);

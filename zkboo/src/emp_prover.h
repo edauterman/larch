@@ -16,26 +16,10 @@ static inline void SetBit(uint32_t *x, int bit, bool val) {
     *x = *x | (val << bit);
 }
 
-static inline void SetWireNum(uint32_t *x, uint32_t wireNum) {
-    *x = *x | (wireNum << 1);
-}
-
-static inline uint32_t GetWireNum(uint32_t x) {
-    return x >> 1;
-}
-
-static inline uint32_t GetWireNum(const block &x) {
-    uint32_t x32;
-    memcpy((uint8_t *)&x32, (uint8_t *)&x, sizeof(uint32_t));
-    return GetWireNum(x32);
-}
-
-
 template<typename T>
 class ZKBooCircExecProver : public CircuitExecution {
     public:
         uint64_t and_ct = 0;
-        //int wireIdx;
         Prover *p;
         CircuitView *proverViews[3];
         int nextWireNum;
@@ -67,7 +51,6 @@ class ZKBooCircExecProver : public CircuitExecution {
 
         block and_gate(const block &a, const block &b) override {
             and_ct++;
-            //printf("and gate, %d\n", nextWireNum);
             uint32_t a_shares[3];
             uint32_t b_shares[3];
             uint32_t out_shares[3];
@@ -98,18 +81,11 @@ class ZKBooCircExecProver : public CircuitExecution {
         }
 
         block public_label(bool b) override {
-            //printf("label\n");
             if (b == 0) {
                 return makeBlock(0,0);
             } else {
                 return makeBlock(-1, -1);
             }
-            /*uint32_t shares[3];
-            for (int i = 0; i < 3; i++) {
-                shares[i] = b == 0 ? 0 : 0xffffffff;
-            }
-            memcpy((uint8_t *)&out, shares, 3 * sizeof(uint32_t));
-            return out;*/
         }
 };
 
