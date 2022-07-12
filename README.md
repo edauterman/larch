@@ -45,5 +45,5 @@ TODO: write test to explicitly check for bad proofs.
 * Either get OpenSSL ECDSA signing working with correct signature format / correct OpenSSL
 version or do more extensive testing for ECDSA sign/verify functions (for authenticating
 ciphertexts sent to log and baseline).
-* Make sure always throwing error / returning false instead of just printing error
+* Make sure always fully propagating errors instead of just printing error
 * More comprehensive testing (esp. for ZKBoo proofs when different types of errors introduced)
