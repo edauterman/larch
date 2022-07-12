@@ -34,8 +34,8 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 set(sources
-    ../emp-tool/emp-tool/emp-tool.cpp
-    ../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    ../../emp-tool/emp-tool/emp-tool.cpp
+    ../../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )   
 
 set(_GRPC_GRPCPP gRPC::grpc++)
@@ -44,8 +44,6 @@ set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.pb.h")
 set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.pb.cc")
 set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.grpc.pb.h")
 set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.grpc.pb.cc")
-
-#add_library(Utils ../src/asn1.cc ../src/base64.cc ../src/sig_parse.cc ../src/x509.cc ../../crypto/params.cc ../../crypto/sigs.cc ../src/client.cc ../../zkboo/src/prover.cc ../../zkboo/src/proof.cc ../../zkboo/src/prover.cc ../../zkboo/src/prover_sys.cc ../../zkboo/src/view.cc ../../zkboo/src/verifier.cc ../../zkboo/src/circuit.cc ../../zkboo/src/circuit_utils.cc ${hw_proto_srcs} ${hw_grpc_srcs})
 
 add_executable(agent agent.cc)
 target_link_libraries(agent

@@ -39,3 +39,11 @@ If `sigs` is included, omit the ZK proof verification (used to benchmark signing
 * `zkboo/test/serialize_test`: Check that proof serialization is correct.
 * `zkboo/test/parallel_test`: Benchmark proof with correct number of repetitions.
 TODO: write test to explicitly check for bad proofs.
+
+
+### TODOs before open source
+* Either get OpenSSL ECDSA signing working with correct signature format / correct OpenSSL
+version or do more extensive testing for ECDSA sign/verify functions (for authenticating
+ciphertexts sent to log and baseline).
+* Make sure always throwing error / returning false instead of just printing error
+* More comprehensive testing (esp. for ZKBoo proofs when different types of errors introduced)
