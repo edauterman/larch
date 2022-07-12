@@ -6,7 +6,7 @@
 #include <emp-tool/emp-tool.h>
 
 #include "../crypto/params.h"
-#include "../agent/src/u2f.h"
+#include "../client/src/u2f.h"
 
 #define NUM_ROUNDS 5
 
