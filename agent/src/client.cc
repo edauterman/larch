@@ -1029,6 +1029,7 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   EC_KEY_set_group(key, Params_group(params));
   //Params_rand_exponent(params, sk);
   EC_KEY_set_private_key(key, sk);
+  // TODO: Segfaulting on ec2 instances but fine on local machine? Problem with OpenSSL install?
   ECDSA_sign(0, message_buf, message_buf_len, sig_out, &sig_len, key);
  
   /* Output message from device. */
