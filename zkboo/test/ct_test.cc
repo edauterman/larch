@@ -80,7 +80,7 @@ int main() {
 
     uint8_t hash_out2[32];
     memset(hash_out2, 0xff, 32);
-    VerifyCtCircuit(&pi[0], iv, m_len, in_len, hash_out, comm, ct, &check);
+    VerifyCtCircuit(&pi[0], iv, m_len, in_len, hash_out2, comm, ct, &check);
     if (!check) {
         cout << "Proof correctly rejected" << endl;
     } else {

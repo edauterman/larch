@@ -11,7 +11,6 @@ class RandomSource {
         RandomSource(uint8_t seeds[32][16], int numRands);
         ~RandomSource();
         uint8_t GetRand(int idx, int gate);
-        //uint8_t GetRand(int gate, int wireIdx);
 };
 
 class RandomOracle {
