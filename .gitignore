@@ -22,4 +22,4 @@ CTestTestfile.cmake
 _deps
 *.swp
 *.a
-agent/src/libClient.a
+client/src/libClient.a
