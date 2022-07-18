@@ -26,3 +26,4 @@ client/src/libClient.a
 *.so
 out/
 build/
+.vscode/
