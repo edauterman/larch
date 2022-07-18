@@ -23,3 +23,6 @@ _deps
 *.swp
 *.a
 client/src/libClient.a
+*.so
+out/
+build/
