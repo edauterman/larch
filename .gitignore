@@ -27,3 +27,5 @@ client/src/libClient.a
 out/
 build/
 .vscode/
+*.pb.cc
+*.pb.h
