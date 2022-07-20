@@ -22,7 +22,7 @@ using namespace emp;
 
 void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &proverViews, block *out, uint8_t seeds[3][32][16], int numRands) {
     int wLen = m_len + 256 + 128 + m_len + 256 + 128 + in_len;
-    block *w = new block[wLen];
+    block *w = (block*) aligned_alloc(16, sizeof(block) * wLen);
 
     memset(w, 0xff, wLen * sizeof(block));
     memcpy((uint8_t *)w, mShares, m_len * sizeof(block));
@@ -90,21 +90,21 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     for (int i = 0; i < 3; i++) {
         w_tmp[i] = (uint32_t *)malloc(proof->wLen * sizeof(uint32_t));
     }
-    block *out = new block[1];
+    block *out = (block*) aligned_alloc(16, sizeof(block) * 1);
     memset((void *)out, 0, sizeof(block));
-    block *mShares = new block[m_len];
+    block *mShares = (block*) aligned_alloc(16, sizeof(block) * m_len);
     ShareInput(m, mShares, m_len, w_tmp,  0);
-    block *hashOutShares = new block[256];
+    block *hashOutShares = (block*) aligned_alloc(16, sizeof(block) * 256);
     ShareInput(hashOut, hashOutShares, 256, w_tmp, m_len);
-    block *ctShares = new block[m_len];
+    block *ctShares = (block*) aligned_alloc(16, sizeof(block) * m_len);
     ShareInput(ct, ctShares, m_len, w_tmp, m_len + 256);
-    block *keyShares = new block[128];
+    block *keyShares = (block*) aligned_alloc(16, sizeof(block) * 128);
     ShareInput(key, keyShares, 128, w_tmp, m_len + 256 + m_len);
-    block *keyRShares = new block[128];
+    block *keyRShares = (block*) aligned_alloc(16, sizeof(block) * 128);
     ShareInput(keyR, keyRShares, 128, w_tmp, m_len + 256 + m_len + 128);
-    block *keyCommShares = new block[256];
+    block *keyCommShares = (block*) aligned_alloc(16, sizeof(block) * 256);
     ShareInput(keyComm, keyCommShares, 256, w_tmp, m_len + 256 + m_len + 128 + 128);
-    block *hashInShares = new block[in_len];
+    block *hashInShares = (block*) aligned_alloc(16, sizeof(block) * in_len);
     ShareInput(hashIn, hashInShares, in_len, w_tmp, m_len + 256 + m_len + 128 + 128 + 256);
 
     uint8_t seeds[3][32][16];
