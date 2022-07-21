@@ -3,6 +3,8 @@
 #include <cstring>
 #include <string>
 
+#include "../circuit_files/sha-256-multiblock-aligned.cpp"
+
 using namespace emp;
 using namespace std;
 
@@ -184,7 +186,14 @@ void sha256(block *input, block *output, int input_len, CircuitExecution *ex) {
 			input_to_sha256_circuit[512 + i] = digest_bits[i];
 		}
 
-        BristolFormat bf((string(PROJ_DIR) + string("/zkboo/circuit_files/sha-256-multiblock-aligned.txt")).c_str());
+		BristolFormat bf(
+			empcircuit_sha256_multiblock_aligned_num_gate,
+			empcircuit_sha256_multiblock_aligned_num_wire,
+			empcircuit_sha256_multiblock_aligned_n1,
+			empcircuit_sha256_multiblock_aligned_n2,
+			empcircuit_sha256_multiblock_aligned_n3,
+			empcircuit_sha256_multiblock_aligned_gate_arr
+		);
 		bf.compute(output_from_sha256_circuit, input_to_sha256_circuit, input_to_sha256_circuit);
 
 		for (int i = 0; i < 256; i++) {
