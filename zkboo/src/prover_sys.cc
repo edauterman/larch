@@ -33,14 +33,12 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128) * sizeof(block), keyCommShares, 256 * sizeof(block));
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128 + 256) * sizeof(block), hashInShares, in_len * sizeof(block));
 
-
-    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
+    ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
     check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
     for (int i = 0; i < 3; i++) {
         proverViews.push_back(ex->proverViews[i]);
     }
-    //delete ex;
 }
 
 void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32], uint8_t openings[3][32][16]) {
@@ -183,5 +181,15 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         free(w_tmp[i]);
     }
 
+    delete CircuitExecution::circ_exec;
+    CircuitExecution::circ_exec = nullptr;
+    free(out);
+    free(mShares);
+    free(hashOutShares);
+    free(ctShares);
+    free(keyShares);
+    free(keyRShares);
+    free(keyCommShares);
+    free(hashInShares);
 }
 
