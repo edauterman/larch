@@ -173,6 +173,15 @@ void sha256(block *input, block *output, int input_len, CircuitExecution *ex) {
 		}
 	}
 
+	thread_local BristolFormat *bf = new BristolFormat(
+		empcircuit_sha256_multiblock_aligned_num_gate,
+		empcircuit_sha256_multiblock_aligned_num_wire,
+		empcircuit_sha256_multiblock_aligned_n1,
+		empcircuit_sha256_multiblock_aligned_n2,
+		empcircuit_sha256_multiblock_aligned_n3,
+		empcircuit_sha256_multiblock_aligned_gate_arr
+	);
+
 	for (int b = 0; b < num_blocks; b++) {
 		//fprintf(stderr, "zkboo: -- sha256\n");
 		// the first 512 bits -> the padded data
@@ -186,15 +195,7 @@ void sha256(block *input, block *output, int input_len, CircuitExecution *ex) {
 			input_to_sha256_circuit[512 + i] = digest_bits[i];
 		}
 
-		BristolFormat bf(
-			empcircuit_sha256_multiblock_aligned_num_gate,
-			empcircuit_sha256_multiblock_aligned_num_wire,
-			empcircuit_sha256_multiblock_aligned_n1,
-			empcircuit_sha256_multiblock_aligned_n2,
-			empcircuit_sha256_multiblock_aligned_n3,
-			empcircuit_sha256_multiblock_aligned_gate_arr
-		);
-		bf.compute(output_from_sha256_circuit, input_to_sha256_circuit, input_to_sha256_circuit);
+		bf->compute(output_from_sha256_circuit, input_to_sha256_circuit, input_to_sha256_circuit);
 
 		for (int i = 0; i < 256; i++) {
 			digest_bits[i] = output_from_sha256_circuit[i];
