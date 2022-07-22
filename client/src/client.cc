@@ -233,7 +233,7 @@ void Client::ReadFromStorage() {
       BN_bin2bn(long_buf, 32, xcoord);
       clientHints.push_back(ShortHint(xcoord));
     }
-    fclose(kh_file);
+    fclose(hint_file);
   }
 
   uint8_t pt_buf[33];
@@ -494,7 +494,7 @@ int Client::Initialize() {
     if (mdctx) EVP_MD_CTX_free(mdctx);
     free(buf);
     EC_POINT_free(auth_pk);
- 
+    return 0;
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
