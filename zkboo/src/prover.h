@@ -16,6 +16,7 @@ using namespace std;
 class Prover {
     public:
         Prover(uint8_t seeds[3][32][16], int numRands);
+        ~Prover();
         
         void AddConst(uint32_t in[], uint8_t alpha, uint32_t out[]);
         void AddShares(uint32_t a[], uint32_t b[], uint32_t out[]);

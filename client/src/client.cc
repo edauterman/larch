@@ -233,7 +233,7 @@ void Client::ReadFromStorage() {
       BN_bin2bn(long_buf, 32, xcoord);
       clientHints.push_back(ShortHint(xcoord));
     }
-    fclose(kh_file);
+    fclose(hint_file);
   }
 
   uint8_t pt_buf[33];
@@ -403,24 +403,26 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
         BN_free(r1);
         BN_free(auth_r1);
         BN_free(auth_r);
+        BN_free(r2);
         BN_free(a1);
-        BN_free(a2);
-        BN_free(a);
         BN_free(b1);
-        BN_free(b2);
-        BN_free(b);
         BN_free(c1);
+        BN_free(a2);
+        BN_free(b2);
+        BN_free(a);
+        BN_free(b);
         BN_free(c);
         BN_free(f1);
-        BN_free(f);
         BN_free(g1);
-        BN_free(g);
         BN_free(h1);
+        BN_free(f);
+        BN_free(g);
         BN_free(h);
-        BN_free(alpha);
         BN_free(alpha1);
         BN_free(alpha2);
+        BN_free(alpha);
         BN_free(ycoord);
+        BN_free(r_inv);
         EC_POINT_free(R);
     }
 
@@ -468,6 +470,12 @@ int Client::Initialize() {
         h->set_g(buf, BN_num_bytes(logHints[i].g));
         BN_bn2bin(logHints[i].h, buf);
         h->set_h(buf, BN_num_bytes(logHints[i].h));
+
+        free(logHints[i].auth_r);
+        free(logHints[i].c);
+        free(logHints[i].f);
+        free(logHints[i].g);
+        free(logHints[i].h);
     }
 
     id = rand();
@@ -494,7 +502,7 @@ int Client::Initialize() {
     if (mdctx) EVP_MD_CTX_free(mdctx);
     free(buf);
     EC_POINT_free(auth_pk);
- 
+    return 0;
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
@@ -719,6 +727,7 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   len_byte = sig_out[1];
   *sig_len = len_byte + 2;
 
+  BN_free(out);
   BN_free(hash_bn);
   BN_free(val);
   BN_free(r);
@@ -983,6 +992,9 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   *ctr_out = ctr32;
 
 cleanup:
+  for (int i = 0; i < NUM_ROUNDS; i++) {
+    free(proof_buf[i]);
+  }
   if (mdctx) EVP_MD_CTX_destroy(mdctx);
   if (out) BN_free(out);
   if (sk) BN_free(sk);

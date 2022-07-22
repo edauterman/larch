@@ -54,4 +54,6 @@ void check_ciphertext_circuit(CircuitExecution *ex, block hash_out[], block m[],
         *res = CircuitExecution::circ_exec->and_gate(*res, out);
     }
     //printf("total: %d\n", ex->num_and());
+
+    delete[] ct_calc;
 }

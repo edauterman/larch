@@ -119,7 +119,9 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     bool final_check = true;
     bool check[NUM_ROUNDS];
     thread workers[NUM_ROUNDS];
+    INIT_TIMER;
     if (!onlySigs) {
+        START_TIMER;
         for (int i = 0; i < NUM_ROUNDS; i++) {
             proof[i].Deserialize(proof_bytes[i], numRands);
             workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
@@ -128,6 +130,7 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
             workers[i].join();
             final_check = final_check && check[i];
         }
+        STOP_TIMER("proofs");
         if (final_check) {
             printf("VERIFIED\n");
         } else {

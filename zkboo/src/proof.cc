@@ -22,9 +22,6 @@ RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
         memcpy(seeds[i], in_seeds[i], 16);
     }
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
-
     uint8_t iv[16];
     uint8_t pt[16];
     memset(iv, 0, 16);
@@ -81,6 +78,7 @@ Proof::Proof() {
         outShares[i] = NULL;
     }
     out = NULL;
+    view = nullptr;
 }
 
 Proof::~Proof() {
@@ -96,6 +94,7 @@ Proof::~Proof() {
         if (outShares[i]) free(outShares[i]);
     }
     if (out) free(out);
+    if (view) delete view;
 }
 
 void Proof::SerializeInt32(uint32_t x, uint8_t **buf) {
