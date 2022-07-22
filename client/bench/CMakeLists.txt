@@ -65,6 +65,16 @@ target_link_libraries(init
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
+add_executable(init_reg_auth init_reg_auth.cc)
+target_link_libraries(init_reg_auth
+    Client
+    Prover
+    Base
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
+
 add_executable(sigs_bench sigs_bench.cc)
 target_link_libraries(sigs_bench
     Client
