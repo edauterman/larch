@@ -39,6 +39,8 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     for (int i = 0; i < 3; i++) {
         proverViews.push_back(ex->proverViews[i]);
     }
+
+    free(w);
 }
 
 void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32], uint8_t openings[3][32][16]) {
@@ -66,6 +68,10 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             dst[j][i + offset] = indivShares[j][i];
         }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        free(indivShares[i]);
     }
 }
 

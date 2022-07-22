@@ -44,6 +44,10 @@ class ZKBooCircExecProver : public CircuitExecution {
 
         ~ZKBooCircExecProver() {
             //fprintf(stderr, "****** Num ands: %d \n", p->numAnds);
+            for (int i = 0; i < 3; i++) {
+                delete proverViews[i];
+            }
+            delete p;
         }
 
 

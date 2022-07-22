@@ -36,6 +36,12 @@ Prover::Prover(uint8_t seeds[3][32][16], int numRands) {
     }
 }
 
+Prover::~Prover() {
+    for (int i = 0; i < 3; i++) {
+        delete rands[i];
+    }
+}
+
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     currGate++;
     int bit = 0;
