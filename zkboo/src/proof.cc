@@ -78,6 +78,7 @@ Proof::Proof() {
         outShares[i] = NULL;
     }
     out = NULL;
+    view = nullptr;
 }
 
 Proof::~Proof() {
