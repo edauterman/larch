@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "client.h"
-#include "../network/log.grpc.pb.h"
-#include "../network/log.pb.h"
-#include "../zkboo/utils/timer.h"
+#include "../src/client.h"
+#include "../../network/log.grpc.pb.h"
+#include "../../network/log.pb.h"
+#include "../../zkboo/utils/timer.h"
 
 int main(int argc, char *argv[]) {
     Client *c = new Client(true);

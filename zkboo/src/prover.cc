@@ -33,9 +33,13 @@ Prover::Prover(uint8_t seeds[3][32][16], int numRands) {
     numAnds = 0;
     for (int i = 0; i < 3; i++) {
         rands[i] = new RandomSource(seeds[i], numRands);
-        //memcpy(rands[i].seed, seeds[i], SHA256_DIGEST_LENGTH);
     }
-    //id = rand() % 100;
+}
+
+Prover::~Prover() {
+    for (int i = 0; i < 3; i++) {
+        delete rands[i];
+    }
 }
 
 void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
@@ -43,11 +47,7 @@ void Prover::AddConst(uint32_t a[], uint8_t alpha, uint32_t out[]) {
     int bit = 0;
     uint32_t setalpha = (alpha == 0) ? 0 : 0xffffffff;
     for (int i = 0; i < 3; i++) {
-        //bool aBit = GetBit(a[i], bit);
-        //bool res = i == 0 ? (aBit + alpha) % 2 : aBit;
-        //SetBit(&out[i], bit, res);
         out[i] = 0xffffffff ^ a[i]; 
-        //out[i] = (i == 0) ? a[i] ^ setalpha : a[i];
     }
 }
 
@@ -56,7 +56,6 @@ void Prover::AddShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
     int bit = 0;
     for (int i = 0; i < 3; i++) {
         out[i] = a[i] ^ b[i];
-        //SetBit(&out[i], bit, ((a[i] & 1) + (b[i] & 1)) % 2);
     }
 }
 
@@ -68,7 +67,6 @@ void Prover::MultShares(uint32_t a[], uint32_t b[], uint32_t out[]) {
         masks[i] = 0;
         for (int j = 0; j < 32; j++) {
             masks[i] = masks[i] | (GetBit(rands[i]->randomness[j][numAnds/8], numAnds%8) << j);
-            //masks[i] = masks[i] | (rands[i]->GetRand(j, numAnds) << j);
         }
     }   
     for (int i = 0; i < 3; i++) {

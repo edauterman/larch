@@ -24,5 +24,5 @@ include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 
 add_subdirectory(zkboo)
 add_subdirectory(network)
-add_subdirectory(agent)
+add_subdirectory(client)
 add_subdirectory(log)

@@ -3,9 +3,9 @@
 #include <chrono>
 #include <thread>
 
-#include "client.h"
-#include "u2f.h"
-#include "../zkboo/utils/timer.h"
+#include "../src/client.h"
+#include "../src/u2f.h"
+#include "../../zkboo/utils/timer.h"
 
 #define NUM_WORKERS 20
 

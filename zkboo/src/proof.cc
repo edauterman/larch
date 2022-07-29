@@ -21,10 +21,6 @@ RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
     for (int i = 0; i < 32; i++) {
         memcpy(seeds[i], in_seeds[i], 16);
     }
-    //RAND_bytes(seed, 16);
-
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
 
     uint8_t iv[16];
     uint8_t pt[16];
@@ -44,16 +40,14 @@ RandomSource::RandomSource(uint8_t in_seeds[32][16], int numRands) {
     }
 }
 
+RandomSource::~RandomSource() {
+    for (int i = 0; i < 32; i++) {
+        free(randomness[i]);
+    }
+}
+
 uint8_t RandomSource::GetRand(int idx, int gate) {
     return GetBit((uint32_t)randomness[idx][gate/8], gate%8);
-    /*return 1;
-    int buf[2 + SHA256_DIGEST_LENGTH / sizeof(int)];
-    buf[0] = gate;
-    //buf[1] = wireIdx % 3;
-    memcpy((uint8_t *)(buf + 1), seed, SHA256_DIGEST_LENGTH);
-    uint8_t out;
-    hash_to_bytes((uint8_t *)&out, sizeof(uint8_t), (uint8_t *)buf, sizeof(int) + SHA256_DIGEST_LENGTH);
-    return (out) % 2;*/
 }
 
 uint8_t RandomOracle::GetRand(CircuitComm &in0, CircuitComm &in1, CircuitComm &in2) {
@@ -74,6 +68,35 @@ uint8_t RandomOracle::GetRand(CircuitComm &in0, CircuitComm &in1, CircuitComm &i
     return out;
 }
 
+Proof::Proof() {
+    for (int i = 0; i < 2; i++) {
+        w[i] = NULL;
+        rands[i] = NULL;
+    }
+    for (int i = 0; i < 3; i++) {
+        pubInShares[i] = NULL;
+        outShares[i] = NULL;
+    }
+    out = NULL;
+    view = nullptr;
+}
+
+Proof::~Proof() {
+    for (int i = 0; i < 2; i++) {
+        if (w[i]) free(w[i]);
+        if (rands[i]) delete rands[i];
+        /*for (int j = 0; j < 32; j++) {
+            if (rands[i]->randomness[j]) free(rands[i]->randomness[j]);
+        }*/
+    }
+    for (int i = 0; i < 3; i++) {
+        if (pubInShares[i]) free(pubInShares[i]);
+        if (outShares[i]) free(outShares[i]);
+    }
+    if (out) free(out);
+    if (view) delete view;
+}
+
 void Proof::SerializeInt32(uint32_t x, uint8_t **buf) {
     (*buf)[0] = x & 0xFF;
     (*buf)[1] = (x >> 8) & 0xFF;
@@ -83,9 +106,6 @@ void Proof::SerializeInt32(uint32_t x, uint8_t **buf) {
 }
 
 void Proof::SerializeBit(uint32_t x, uint8_t **buf, int *idx) {
-/*    if (x != 0 && x != 1) {
-        printf("ERROR: serializing %d as bit\n", x);
-    }*/
     if (x & 1 == 1) {
         (*buf)[0] = (*buf)[0] | (1 << *idx);
     }

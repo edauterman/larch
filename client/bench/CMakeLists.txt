@@ -34,24 +34,22 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 set(sources
-    ../emp-tool/emp-tool/emp-tool.cpp
-    ../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    ../../emp-tool/emp-tool/emp-tool.cpp
+    ../../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )   
 
 set(_GRPC_GRPCPP gRPC::grpc++)
 
-set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.pb.h")
-set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.pb.cc")
-set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.grpc.pb.h")
-set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/../network/log.grpc.pb.cc")
-
-add_library(Utils asn1.cc base64.cc sig_parse.cc x509.cc ../crypto/params.cc ../crypto/sigs.cc client.cc ../zkboo/src/prover.cc ../zkboo/src/proof.cc ../zkboo/src/prover.cc ../zkboo/src/prover_sys.cc ../zkboo/src/view.cc ../zkboo/src/verifier.cc ../zkboo/src/circuit.cc ../zkboo/src/circuit_utils.cc ${hw_proto_srcs} ${hw_grpc_srcs})
+set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.pb.h")
+set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.pb.cc")
+set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.grpc.pb.h")
+set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.grpc.pb.cc")
 
 add_executable(agent agent.cc)
 target_link_libraries(agent
+    Client
     Prover
     Base
-    Utils
     OpenSSL::SSL
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -59,9 +57,29 @@ target_link_libraries(agent
 
 add_executable(init init.cc)
 target_link_libraries(init
+    Client
     Prover
     Base
-    Utils
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(init_reg_auth init_reg_auth.cc)
+target_link_libraries(init_reg_auth
+    Client
+    Prover
+    Base
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(convert_circuit convert_circuit.cc)
+target_link_libraries(convert_circuit
+    Client
+    Prover
+    Base
     OpenSSL::SSL
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -69,9 +87,9 @@ target_link_libraries(init
 
 add_executable(sigs_bench sigs_bench.cc)
 target_link_libraries(sigs_bench
+    Client
     Prover
     Base
-    Utils
     OpenSSL::SSL
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -79,9 +97,9 @@ target_link_libraries(sigs_bench
 
 add_executable(auth_bench auth_bench.cc)
 target_link_libraries(auth_bench
+    Client
     Prover
     Base
-    Utils
     OpenSSL::SSL
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -89,9 +107,9 @@ target_link_libraries(auth_bench
 
 add_executable(throughput_bench throughput_bench.cc)
 target_link_libraries(throughput_bench
+    Client
     Prover
     Base
-    Utils
     OpenSSL::SSL
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
@@ -99,9 +117,9 @@ target_link_libraries(throughput_bench
 
 add_executable(baseline_bench baseline_bench.cc)
 target_link_libraries(baseline_bench
+    Client
     Prover
     Base
-    Utils
     OpenSSL::SSL
     ${_REFLECTION}
     ${_GRPC_GRPCPP}

@@ -12,7 +12,6 @@
 #include "prover.h"
 #include "proof.h"
 #include "emp_prover.h"
-//#include "common.h"
 #include "prover_sys.h"
 #include "../utils/timer.h"
 #include "../../crypto/params.h"
@@ -23,7 +22,7 @@ using namespace emp;
 
 void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_len, block *hashOutShares, block *ctShares, block *keyShares, block *keyCommShares, block *keyRShares, __m128i iv, vector<CircuitView *> &proverViews, block *out, uint8_t seeds[3][32][16], int numRands) {
     int wLen = m_len + 256 + 128 + m_len + 256 + 128 + in_len;
-    block *w = new block[wLen];
+    block *w = (block*) aligned_alloc(16, sizeof(block) * wLen);
 
     memset(w, 0xff, wLen * sizeof(block));
     memcpy((uint8_t *)w, mShares, m_len * sizeof(block));
@@ -34,14 +33,14 @@ void GenViewsCtCircuit(block *mShares, int m_len, block *hashInShares, int in_le
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128) * sizeof(block), keyCommShares, 256 * sizeof(block));
     memcpy((uint8_t *)w + (m_len + 256 + m_len + 128 + 128 + 256) * sizeof(block), hashInShares, in_len * sizeof(block));
 
-
-    thread_local ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
+    ZKBooCircExecProver<AbandonIO> *ex = new ZKBooCircExecProver<AbandonIO>(seeds, w, wLen, numRands);
     CircuitExecution::circ_exec = ex;
     check_ciphertext_circuit(ex, hashOutShares, mShares, m_len, hashInShares, in_len, ctShares, iv, keyShares, keyCommShares, keyRShares, out);
     for (int i = 0; i < 3; i++) {
         proverViews.push_back(ex->proverViews[i]);
     }
-    //delete ex;
+
+    free(w);
 }
 
 void CommitViews(vector<CircuitView *> &views, CircuitComm comms[3][32], uint8_t openings[3][32][16]) {
@@ -66,10 +65,13 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
         RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ setval;
         for (int j = 0; j < 3; j++) {
-            //SetWireNum(&indivShares[j][i], i + offset);
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
             dst[j][i + offset] = indivShares[j][i];
         }
+    }
+
+    for (int i = 0; i < 3; i++) {
+        free(indivShares[i]);
     }
 }
 
@@ -94,21 +96,21 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     for (int i = 0; i < 3; i++) {
         w_tmp[i] = (uint32_t *)malloc(proof->wLen * sizeof(uint32_t));
     }
-    block *out = new block[1];
+    block *out = (block*) aligned_alloc(16, sizeof(block) * 1);
     memset((void *)out, 0, sizeof(block));
-    block *mShares = new block[m_len];
+    block *mShares = (block*) aligned_alloc(16, sizeof(block) * m_len);
     ShareInput(m, mShares, m_len, w_tmp,  0);
-    block *hashOutShares = new block[256];
+    block *hashOutShares = (block*) aligned_alloc(16, sizeof(block) * 256);
     ShareInput(hashOut, hashOutShares, 256, w_tmp, m_len);
-    block *ctShares = new block[m_len];
+    block *ctShares = (block*) aligned_alloc(16, sizeof(block) * m_len);
     ShareInput(ct, ctShares, m_len, w_tmp, m_len + 256);
-    block *keyShares = new block[128];
+    block *keyShares = (block*) aligned_alloc(16, sizeof(block) * 128);
     ShareInput(key, keyShares, 128, w_tmp, m_len + 256 + m_len);
-    block *keyRShares = new block[128];
+    block *keyRShares = (block*) aligned_alloc(16, sizeof(block) * 128);
     ShareInput(keyR, keyRShares, 128, w_tmp, m_len + 256 + m_len + 128);
-    block *keyCommShares = new block[256];
+    block *keyCommShares = (block*) aligned_alloc(16, sizeof(block) * 256);
     ShareInput(keyComm, keyCommShares, 256, w_tmp, m_len + 256 + m_len + 128 + 128);
-    block *hashInShares = new block[in_len];
+    block *hashInShares = (block*) aligned_alloc(16, sizeof(block) * in_len);
     ShareInput(hashIn, hashInShares, in_len, w_tmp, m_len + 256 + m_len + 128 + 128 + 256);
 
     uint8_t seeds[3][32][16];
@@ -145,8 +147,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
             memcpy(proof->openings[i][j], openings[(proof->idx[j] + i) % 3][j], 16);
         }
     }
-    //proof->w[0] = w_tmp[proof->idx];
-    //proof->w[1] = w_tmp[(proof->idx + 1) % 3];
     
     for (int i = 0; i < 3; i++) {
         proof->pubInShares[i] = (uint32_t *)malloc((m_len + 256 + 256) * sizeof(uint32_t));
@@ -161,7 +161,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         }
     }
 
-    // TODO run randomness tape on verifier
     for (int i = 0; i < 2; i++) {
         uint8_t seeds_tmp[32][16];
         for (int j = 0; j < 32; j++) {
@@ -169,8 +168,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
         }
         proof->rands[i] = new RandomSource(seeds_tmp, numRands);
     }
-    //proof->rands[0] = new RandomSource(seeds[proof->idx], numRands);
-    //proof->rands[1] = new RandomSource(seeds[(proof->idx+1)%3], numRands);
 
     proof->outLen = 1;
     bool b;
@@ -186,5 +183,19 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     proof->out = (uint8_t *)malloc(1);
     proof->out[0] = b;
 
+    for (int i = 0; i < 3; i++) {
+        free(w_tmp[i]);
+    }
+
+    delete CircuitExecution::circ_exec;
+    CircuitExecution::circ_exec = nullptr;
+    free(out);
+    free(mShares);
+    free(hashOutShares);
+    free(ctShares);
+    free(keyShares);
+    free(keyRShares);
+    free(keyCommShares);
+    free(hashInShares);
 }
 

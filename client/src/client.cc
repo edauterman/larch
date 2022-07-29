@@ -27,24 +27,25 @@
 #include <emp-tool/emp-tool.h>
 
 //#include "agent.h"
-#include "../crypto/common.h"
-#include "../crypto/sigs.h"
+#include "../../crypto/common.h"
+#include "../../crypto/sigs.h"
 #include "base64.h"
 #include "u2f.h"
 #include "client.h"
 #include "x509.h"
 #include "asn1.h"
-#include "../zkboo/src/proof.h"
-#include "../zkboo/src/prover.h"
-#include "../zkboo/src/prover_sys.h"
-#include "../zkboo/src/verifier.h"
-#include "../zkboo/utils/timer.h"
-#include "../zkboo/utils/colors.h"
-#include "../network/log.grpc.pb.h"
-#include "../network/log.pb.h"
+#include "../../zkboo/src/proof.h"
+#include "../../zkboo/src/prover.h"
+#include "../../zkboo/src/prover_sys.h"
+#include "../../zkboo/src/verifier.h"
+#include "../../zkboo/utils/timer.h"
+#include "../../zkboo/utils/colors.h"
+#include "../../network/log.grpc.pb.h"
+#include "../../network/log.pb.h"
+#include "../../config.h"
 
 // Used to define JSON messages.
-#define ID "agent-det2f"
+#define ID "agent-larch"
 #define AUTH_REQ "sign_helper_request"
 #define AUTH_RESP "sign_helper_reply"
 #define REG_REQ "enroll_helper_request"
@@ -65,14 +66,10 @@
 #define DEVICE_OK 0
 #define DEVICE_ERR 0x6984
 #define U2F_V2 "U2F_V2"
-#define KH_FILE "/home/ec2-user/out/kh_file.txt"
-//#define KH_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/kh_file.txt"
-#define SK_FILE "/home/ec2-user/out/sk_file.txt"
-//#define SK_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/sk_file.txt"
-#define MASTER_FILE "/home/ec2-user/out/master_file.txt"
-//#define MASTER_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/master_file.txt"
-#define HINT_FILE "/home/ec2-user/out/hint_file.txt"
-//#define HINT_FILE "/Users/emmadauterman/Projects/zkboo-r1cs/agent/out/hint_file.txt"
+#define KH_FILE (string(OUT_DIR) + string("/kh_file.txt")).c_str()
+#define SK_FILE (string(OUT_DIR) + string("/sk_file.txt")).c_str()
+#define MASTER_FILE (string(OUT_DIR) + string("/master_file.txt")).c_str()
+#define HINT_FILE (string(OUT_DIR) + string("/hint_file.txt")).c_str()
 
 #define NUM_ROUNDS 5 
 
@@ -104,8 +101,6 @@ generate_key_handle(const uint8_t *app_id, int app_id_len, uint8_t *key_handle,
                     int key_handle_len)
 {
   int rv = ERROR;
-  //memcpy(key_handle, app_id, app_id_len);
-  //CHECK_C (RAND_bytes(key_handle + app_id_len, key_handle_len - app_id_len));
   CHECK_C (RAND_bytes(key_handle, key_handle_len));
 
 cleanup:
@@ -134,9 +129,7 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
 
 Client::Client(bool startConn) {
     params = Params_new(P256);
-    //logAddr = "13.59.107.196:12345";
-    logAddr = "18.116.199.45:12345";
-    //logAddr = "3.134.86.85:12345";
+    logAddr = LOG_IP_ADDR;
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     }
@@ -144,7 +137,6 @@ Client::Client(bool startConn) {
 
 /* Write agent state to file, including root public keys and map of key handles
  * to public keys. Should be called when creating a new agent. */
-// TODO: error checking
 void Client::WriteToStorage() {
   /* Write map of key handles to public keys. */
   FILE *kh_file = fopen(KH_FILE, "w");
@@ -191,9 +183,6 @@ void Client::WriteToStorage() {
   fwrite(buf, 32, 1, master_file);
   fclose(master_file);
  
-  //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
-  //fprintf(stderr, "det2f: WROTE TO STORAGE\n");
-
 }
 
 /* Read agent state from file, including root public keys and map of key handles
@@ -244,7 +233,7 @@ void Client::ReadFromStorage() {
       BN_bin2bn(long_buf, 32, xcoord);
       clientHints.push_back(ShortHint(xcoord));
     }
-    fclose(kh_file);
+    fclose(hint_file);
   }
 
   uint8_t pt_buf[33];
@@ -282,75 +271,42 @@ void Client::ReadFromStorage() {
   auth_key = BN_new();
   BN_bin2bn(buf, 32, auth_key);
 
-  //fprintf(stderr, "det2f: auth ctr=%d\n", auth_ctr); 
   fclose(master_file);
  
 }
 
-// TODO 32 bytes and mod order
-void Client::GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret) {
-    uint8_t pt[16];
-    uint8_t out[16];
-    int len;
-    memset(pt, 0, 16);
-    memcpy(pt, (uint8_t *)&ctr, sizeof(uint64_t));
-    EVP_EncryptUpdate(ctx, out, &len, pt, 16);
-    BN_bin2bn(out, len, ret);
-    BN_mod(ret, ret, Params_order(params), bn_ctx);
-}
-
-void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret) {
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    BN_CTX *bn_ctx = BN_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
-    uint8_t iv[16];
-    memset(iv, 0, 16);
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed, iv);
-    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
-}
-
-void Client::GetPreprocessValue(uint64_t ctr, BIGNUM *ret, uint8_t *seed_in) {
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    BN_CTX *bn_ctx = BN_CTX_new();
-    EVP_CIPHER_CTX_init(ctx);
-    uint8_t iv[16];
-    memset(iv, 0, 16);
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_ctr(), NULL, seed_in, iv);
-    GetPreprocessValue(ctx, bn_ctx, ctr, ret);
-}
-
 void Client::GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
     uint64_t ctr = i * 9;
-    GetPreprocessValue(ctx, bn_ctx, ctr, r);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 1, auth_r);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 2, a);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 3, b);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 4, c);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 5, f);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 6, g);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 7, h);
-    GetPreprocessValue(ctx, bn_ctx, ctr + 8, alpha);
+    GetPreprocessValue(ctx, bn_ctx, ctr, r, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 1, auth_r, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 2, a, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 3, b, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 4, c, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 5, f, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 6, g, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 7, h, params);
+    GetPreprocessValue(ctx, bn_ctx, ctr + 8, alpha, params);
 }
 
 void Client::GetPreprocessValueSetLog(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in) {
     uint64_t ctr = i * 4;
-    GetPreprocessValue(ctr, r, seed_in);
-    GetPreprocessValue(ctr + 1, a, seed_in);
-    GetPreprocessValue(ctr + 2, b, seed_in);
-    GetPreprocessValue(ctr + 3, alpha, seed_in);
+    GetPreprocessValue(ctr, r, seed_in, params);
+    GetPreprocessValue(ctr + 1, a, seed_in, params);
+    GetPreprocessValue(ctr + 2, b, seed_in, params);
+    GetPreprocessValue(ctr + 3, alpha, seed_in, params);
 }
 
 void Client::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
     uint64_t ctr = i * 9;
-    GetPreprocessValue(ctr, r);
-    GetPreprocessValue(ctr + 1, auth_r);
-    GetPreprocessValue(ctr + 2, a);
-    GetPreprocessValue(ctr + 3, b);
-    GetPreprocessValue(ctr + 4, c);
-    GetPreprocessValue(ctr + 5, f);
-    GetPreprocessValue(ctr + 6, g);
-    GetPreprocessValue(ctr + 7, h);
-    GetPreprocessValue(ctr + 8, alpha);
+    GetPreprocessValue(ctr, r, seed, params);
+    GetPreprocessValue(ctr + 1, auth_r, seed, params);
+    GetPreprocessValue(ctr + 2, a, seed, params);
+    GetPreprocessValue(ctr + 3, b, seed, params);
+    GetPreprocessValue(ctr + 4, c, seed, params);
+    GetPreprocessValue(ctr + 5, f, seed, params);
+    GetPreprocessValue(ctr + 6, g, seed, params);
+    GetPreprocessValue(ctr + 7, h, seed, params);
+    GetPreprocessValue(ctr + 8, alpha, seed, params);
 }
 
 // TODO compress r1 or r2 with PRG
@@ -367,7 +323,7 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
     BIGNUM *f, *g, *h;
     BIGNUM *alpha1, *alpha2, *alpha;
     BIGNUM *auth_r1, *auth_r2, *auth_r;
-    BIGNUM *xcoord, *ycoord, *auth_xcoord;
+    BIGNUM *xcoord, *ycoord;
     BIGNUM *zero = NULL;
     BIGNUM *neg_one = NULL;
     EC_POINT *R = NULL;
@@ -383,16 +339,9 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
     RAND_bytes(seed, 16);
     EVP_EncryptInit_ex(evp_ctx, EVP_aes_128_ctr(), NULL, seed, iv);
     RAND_bytes(log_seed, 16);
-/*
-    CHECK_A (zero = BN_new());
-    CHECK_A (neg_one = BN_new());
-    BN_zero(zero);
-    CHECK_C (BN_mod_sub(neg_one, zero, BN_value_one(), Params_order(params), ctx));
-*/
     for (int i = 0; i < NUM_AUTHS; i++) {
 
         CHECK_A (r = BN_new());
-        //CHECK_A (r_inv = BN_new());
         CHECK_A (r1 = BN_new());
         CHECK_A (auth_r1 = BN_new());
         CHECK_A (auth_r2 = BN_new());
@@ -421,17 +370,12 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
         CHECK_A (alpha = BN_new());
         CHECK_A (xcoord = BN_new());
         CHECK_A (ycoord = BN_new());
-        CHECK_A (auth_xcoord = BN_new());
         CHECK_A (R = EC_POINT_new(Params_group(params)));
 
         GetPreprocessValueSet(i, r1, auth_r1, a1, b1, c1, f1, g1, h1, alpha1);
         GetPreprocessValueSetLog(i, r2, a2, b2, alpha2, log_seed);
-        //GetPreprocessValueSet(evp_ctx, ctx, i, r1, a1, b1, c1);
-        //CHECK_C (Params_rand_exponent(params, r2));
-        //CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
         CHECK_C (BN_mod_add(r, r1, r2, Params_order(params), ctx));
         r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
-        //CHECK_C (BN_mod_exp(r_inv, r, neg_one, Params_order(params), ctx));
         CHECK_C (Params_exp(params, R, r_inv));
 
         CHECK_C (BN_mod_add(a, a1, a2, Params_order(params), ctx));
@@ -452,41 +396,45 @@ void Client::Preprocess(vector<Hint> &logHints, uint8_t *log_seed) {
         CHECK_C (BN_mod(xcoord, xcoord, Params_order(params), ctx));
         CHECK_C (BN_mod_mul(auth_r, r, alpha, Params_order(params), ctx));
         CHECK_C (BN_mod_sub(auth_r2, auth_r, auth_r1, Params_order(params), ctx));
-
-
-
- /*       BN_zero(a2);
-        BN_zero(b2);
-        BN_zero(r2);
-        r = BN_mod_inverse(NULL ,r1, Params_order(params), ctx);
-        BN_mod_mul(c, a1, b1, Params_order(params), ctx);
-        BN_mod_sub(c2, c, c1, Params_order(params), ctx);
-        Params_exp(params, R, r);
-        printf("r = %s\n", BN_bn2hex(r));
-        printf("r1 = %s\n", BN_bn2hex(r1));
-        printf("c2 = %s\n", BN_bn2hex(c2));*/
-
+        
         clientHints.push_back(ShortHint(xcoord));
         logHints.push_back(Hint(xcoord, auth_r2, c2, f2, g2, h2));
         BN_free(r);
         BN_free(r1);
+        BN_free(auth_r1);
+        BN_free(auth_r);
+        BN_free(r2);
         BN_free(a1);
-        BN_free(a);
         BN_free(b1);
-        BN_free(b);
         BN_free(c1);
+        BN_free(a2);
+        BN_free(b2);
+        BN_free(a);
+        BN_free(b);
         BN_free(c);
+        BN_free(f1);
+        BN_free(g1);
+        BN_free(h1);
+        BN_free(f);
+        BN_free(g);
+        BN_free(h);
+        BN_free(alpha1);
+        BN_free(alpha2);
+        BN_free(alpha);
+        BN_free(ycoord);
+        BN_free(r_inv);
+        EC_POINT_free(R);
     }
 
 cleanup:
     if (ctx) BN_CTX_free(ctx);
+    if (evp_ctx) EVP_CIPHER_CTX_free(evp_ctx);
 }
 
 int Client::Initialize() {
     InitRequest req;
     InitResponse resp;
     ClientContext client_ctx;
-    //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     vector<Hint> logHints;
     uint8_t comm_in[64];
     uint8_t log_seed[16];
@@ -506,24 +454,14 @@ int Client::Initialize() {
     EVP_DigestUpdate(mdctx, comm_in, 32);
     EVP_DigestFinal(mdctx, enc_key_comm, NULL);
 
-    //fprintf(stderr, "det2f: going to do preprocessing\n");
     Preprocess(logHints, log_seed);
-    //fprintf(stderr, "det2f: done with preprocessing\n");
 
     for (int i = 0; i < NUM_AUTHS; i++) {
         HintMsg *h = req.add_hints();
         BN_bn2bin(logHints[i].xcoord, buf);
         h->set_xcoord(buf, BN_num_bytes(logHints[i].xcoord));
-        //BN_bn2bin(logHints[i].auth_xcoord, buf);
-        //h->set_auth_xcoord(buf, BN_num_bytes(logHints[i].auth_xcoord));
-        //BN_bn2bin(logHints[i].r, buf);
-        //h->set_r(buf, BN_num_bytes(logHints[i].r));
         BN_bn2bin(logHints[i].auth_r, buf);
         h->set_auth_r(buf, BN_num_bytes(logHints[i].auth_r));
-        //BN_bn2bin(logHints[i].a, buf);
-        //h->set_a(buf, BN_num_bytes(logHints[i].a));
-        //BN_bn2bin(logHints[i].b, buf);
-        //h->set_b(buf, BN_num_bytes(logHints[i].b));
         BN_bn2bin(logHints[i].c, buf);
         h->set_c(buf, BN_num_bytes(logHints[i].c));
         BN_bn2bin(logHints[i].f, buf);
@@ -532,8 +470,12 @@ int Client::Initialize() {
         h->set_g(buf, BN_num_bytes(logHints[i].g));
         BN_bn2bin(logHints[i].h, buf);
         h->set_h(buf, BN_num_bytes(logHints[i].h));
-        //BN_bn2bin(logHints[i].alpha, buf);
-        //h->set_alpha(buf, BN_num_bytes(logHints[i].alpha));
+
+        BN_free(logHints[i].auth_r);
+        BN_free(logHints[i].c);
+        BN_free(logHints[i].f);
+        BN_free(logHints[i].g);
+        BN_free(logHints[i].h);
     }
 
     id = rand();
@@ -556,7 +498,11 @@ int Client::Initialize() {
 
     auth_ctr = 0;
     STOP_TIMER("total init");
- 
+
+    if (mdctx) EVP_MD_CTX_free(mdctx);
+    free(buf);
+    EC_POINT_free(auth_pk);
+    return 0;
 }
 
 /* Run registration with origin specified by app_id. Returns sum of lengths of
@@ -572,72 +518,52 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   int cert_len = 0;
   int sig_len = 0;
   uint8_t reg_id = U2F_REGISTER_HASH_ID;
-  const BIGNUM *r = NULL;
-  const BIGNUM *s = NULL;
   BIGNUM *sk;
   BIGNUM *x;
   BIGNUM *y;
-  BIGNUM *exp;
   uint8_t signed_data[1 + U2F_APPID_SIZE + U2F_NONCE_SIZE + MAX_KH_SIZE +
       P256_POINT_SIZE];
   EVP_PKEY *anon_pkey;
   string str;
   BN_CTX *ctx;
-  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   RegRequest req;
   RegResponse resp;
   ClientContext client_ctx;
   vector<Hint> logHints;
 
-  CHECK_A(cert = X509_new());
-  CHECK_A(anon_key = EC_KEY_new());
+  //CHECK_A(cert = X509_new());
+  //CHECK_A(anon_key = EC_KEY_new());
   CHECK_A(evpctx = EVP_MD_CTX_create());
   CHECK_A(sk = BN_new());
-  CHECK_A(r = BN_new());
-  CHECK_A(s = BN_new());
   CHECK_A(x = BN_new());
   CHECK_A(y = BN_new());
-  CHECK_A(exp = BN_new());
   CHECK_A(ctx = BN_CTX_new());
-  CHECK_A(anon_pkey = EVP_PKEY_new());
+  //CHECK_A(anon_pkey = EVP_PKEY_new());
   pk = Params_point_new(params);
 
-  //fprintf(stderr, "det2f: going to generate key handle\n");
 
   /* Generate key handle. */
   generate_key_handle(app_id, U2F_APPID_SIZE, key_handle_out, MAX_KH_SIZE);
-  // NEW 2PC SIGS
   CHECK_C (Params_rand_exponent(params, sk));
   sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = sk;
   CHECK_C (Params_exp(params, pk, sk));
   EC_POINT_add(Params_group(params), pk, pk, logPk, ctx);
-  //fprintf(stderr, "det2f: sk = %s\n", BN_bn2hex(sk_map[string((const char *)key_handle_out, MAX_KH_SIZE)]));
-  //CHECK_C (Params_exp_base(params, pk, logPk, sk));
   pk_map[string((const char *)key_handle_out, MAX_KH_SIZE)] = pk;
   EC_POINT_get_affine_coordinates_GFp(params->group, pk, x, y, NULL);
   BN_bn2bin(x, pk_out->x);
   BN_bn2bin(y, pk_out->y);
   pk_out->format = UNCOMPRESSED_POINT;
 
-
-  //fprintf(stderr, "det2f: generated key handle\n");
-
-  //fprintf(stderr, "det2f: chose pub key\n");
-
   /* Randomly choose key for attestation. */
-  CHECK_C (EC_KEY_set_group(anon_key, Params_group(params)));
-  CHECK_C (EC_KEY_generate_key(anon_key));
-
-  //fprintf(stderr, "det2f: chose attestation key\n");
+  //CHECK_C (EC_KEY_set_group(anon_key, Params_group(params)));
+  //CHECK_C (EC_KEY_generate_key(anon_key));
 
   /* Generate self-signed cert. */
-  cert_len = generate_cert(params, anon_key, cert_sig_out);
-
-  //fprintf(stderr, "det2f: self signed cert\n");
+  //cert_len = generate_cert(params, anon_key, cert_sig_out);
 
   /* Sign hash of U2F_REGISTER_ID, app_id, challenge, kh, and pk with key from
    * self-signed attestation cert. */
-  memcpy(signed_data, &reg_id, 1);
+  /*memcpy(signed_data, &reg_id, 1);
   memcpy(signed_data + 1, app_id, U2F_APPID_SIZE);
   memcpy(signed_data + 1 + U2F_APPID_SIZE, challenge, U2F_NONCE_SIZE);
   memcpy(signed_data + 1 + U2F_APPID_SIZE + U2F_NONCE_SIZE, key_handle_out,
@@ -649,44 +575,32 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   CHECK_C(EVP_SignUpdate(evpctx, signed_data, 1 + U2F_APPID_SIZE +
                          U2F_NONCE_SIZE + MAX_KH_SIZE + P256_POINT_SIZE));
   CHECK_C(EVP_SignFinal(evpctx, cert_sig_out + cert_len,
-                        (unsigned int *)&sig_len, anon_pkey));
-
-  //fprintf(stderr, "det2f: did sig\n");
+                        (unsigned int *)&sig_len, anon_pkey)); */
 
 cleanup:
   if (rv == ERROR && pk) EC_POINT_clear_free(pk);
-  if (cert) X509_free(cert);
-  if (anon_pkey) EVP_PKEY_free(anon_pkey);
+  //if (cert) X509_free(cert);
+  //if (anon_pkey) EVP_PKEY_free(anon_pkey);
   if (evpctx) EVP_MD_CTX_destroy(evpctx);
+  if (x) BN_free(x);
+  if (y) BN_free(y);
+  if (ctx) BN_CTX_free(ctx);
   return cert_len + sig_len;
 }
 
 int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
   BN_CTX *ctx;
   int rv = OKAY;
-  BIGNUM *auth_val = BN_new();
-  BIGNUM *auth_hash = BN_new();
 
   ctx = BN_CTX_new();
-
-  //fprintf(stderr, "det2f: x_coord = %s\n", BN_bn2hex(clientHints[auth_ctr].xcoord));
-  //BN_mod_mul(val, clientHints[auth_ctr].xcoord, sk, Params_order(params), ctx);
-  //BN_mod_add(val, val, msg_hash, Params_order(params), ctx);
-  //fprintf(stderr, "det2f: COMPUTED VAL = %s\n", BN_bn2hex(val));
-  //fprintf(stderr, "det2f: multiplying by r^-1 = %s\n", BN_bn2hex(r));
-
-  //BN_mod_mul(auth_val, clientHints[auth_ctr].auth_xcoord, sk, Params_order(params), ctx);
-  //BN_mod_mul(auth_hash, msg_hash, alpha, Params_order(params), ctx);
-  //BN_mod_add(auth_val, auth_val, auth_hash, Params_order(params), ctx);
 
   BN_mod_sub(d, r, a, Params_order(params), ctx);
   BN_mod_sub(e, sk, b, Params_order(params), ctx);
 
   BN_mod_sub(auth_d, auth_r, f, Params_order(params), ctx);
-  //BN_mod_sub(auth_e, auth_val, g, Params_order(params), ctx);
-  //fprintf(stderr, "det2f: finished start signing procedure\n");
 
 cleanup:
+  BN_CTX_free(ctx);
   return rv;
 }
 
@@ -707,7 +621,6 @@ int Client::FinishSigning(BIGNUM *hash_bn, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGN
     BN_mod_mul(prod, e, a, Params_order(params), ctx);
     BN_mod_add(out, out, prod, Params_order(params), ctx);
     BN_mod_add(out, out, c, Params_order(params), ctx);
-    //fprintf(stderr, "det2f: * share of s = %s\n", BN_bn2hex(out));
 
     // authenticated value
     // de.\alpha + d[g] + e[f] + [h]
@@ -725,6 +638,9 @@ int Client::FinishSigning(BIGNUM *hash_bn, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGN
     BN_mod_add(out, out, term1, Params_order(params), ctx);
 
 cleanup:
+    BN_free(prod);
+    BN_free(term1);
+    BN_CTX_free(ctx);
     return rv;
 }
 
@@ -735,6 +651,8 @@ void Client::MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alph
     BN_CTX_free(ctx);
 }
 
+// TODO: test more thoroughly or get signature format correct to use OpenSSL
+// ECDSA signature verification directly.
 bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
     EC_POINT *test = EC_POINT_new(Params_group(params));
     EC_POINT *g_m = EC_POINT_new(Params_group(params));
@@ -764,6 +682,8 @@ bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
     return res;
 }
 
+// TODO: test more thoroughly or get signature format correct to use OpenSSL
+// ECDSA signing directly.
 void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len) {
   int rv;
   BIGNUM *out = NULL;
@@ -779,7 +699,6 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   hash_bn = BN_new();
   val = BN_new();
   r = BN_new();
-  r_inv = BN_new();
   x_coord = BN_new();
   y_coord = BN_new();
   sk = BN_new();
@@ -802,18 +721,28 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
 
   /* Output signature. */
-  //fprintf(stderr, "encoding sig\n");
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
-  //asn1_sigp(sig_out, r, s);
   asn1_sigp(sig_out, x_coord, out);
   len_byte = sig_out[1];
   *sig_len = len_byte + 2;
+
+  BN_free(out);
+  BN_free(hash_bn);
+  BN_free(val);
+  BN_free(r);
+  BN_free(r_inv);
+  BN_free(x_coord);
+  BN_free(y_coord);
+  BN_free(sk);
+  EVP_MD_CTX_free(mdctx2);
+  BN_CTX_free(ctx);
+  EC_POINT_free(R);
 }
 
 void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
-  BIGNUM *e_client, *e_log, *auth_e, *e, *check_e;
+  BIGNUM *e_client, *e_log, *auth_e, *e;
   BIGNUM *f, *g, *h;
   BIGNUM *alpha;
   BIGNUM *auth_r, *r;
@@ -821,7 +750,6 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BIGNUM *out_client, *out_log, *auth_out_client;
   BIGNUM *val;
   BIGNUM *zero;
-  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthCheckRequest checkReq;
   AuthCheck2Request check2Req;
   AuthResponse resp;
@@ -857,8 +785,6 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   check_d = BN_new();
   val = BN_new();
   ctx = BN_CTX_new();
-  //INIT_TIMER;
-  //START_TIMER;
 
 
   req.set_digest(hash_out, 32);
@@ -873,7 +799,6 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   BN_bn2bin(e_client, e_buf);
   req.set_d(d_buf, BN_num_bytes(d_client));
   req.set_e(e_buf, BN_num_bytes(e_client));
-  //STOP_TIMER("before send");
 
   stub->SendAuth(&client_ctx, req, &resp);
 
@@ -890,19 +815,14 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   FinishSigning(hash_bn, r, a, b, c, d, e, f, g, h, alpha, out_client, auth_out_client);
 
   MakeCheckVal(check_d, d, auth_d, alpha);
-  //MakeCheckVal(check_e, e, auth_e, alpha);
 
   check_d_buf = (uint8_t *)malloc(BN_num_bytes(check_d));
-  //check_e_buf = (uint8_t *)malloc(BN_num_bytes(check_e));
   int check_d_len = BN_bn2bin(check_d, check_d_buf);
   uint8_t cm_check_d[32];
   uint8_t r_buf[16];
   RAND_bytes(r_buf, 16);
   Commit(cm_check_d, check_d_buf, check_d_len, r_buf);
   checkReq.set_cm_check_d(cm_check_d, 32);
-  //BN_bn2bin(check_e, check_e_buf);
-  //checkReq.set_check_d(check_d_buf, BN_num_bytes(check_d));
-  //checkReq.set_check_e(check_e_buf, BN_num_bytes(check_e));
   checkReq.set_session_ctr(resp.session_ctr());
 
   stub->SendAuthCheck(&client_ctx2, checkReq, &checkResp);
@@ -929,6 +849,33 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
 
   auth_ctr++;
 
+  BN_free(a);
+  BN_free(b);
+  BN_free(c);
+  BN_free(d_client);
+  BN_free(d_log);
+  BN_free(auth_d);
+  BN_free(d);
+  BN_free(check_d);
+  BN_free(e_client);
+  BN_free(e_log);
+  BN_free(auth_e);
+  BN_free(e);
+  BN_free(f);
+  BN_free(g);
+  BN_free(h);
+  BN_free(alpha);
+  BN_free(r);
+  BN_free(auth_r);
+  BN_free(out_log);
+  BN_free(out_client);
+  BN_free(auth_out_client);
+  BN_free(hash_bn);
+  BN_free(val);
+  BN_CTX_free(ctx);
+  free(d_buf);
+  free(e_buf);
+  free(check_d_buf);
 }
 
 /* Authenticate at origin specified by app_id given a challenge from the origin
@@ -937,21 +884,13 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool noRegistration) {
   int rv = ERROR;
-  //INIT_TIMER;
-  //START_TIMER;
   
   BIGNUM *out = NULL;
   BIGNUM *x_coord = NULL;
-  EC_POINT *R, *auth_pkey;
   EVP_MD_CTX *mdctx;
-  EVP_MD_CTX *mdctx2;
-  EVP_MD_CTX *mdctx3;
   uint8_t message[SHA256_DIGEST_LENGTH];
   uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
-  ECDSA_SIG *sig = NULL;
   unsigned int sig_len = 0;
-  //size_t sig_len_sizet = 0;
-  //uint8_t flags = 5;
   uint8_t flags = 0x01;
   uint8_t ctr[4];
   EC_KEY *key;
@@ -965,26 +904,18 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
   uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
   uint8_t len_byte;
-  uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
   EVP_PKEY *pkey;
-  //uint8_t r_open[16];
-  //uint8_t enc_key_comm[32];
   uint8_t hash_out[32];
   uint8_t comm_in[64];
   uint8_t ct[SHA256_DIGEST_LENGTH];
   __m128i iv = makeBlock(0,0);
   __m128i enc_key_128 = makeBlock(0,0);
-  //uint8_t enc_key[16];
   Proof proof[NUM_ROUNDS];
   int numRands = 116916;
   uint8_t *proof_buf[NUM_ROUNDS];
   thread workers[NUM_ROUNDS];
   int proof_buf_len;
   uint8_t iv_raw[16];
-  uint8_t *d_buf;
-  uint8_t *e_buf;
-  uint8_t *check_d_buf;
-  uint8_t *check_e_buf;
   BIGNUM *sk;
   uint8_t tag[SHA256_DIGEST_LENGTH];
   uint8_t auth_input[16 + SHA256_DIGEST_LENGTH];
@@ -993,7 +924,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   INIT_TIMER;
   START_TIMER;
 
-  //unique_ptr<Log::Stub> stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
   AuthRequest req;
   AuthCheckRequest checkReq;
   AuthResponse resp;
@@ -1005,17 +935,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   CHECK_A (sk = BN_new());
   CHECK_A (x_coord = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
-  CHECK_A (mdctx2 = EVP_MD_CTX_create());
-  CHECK_A (mdctx3 = EVP_MD_CTX_create());
   CHECK_A (ctx = BN_CTX_new());
-  CHECK_A (sig = ECDSA_SIG_new());
-  CHECK_A (key = EC_KEY_new());
-  pkey = EVP_PKEY_new();
-  R = EC_POINT_new(Params_group(params));
-  auth_pkey = EC_POINT_new(Params_group(params));
-
-  //fprintf(stderr, "det2f: going to hash app id\n");
-  //fprintf(stderr, "det2f: hashed app id\n");
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
@@ -1023,62 +943,32 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy(message_buf + SHA256_DIGEST_LENGTH, &flags, sizeof(flags));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
-  /*fprintf(stderr, "det2f: AUTH DATA: ");
-  for (int i = 0; i < message_buf_len; i++) {
-    fprintf(stderr, "%d ", message_buf[i]);
-  }
-  fprintf(stderr, "\n");*/
 
-  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
-  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
-  EVP_DigestFinal(mdctx2, hash_out, NULL);
+  EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL);
+  EVP_DigestUpdate(mdctx, message_buf, message_buf_len);
+  EVP_DigestFinal(mdctx, hash_out, NULL);
 
   RAND_bytes(iv_raw, 16);
   memcpy((uint8_t *)&iv, iv_raw, 16);
 
-//  memset(enc_key, 0, 16);
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
   aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
-  //STOP_TIMER("setup garbage"); 
 
-  //fprintf(stderr, "det2f: proving circuit\n");
-  //req.set_digest(hash_out, 32);
   START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
-    //ProveCtCircuit(app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof);
   }
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
-    STOP_TIMER("worker finished");
     proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len);
   }
-  //STOP_TIMER("Proof gen");
   STOP_TIMER("Prover time");
-  //fprintf(stderr, "det2f: proof_buf_len = %d\n", proof_buf_len);
-  //req.set_proof(proof_buf, proof_buf_len);
-  //fprintf(stderr, "det2f: message_buf_len = %d\n", message_buf_len);
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
-  //req.set_digest(hash_out, 32);
-  // TODO real IV
-  //memset(iv_raw, 0, 16);
   req.set_iv(iv_raw, 16);
   memcpy(auth_input, iv_raw, 16);
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
-  /*key = EC_KEY_new_by_curve_name(415);
-  EC_KEY_set_group(key, Params_group(params));
-  EC_KEY_set_private_key(key, auth_key);
-  Params_exp(params, auth_pkey, auth_key);
-  EC_KEY_set_public_key(key, auth_pkey);
-  EVP_PKEY_assign_EC_KEY(pkey, key);
-  EVP_MD_CTX_init(mdctx);
-  EVP_SignInit(mdctx, EVP_sha256());
-  EVP_SignUpdate(mdctx, auth_input, 48);
-  EVP_SignFinal(mdctx, auth_sig, &auth_sig_len, pkey);*/
-  //ECDSA_sign(0, auth_input, 32, auth_sig, &auth_sig_len, key);
-  //ECDSA_sign(0, auth_input, 48, auth_sig, &auth_sig_len, key);
   Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
   req.set_tag(auth_sig, auth_sig_len);
   STOP_TIMER("prove");
@@ -1089,30 +979,26 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
     ThresholdSign(out, hash_out, sk, req);
   }
   STOP_TIMER("threshold sig");
-  //INIT_TIMER;
-  //START_TIMER;
 
   /* Output signature. */
-  //fprintf(stderr, "encoding sig\n");
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
-  //asn1_sigp(sig_out, r, s);
   asn1_sigp(sig_out, clientHints[auth_ctr - 1].xcoord, out);
   len_byte = sig_out[1];
   sig_len = len_byte + 2;
-  //STOP_TIMER("ECDSA sign");
 
   /* Output message from device. */
   *flags_out = flags;
   *ctr_out = ctr32;
-  //memcpy(ctr_out, ctr, sizeof(uint32_t));
-  //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
-
-  //auth_ctr++;
-  //STOP_TIMER("authenticate time");
 
 cleanup:
+  for (int i = 0; i < NUM_ROUNDS; i++) {
+    free(proof_buf[i]);
+  }
   if (mdctx) EVP_MD_CTX_destroy(mdctx);
-  //fprintf(stderr, "det2f: sig_len = %d vs %d\n", sig_len, MAX_ECDSA_SIG_SIZE);
+  if (out) BN_free(out);
+  if (sk) BN_free(sk);
+  if (x_coord) BN_free(x_coord);
+  if (ctx) BN_CTX_free(ctx);
   return rv == OKAY ? sig_len : ERROR;
 }
 
@@ -1122,21 +1008,11 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool noRegistration) {
   int rv = ERROR;
-  //INIT_TIMER;
-  //START_TIMER;
   
-  BIGNUM *out = NULL;
-  BIGNUM *r, *r_inv, *x_coord, *y_coord, *val, *hash_bn, *sk;
-  EC_POINT *R;
-  EVP_MD_CTX *mdctx;
-  EVP_MD_CTX *mdctx2;
-  EVP_MD_CTX *mdctx3;
+  BIGNUM *sk;
   uint8_t message[SHA256_DIGEST_LENGTH];
-  uint8_t app_id_digest[SHA256_DIGEST_LENGTH];
   ECDSA_SIG *sig = NULL;
   unsigned int sig_len = 0;
-  //size_t sig_len_sizet = 0;
-  //uint8_t flags = 5;
   uint8_t flags = 0x01;
   uint8_t ctr[4];
   EC_KEY *key;
@@ -1146,46 +1022,14 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   ctr[1] = 0xFF & ctr32 >> 16;
   ctr[2] = 0xFF & ctr32 >> 8;
   ctr[3] = 0xFF & ctr32;
-  BN_CTX *ctx;
+  EVP_PKEY *pkey;
   int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
   uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
-  uint8_t len_byte;
-  uint8_t sig_out2[MAX_ECDSA_SIG_SIZE];
-  EVP_PKEY *pkey;
-  //uint8_t r_open[16];
-  //uint8_t enc_key_comm[32];
-  uint8_t hash_out[32];
-  uint8_t comm_in[64];
-  uint8_t ct[SHA256_DIGEST_LENGTH];
-  __m128i iv = makeBlock(0,0);
-  __m128i enc_key_128 = makeBlock(0,0);
-  //uint8_t enc_key[16];
-  Proof proof[NUM_ROUNDS];
-  int numRands = 116916;
-  int proof_buf_len;
-  uint8_t iv_raw[16];
-  uint8_t tag[SHA256_DIGEST_LENGTH];
-  uint8_t mac_input[16 + 16 + SHA256_DIGEST_LENGTH];
 
-
-  CHECK_A (out = BN_new());
-  CHECK_A (hash_bn = BN_new());
-  CHECK_A (val = BN_new());
-  CHECK_A (r = BN_new());
-  CHECK_A (r_inv = BN_new());
-  CHECK_A (x_coord = BN_new());
-  CHECK_A (y_coord = BN_new());
   CHECK_A (sk = BN_new());
-  CHECK_A (mdctx = EVP_MD_CTX_create());
-  CHECK_A (mdctx2 = EVP_MD_CTX_create());
-  CHECK_A (ctx = BN_CTX_new());
   CHECK_A (sig = ECDSA_SIG_new());
   CHECK_A (key = EC_KEY_new());
   pkey = EVP_PKEY_new();
-  R = EC_POINT_new(Params_group(params));
-
-  //fprintf(stderr, "det2f: going to hash app id\n");
-  //fprintf(stderr, "det2f: hashed app id\n");
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
@@ -1193,29 +1037,23 @@ int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *chall
   memcpy(message_buf + SHA256_DIGEST_LENGTH, &flags, sizeof(flags));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
   memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
-  /*fprintf(stderr, "det2f: AUTH DATA: ");
-  for (int i = 0; i < message_buf_len; i++) {
-    fprintf(stderr, "%d ", message_buf[i]);
-  }
-  fprintf(stderr, "\n");*/
   EC_KEY_set_group(key, Params_group(params));
+  //Params_rand_exponent(params, sk);
   EC_KEY_set_private_key(key, sk);
+  // TODO: Segfaulting on ec2 instances but fine on local machine? Problem with OpenSSL install?
   ECDSA_sign(0, message_buf, message_buf_len, sig_out, &sig_len, key);
  
-  //Sign(message_buf, message_buf_len, sk, sig_out, &sig_len);
-
   /* Output message from device. */
   *flags_out = flags;
   *ctr_out = ctr32;
-  //memcpy(ctr_out, ctr, sizeof(uint32_t));
-  //fprintf(stderr, "det2f: counter out = %d\n", *ctr_out);
 
   auth_ctr++;
-  //STOP_TIMER("authenticate time");
 
 cleanup:
-  if (mdctx) EVP_MD_CTX_destroy(mdctx);
-  //fprintf(stderr, "det2f: sig_len = %d vs %d\n", sig_len, MAX_ECDSA_SIG_SIZE);
+  if (sk) BN_free(sk);
+  if (sig) ECDSA_SIG_free(sig);
+  if (key) EC_KEY_free(key);
+  if (pkey) EVP_PKEY_free(pkey);
   return rv == OKAY ? sig_len : ERROR;
 }
 

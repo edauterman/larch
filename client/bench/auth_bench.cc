@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "client.h"
-#include "u2f.h"
-#include "../zkboo/utils/timer.h"
+#include "../src/client.h"
+#include "../src/u2f.h"
+#include "../../zkboo/utils/timer.h"
 
 int main(int argc, char *argv[]) {
-    Client *c = new Client(false);
+    Client *c = new Client();
     uint8_t app_id[32];
     uint8_t challenge[32];
     uint8_t key_handle[32];
@@ -19,10 +19,10 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "det2f: starting initialize\n");
     INIT_TIMER;
     START_TIMER;
-    for (int i = 0; i < 10; i++) {
-        c->BaselineAuthenticate(app_id, 32, challenge, key_handle, &flags, &ctr, sig_out, true);
+    for (int i = 0; i < 100; i++) {
+        c->Authenticate(app_id, 32, challenge, key_handle, &flags, &ctr, sig_out, true);
     }
-    STOP_TIMER_US("auth time (100)");
+    STOP_TIMER("auth time (10)");
     fprintf(stderr, "det2f: finished initialize\n");
     c->WriteToStorage();
 }

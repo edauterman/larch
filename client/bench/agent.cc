@@ -13,19 +13,19 @@
 
 #include <iostream>
 #include <iomanip>
-#include "json.hpp"
+#include "../src/json.hpp"
 #include <string>
 
 //#include "agent.h"
 //#include "common.h"
-#include "base64.h"
-#include "u2f.h"
-#include "client.h"
-#include "../zkboo/utils/timer.h"
-#include "../zkboo/utils/colors.h"
+#include "../src/base64.h"
+#include "../src/u2f.h"
+#include "../src/client.h"
+#include "../../zkboo/utils/timer.h"
+#include "../../zkboo/utils/colors.h"
 
 // Used to define JSON messages.
-#define ID "agent-det2f"
+#define ID "agent-larch"
 #define AUTH_REQ "sign_helper_request"
 #define AUTH_RESP "sign_helper_reply"
 #define REG_REQ "enroll_helper_request"
@@ -100,7 +100,7 @@ void handle_registration(Client *c, json request) {
   uint8_t challenge[U2F_NONCE_SIZE + 1];
   uint8_t key_handle[MAX_KH_SIZE];
 
-  fprintf(stderr, "det2f: handling registration request\n");
+  fprintf(stderr, "larch: handling registration request\n");
 
   /* Set base fields. */
   response[TYPE] = REG_RESP;
@@ -108,30 +108,30 @@ void handle_registration(Client *c, json request) {
 
   /* Decode app id. */
   app_id_str = request[APP_ID];
-  fprintf(stderr, "det2f: app_id %s\n", app_id_str.c_str());
+  fprintf(stderr, "larch: app_id %s\n", app_id_str.c_str());
   int app_id_size = decode_base64(app_id, app_id_str.c_str());
   if (app_id_size != U2F_APPID_SIZE + 1) // extra 1 for null terminator
-    fprintf(stderr, "det2f: ERROR: decoded enroll data that's not of length\
+    fprintf(stderr, "larch: ERROR: decoded enroll data that's not of length\
             U2F_APPID_SIZE: %d\n", app_id_size);
-  fprintf(stderr, "det2f: got app id\n");
+  fprintf(stderr, "larch: got app id\n");
 
   /* Decode challenge. */
   challenge_str = request[CHALLENGE];
-  fprintf(stderr, "det2f: challenge %s\n", challenge_str.c_str());
+  fprintf(stderr, "larch: challenge %s\n", challenge_str.c_str());
   int challenge_size = decode_base64(challenge, challenge_str.c_str());
   if (challenge_size != U2F_NONCE_SIZE + 1) // extra 1 for null terminator
-    fprintf(stderr, "det2f: ERROR: decoded enroll data that's not of length\
+    fprintf(stderr, "larch: ERROR: decoded enroll data that's not of length\
             U2F_APPID_SIZE: %d\n", challenge_size);
-  fprintf(stderr, "det2f: got challenge\n");
+  fprintf(stderr, "larch: got challenge\n");
 
   /* Register with device. */
   uint8_t *cert_sig_ptr = u2f_resp.keyHandleCertSig + MAX_KH_SIZE;
-  fprintf(stderr, "det2f: got cert sig ptr\n");
+  fprintf(stderr, "larch: got cert sig ptr\n");
   int cert_sig_len = c->Register(app_id, challenge, u2f_resp.keyHandleCertSig,
                               &u2f_resp.pubKey, cert_sig_ptr);
   if (cert_sig_len > 0) {
     /* Successful registration. */
-    fprintf(stderr, "det2f: successful register\n");
+    fprintf(stderr, "larch: successful register\n");
 
     /* Set additional response fields. */
     response[CODE] = DEVICE_OK;
@@ -155,10 +155,10 @@ void handle_registration(Client *c, json request) {
     free(encoded_pk);
   } else {
     /* Unsuccessful. Report error. */
-    fprintf(stderr, "det2f: unsuccessful register\n");
+    fprintf(stderr, "larch: unsuccessful register\n");
     response[CODE] = DEVICE_ERR;
   }
-  fprintf(stderr, "det2f: sending %s\n", response.dump().c_str());
+  fprintf(stderr, "larch: sending %s\n", response.dump().c_str());
   send_message(encode_message(response));
 }
 
@@ -174,7 +174,7 @@ void handle_authentication(Client *c, json request) {
   uint8_t challenge[U2F_NONCE_SIZE + 1];
   uint8_t key_handle[MAX_KH_SIZE + 1];
 
-  //fprintf(stderr, "det2f: handling authentication request\n");
+  //fprintf(stderr, "larch: handling authentication request\n");
 
   /* Set base field. */
   response[TYPE] = AUTH_RESP;
@@ -182,17 +182,17 @@ void handle_authentication(Client *c, json request) {
   /* Decode app id. */
   app_id_str = request[APP_ID];
   const uint8_t *app_id_buf = (const uint8_t *)app_id_str.c_str();
-  //fprintf(stderr, "det2f: app_id %s\n", app_id_str.c_str());
+  //fprintf(stderr, "larch: app_id %s\n", app_id_str.c_str());
   int app_id_size = decode_base64(app_id, app_id_str.c_str());
 
   /* Decode challenge. */
   challenge_str = request[CHALLENGE];
-  //fprintf(stderr, "det2f: challenge %s\n", challenge_str.c_str());
+  //fprintf(stderr, "larch: challenge %s\n", challenge_str.c_str());
   int challenge_size = decode_base64(challenge, challenge_str.c_str());
 
   /* Decode key handle. */
   key_handle_str = request[KEY_HANDLE];
-  //fprintf(stderr, "det2f: key handle %s\n", key_handle_str.c_str());
+  //fprintf(stderr, "larch: key handle %s\n", key_handle_str.c_str());
   int key_handle_size = decode_base64(key_handle, key_handle_str.c_str());
 
   /* Authenticate with device. */
@@ -200,7 +200,7 @@ void handle_authentication(Client *c, json request) {
                              &u2f_resp.ctr, u2f_resp.sig);
   if (sig_len > 0) {
     /* Successful authentication. */
-    //fprintf(stderr, "det2f: successful authentication\n");
+    //fprintf(stderr, "larch: successful authentication\n");
 
     /* Set response fields. */
     response[CODE] = DEVICE_OK;
@@ -216,17 +216,17 @@ void handle_authentication(Client *c, json request) {
     //memcpy(resp_buf, u2f_resp.sig, sig_len);
     //memcpy(resp_buf, &u2f_resp, msg_len);
     char *encoded_sig = encode_base64(sig_len, u2f_resp.sig);
-    //fprintf(stderr, "det2f: encoded sig %s\n", encoded_sig);
+    //fprintf(stderr, "larch: encoded sig %s\n", encoded_sig);
     response[SIGNATURE] = string(encoded_sig);
     response[RESPONSE_DATA] = responseData;
     response[COUNTER] = u2f_resp.ctr;
     free(encoded_sig);
   } else {
     /* Unsuccessful. Report error. */
-    fprintf(stderr, "det2f: unsuccessful authentication\n");
+    fprintf(stderr, "larch: unsuccessful authentication\n");
     response[CODE] = DEVICE_ERR;
   }
-  //fprintf(stderr, "det2f: sending %s\n", response.dump().c_str());
+  //fprintf(stderr, "larch: sending %s\n", response.dump().c_str());
   send_message(encode_message(response));
   STOP_TIMER("overall auth");
 }
@@ -235,13 +235,13 @@ int main(int argc, char *argv[]) {
 
   Client *c = new Client();
   c->ReadFromStorage();
-  fprintf(stderr, "det2f: STARTUP\n");
+  fprintf(stderr, "larch: STARTUP\n");
 
   json request = get_message();
-  fprintf(stderr, "det2f: RECEIVED: %s\n", request.dump().c_str());
+  fprintf(stderr, "larch: RECEIVED: %s\n", request.dump().c_str());
 
   string type = request[TYPE];
-  fprintf(stderr, "det2f: type: %s\n", type.c_str());
+  fprintf(stderr, "larch: type: %s\n", type.c_str());
 
   json response;
   string app_id_str, challenge_str, key_handle_str;
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
     handle_authentication(c, request);
   } else {
     /* Unknown message type. */
-    fprintf(stderr, "det2f ERROR: unrecognized msg type: %s\n", type.c_str());
+    fprintf(stderr, "larch ERROR: unrecognized msg type: %s\n", type.c_str());
   }
 
   c->WriteToStorage();

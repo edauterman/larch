@@ -1,7 +1,12 @@
 #include "emp-tool/emp-tool.h"
+#include "../../config.h"
 #include <cstring>
+#include <string>
+
+#include "../circuit_files/sha-256-multiblock-aligned.cpp"
 
 using namespace emp;
+using namespace std;
 
 typedef unsigned int word32;
 
@@ -168,6 +173,15 @@ void sha256(block *input, block *output, int input_len, CircuitExecution *ex) {
 		}
 	}
 
+	thread_local BristolFormat bf(
+		empcircuit_sha256_multiblock_aligned_num_gate,
+		empcircuit_sha256_multiblock_aligned_num_wire,
+		empcircuit_sha256_multiblock_aligned_n1,
+		empcircuit_sha256_multiblock_aligned_n2,
+		empcircuit_sha256_multiblock_aligned_n3,
+		empcircuit_sha256_multiblock_aligned_gate_arr
+	);
+
 	for (int b = 0; b < num_blocks; b++) {
 		//fprintf(stderr, "zkboo: -- sha256\n");
 		// the first 512 bits -> the padded data
@@ -181,8 +195,6 @@ void sha256(block *input, block *output, int input_len, CircuitExecution *ex) {
 			input_to_sha256_circuit[512 + i] = digest_bits[i];
 		}
 
-	    BristolFormat bf("/home/ec2-user/zkboo-r1cs/zkboo/circuit_files/sha-256-multiblock-aligned.txt", ex);
-		//BristolFormat bf("/Users/emmadauterman/Projects/zkboo-r1cs/zkboo/circuit_files/sha-256-multiblock-aligned.txt");
 		bf.compute(output_from_sha256_circuit, input_to_sha256_circuit, input_to_sha256_circuit);
 
 		for (int i = 0; i < 256; i++) {

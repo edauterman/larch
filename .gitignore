@@ -21,3 +21,11 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 *.swp
+*.a
+client/src/libClient.a
+*.so
+out/
+build/
+.vscode/
+*.pb.cc
+*.pb.h
