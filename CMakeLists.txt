@@ -12,7 +12,9 @@ find_package(emp-tool REQUIRED)
 
 set(CMAKE_C_FLAGS "-Wall -pthread")
 #set(CMAKE_C_FLAGS "-Wall -lpthread -lssl -lcrypto")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -g")
+# CHANGED FROM 14 to 17 for SEAL
+#set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -g")
 
 include_directories(${EMP-TOOL_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
@@ -26,3 +28,4 @@ add_subdirectory(zkboo)
 add_subdirectory(network)
 add_subdirectory(client)
 add_subdirectory(log)
+add_subdirectory(he)

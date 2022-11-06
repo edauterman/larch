@@ -34,6 +34,8 @@
   #add_definitions(-D_WIN32_WINNT=0x600)
 #endif()
 
+cmake_minimum_required(VERSION 2.8)
+
 find_package(Threads REQUIRED)
 
 set(CMAKE_C_FLAGS "-Wall -lpthread -lssl -lcrypto")
