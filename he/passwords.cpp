@@ -25,11 +25,11 @@ SEALContext SetContext() {
 
 PwdClient::PwdClient() : context(SetContext()) {}
 
-void PwdClient::KeyGen() {
+PublicKey PwdClient::KeyGen() {
     KeyGenerator keygen(context);
-    SecretKey secret_key = keygen.secret_key();
-    PublicKey public_key;
+    secret_key = keygen.secret_key();
     keygen.create_public_key(public_key);
+    return public_key;
 }
 
 Ciphertext *PwdClient::GenEncryptedVector(int idx) {
@@ -50,6 +50,10 @@ string PwdClient::Decrypt(Ciphertext &c) {
     return x_dec.to_string();   // TODO to int instead of to string
 }
 
+int PwdClient::GetNumPwds() {
+    return num_pwds;
+}
+
 PwdServer::PwdServer(PublicKey &public_key_) : context(SetContext()), public_key(public_key_) {}
 
 Ciphertext PwdServer::Eval(Ciphertext *c, uint64_t *inputs) {
@@ -68,5 +72,12 @@ Ciphertext PwdServer::Eval(Ciphertext *c, uint64_t *inputs) {
 }
 
 int main() {
-
+    PwdClient *client = new PwdClient();
+    PublicKey pk = client->KeyGen();
+    Ciphertext *c_in = client->GenEncryptedVector(0);
+    PwdServer *server = new PwdServer(pk);
+    uint64_t *inputs = new uint64_t[client->GetNumPwds()];
+    Ciphertext c_res = server->Eval(c_in, inputs);
+    string res = client->Decrypt(c_res);
+    cout << "Decrypted to " << res << endl;
 }

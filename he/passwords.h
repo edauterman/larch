@@ -10,14 +10,15 @@ using namespace seal;
 class PwdClient {
     public:
         PwdClient();
-        void KeyGen();
+        PublicKey KeyGen();
         Ciphertext *GenEncryptedVector(int idx);
         string Decrypt(Ciphertext &c);
+        int GetNumPwds();
     private:
         SecretKey secret_key;
         PublicKey public_key;
         SEALContext context;
-        int num_pwds;
+        int num_pwds = 10;
 };
 
 class PwdServer {
@@ -27,7 +28,7 @@ class PwdServer {
     private:
         PublicKey public_key;
         SEALContext context;
-        int num_pwds;
+        int num_pwds = 10;
 };
 
 #endif
