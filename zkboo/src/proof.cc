@@ -6,7 +6,7 @@
 
 #include "proof.h"
 #include "prover.h"
-#include "../../crypto/params.h"
+#include "../../crypto/src/params.h"
 #include "view.h"
 
 static inline void SetWireNum(uint32_t *x, uint32_t wireNum) {

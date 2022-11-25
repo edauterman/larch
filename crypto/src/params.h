@@ -61,9 +61,9 @@ int Params_exp (const_Params p, EC_POINT *point, const BIGNUM *exponent);
 // Compute h^x for any point h
 int Params_exp_base (const_Params p, EC_POINT *point, 
     const EC_POINT *base, const BIGNUM *exponent);
-//int Params_exp_base2 (const_Params p, EC_POINT *point, 
-//    const EC_POINT *base1, const BIGNUM *e1,
-//    const EC_POINT *base2, const BIGNUM *e2);
+int Params_exp_base2 (const_Params p, EC_POINT *point, 
+    const EC_POINT *base1, const BIGNUM *e1,
+    const EC_POINT *base2, const BIGNUM *e2);
 int Params_exp_base_g (const_Params p, EC_POINT *point,
     const BIGNUM *exp);
 int Params_exp_base_h (const_Params p, EC_POINT *point,

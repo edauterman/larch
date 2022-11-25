@@ -10,8 +10,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include "u2f.h"
-#include "../../crypto/params.h"
-#include "../../crypto/sigs.h"
+#include "../../crypto/src/params.h"
+#include "../../crypto/src/sigs.h"
 #include "../../network/log.grpc.pb.h"
 #include "../../network/log.pb.h"
 

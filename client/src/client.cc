@@ -27,8 +27,8 @@
 #include <emp-tool/emp-tool.h>
 
 //#include "agent.h"
-#include "../../crypto/common.h"
-#include "../../crypto/sigs.h"
+#include "../../crypto/src/common.h"
+#include "../../crypto/src/sigs.h"
 #include "base64.h"
 #include "u2f.h"
 #include "client.h"

@@ -9,7 +9,7 @@
 #include <openssl/sha.h>
 #include "asn1.h"
 #include "x509.h"
-#include "../../crypto/common.h"
+#include "../../crypto/src/common.h"
 
 static void add_CN(ASN1* ctx) {
   SEQ_START(*ctx, t_SEQ, SEQ_SMALL) {

@@ -5,7 +5,7 @@
 #include <openssl/evp.h>
 #include <emp-tool/emp-tool.h>
 
-#include "../crypto/params.h"
+#include "../crypto/src/params.h"
 #include "../client/src/u2f.h"
 
 #define NUM_ROUNDS 5

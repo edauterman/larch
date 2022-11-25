@@ -14,7 +14,7 @@
 #include "emp_prover.h"
 #include "prover_sys.h"
 #include "../utils/timer.h"
-#include "../../crypto/params.h"
+#include "../../crypto/src/params.h"
 #include "circuit.h"
 
 using namespace std;

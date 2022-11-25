@@ -13,8 +13,8 @@
 
 #include "../network/log.grpc.pb.h"
 #include "../network/log.pb.h"
-#include "../crypto/params.h"
-#include "../crypto/sigs.h"
+#include "../crypto/src/params.h"
+#include "../crypto/src/sigs.h"
 #include "../client/src/u2f.h"
 #include "../zkboo/src/proof.h"
 #include "../zkboo/src/verifier.h"

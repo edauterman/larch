@@ -9,7 +9,7 @@
 #include "view.h"
 #include "circuit.h"
 #include "emp_verifier.h"
-#include "../../crypto/params.h"
+#include "../../crypto/src/params.h"
 
 using namespace std;
 using namespace emp;
