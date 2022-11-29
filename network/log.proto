@@ -7,6 +7,7 @@ service Log {
     // Function invoked to send the request
     rpc SendInit (InitRequest) returns (InitResponse) {}
     rpc SendReg (RegRequest) returns (RegResponse) {}
+    rpc SendProof (ProofRequest) returns (ProofResponse) {}
     rpc SendAuth (AuthRequest) returns (AuthResponse) {}
     rpc SendAuthCheck (AuthCheckRequest) returns (AuthCheckResponse) {}
     rpc SendAuthCheck2 (AuthCheck2Request) returns (AuthCheck2Response) {}
@@ -45,6 +46,15 @@ message RegResponse {
     bytes pk_x = 1;
     bytes pk_y = 2;
 }
+
+message ProofRequest {
+    repeated bytes proof = 1;
+    uint32 id = 2;
+    int32 session_ctr = 3;
+    uint32 auth_ctr = 4;
+}
+
+message ProofResponse {}
 
 message AuthRequest {
     repeated bytes proof = 1;

@@ -3,11 +3,13 @@
 
 #include <map>
 #include <string>
+#include <thread>
 
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 #include <openssl/evp.h>
 #include <grpcpp/grpcpp.h>
+#include "semaphore.h"
 
 #include "u2f.h"
 #include "../../crypto/src/params.h"
@@ -52,7 +54,7 @@ class Client {
                         uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool noRegistration = false);
         void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len);
-        void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req);
+        void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req, bool onlySigs = false);
     private:
         Params params;
         map<string, EC_POINT*> pk_map;
@@ -68,6 +70,8 @@ class Client {
         uint32_t id;
         BIGNUM *auth_key;
         unique_ptr<Log::Stub> stub;
+        sem_t session_sema;
+        uint32_t session_ctr;
 
         const int NUM_AUTHS = 100;
 
@@ -80,6 +84,7 @@ class Client {
         int FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha, BIGNUM *out, BIGNUM *auth_out);
         void MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alpha);
         bool VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s);
+        void DispatchProof(sem_t *semas, uint8_t *proof_buf[], int *proof_buf_len, uint32_t auth_ctr_in);
 
 };
 

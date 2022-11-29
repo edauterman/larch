@@ -40,7 +40,8 @@ Token::Token(uint8_t *ct_in, uint8_t *iv_in, uint8_t *sig_in, unsigned int sig_l
     memcpy(sig, sig_in, sig_len);
 }
 
-AuthState::AuthState(BIGNUM *check_d_in, uint8_t *r_in, BIGNUM *out_in) {
+AuthState::AuthState(uint8_t *digest_in, BIGNUM *check_d_in, uint8_t *r_in, BIGNUM *out_in) {
+    memcpy(digest, digest_in, SHA256_DIGEST_LENGTH);
     check_d = check_d_in;
     memcpy(r, r_in, 16);
     out = out_in;
@@ -86,10 +87,46 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     EC_POINT_point2oct(Params_group(params), initSt->pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
     initSt->auth_ctr = 0;
 
+    clientMapLock.lock();
     clientMap[req->id()] = initSt;
+    clientMapLock.unlock();
 }
 
-void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *cm_check_d, uint32_t *sessionCtr) {
+void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint32_t sessionCtr, uint32_t auth_ctr) {
+    Proof proof[NUM_ROUNDS];
+
+    __m128i iv;
+    uint8_t iv_raw[16];
+    memset(iv_raw, 0, 16);
+    memcpy(iv_raw, (uint8_t *)&auth_ctr, sizeof(uint32_t));
+    memcpy((uint8_t *)&iv, iv_raw, 16);
+           
+    bool final_check = true;
+    bool check[NUM_ROUNDS];
+    thread workers[NUM_ROUNDS];
+    INIT_TIMER;
+    if (!onlySigs) {
+        START_TIMER;
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, saveMap[sessionCtr]->digest, clientMap[id]->enc_key_comm, tokenMap[id][auth_ctr]->ct, &check[i]);
+        }
+        for (int i = 0; i < NUM_ROUNDS; i++) {
+            workers[i].join();
+            final_check = final_check && check[i];
+        }
+        STOP_TIMER("proofs");
+        if (final_check) {
+            printf("VERIFIED\n");
+        } else {
+            printf("PROOF FAILED TO VERIFY\n");
+        }
+        saveMap[sessionCtr]->proof_verified = final_check;
+        sem_post(&saveMap[sessionCtr]->proof_sema);
+        //saveMap[sessionCtr]->proof_sema.release();
+    }
+}
+
+void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *cm_check_d, uint32_t *sessionCtr) {
     Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
@@ -108,8 +145,11 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     BIGNUM *b = BN_new();
     BIGNUM *alpha = BN_new();
     BN_CTX *ctx = BN_CTX_new();
-    
+   
+    clientMapLock.lock();
     uint32_t auth_ctr = clientMap[id]->auth_ctr;
+    clientMap[id]->auth_ctr++;
+    clientMapLock.unlock();
 
     __m128i iv;
     uint8_t iv_raw[16];
@@ -117,7 +157,7 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     memcpy(iv_raw, (uint8_t *)&auth_ctr, sizeof(uint32_t));
     memcpy((uint8_t *)&iv, iv_raw, 16);
            
-    bool final_check = true;
+    /*bool final_check = true;
     bool check[NUM_ROUNDS];
     thread workers[NUM_ROUNDS];
     INIT_TIMER;
@@ -125,7 +165,7 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
         START_TIMER;
         for (int i = 0; i < NUM_ROUNDS; i++) {
             //proof[i].Deserialize(proof_bytes[i], numRands);
-            workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
+            workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, tokenMap[id][auth_ctr]->ct, &check[i]);
             //workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
         }
         for (int i = 0; i < NUM_ROUNDS; i++) {
@@ -139,7 +179,7 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
             printf("PROOF FAILED TO VERIFY\n");
             return;
         }
-    }
+    }*/
 
     GetPreprocessValueSet(auth_ctr, r, a, b, alpha, clientMap[id]->log_seed);
 
@@ -185,18 +225,21 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     int len = BN_bn2bin(check_d, check_d_buf);
     RAND_bytes(r_buf, 16);
     Commit(cm_check_d, check_d_buf, len, r_buf);
-    AuthState *state = new AuthState(check_d, r_buf, out);
+    AuthState *state = new AuthState(digest, check_d, r_buf, out);
+    sem_init(&state->proof_sema, 1, 0);
+    saveMapLock.lock();
     saveMap[*sessionCtr] = state;
+    saveMapLock.unlock();
 
-    clientMap[id]->auth_ctr++;
-    
     if (!onlySigs) {
-        Token *token = new Token(ct, iv_bytes, auth_sig, auth_sig_len);
-        tokenMap[id] = token;
+        Token *token = new Token(ct, iv_raw, auth_sig, auth_sig_len);
+        tokenMapLock.lock();
+        tokenMap[id].push_back(token);
+        tokenMapLock.unlock();
 
         // TODO move earlier to abort if check fails
         uint8_t auth_input[48];
-        memcpy(auth_input, iv_bytes, 16);
+        memcpy(auth_input, iv_raw, 16);
         memcpy(auth_input + 16, ct, 32);
         EC_KEY *key = EC_KEY_new();
         EVP_PKEY *pkey = EVP_PKEY_new();
@@ -254,8 +297,18 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
         fprintf(stderr, "ERROR: commitment doesn't open correctly = %s\n", check_d_len);
         *final_out_len = 0;
     }
-    
-    *final_out_len = BN_bn2bin(saveMap[sessionCtr]->out, final_out);
+ 
+    if (!onlySigs) { 
+        sem_wait(&saveMap[sessionCtr]->proof_sema);
+    } else {
+        saveMap[sessionCtr]->proof_verified = true;
+    }
+    if (saveMap[sessionCtr]->proof_verified) {
+        *final_out_len = BN_bn2bin(saveMap[sessionCtr]->out, final_out);
+    } else {
+        *final_out_len = 0;
+    }
+    // TODO delete saveMap entry
     
     if (check_d_client) BN_free(check_d_client);
     if (sum) BN_free(sum);
@@ -277,6 +330,18 @@ class LogServiceImpl final : public Log::Service {
             return Status::OK;
         }
 
+        Status SendProof(ServerContext *context, const ProofRequest *req, ProofResponse *resp) override {
+            uint8_t *proof_bytes[NUM_ROUNDS];
+            if (!onlySigs) {
+                for (int i = 0; i < NUM_ROUNDS; i++) {
+                    proof_bytes[i] = (uint8_t *)req->proof(i).c_str();
+                }
+            }
+            server->VerifyProof(req->id(), proof_bytes, req->session_ctr(), req->auth_ctr());
+            return Status::OK;
+ 
+        }
+
         Status SendAuth(ServerContext *context, const AuthRequest *req, AuthResponse *resp) override {
             uint8_t prod[32];
             unsigned int prod_len = 0;
@@ -287,16 +352,16 @@ class LogServiceImpl final : public Log::Service {
             uint8_t cm_check_d[32];
             uint32_t sessionCtr;
             uint8_t *proof_bytes[NUM_ROUNDS];
-            if (!onlySigs) {
+            /*if (!onlySigs) {
                 for (int i = 0; i < NUM_ROUNDS; i++) {
                     proof_bytes[i] = (uint8_t *)req->proof(i).c_str();
                 }
-            }
-            string challengeStr = req->challenge();
+            }*/
             string ctStr = req->ct();
             INIT_TIMER;
             START_TIMER;
-            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
+            server->StartSign(req->id(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
+            //server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->ct().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
             resp->set_cm_check_d(cm_check_d, 32);

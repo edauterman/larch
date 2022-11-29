@@ -133,6 +133,7 @@ Client::Client(bool startConn) {
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     }
+    sem_init(&session_sema, 1, 0);
 }
 
 /* Write agent state to file, including root public keys and map of key handles
@@ -738,7 +739,7 @@ void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t
   EC_POINT_free(R);
 }
 
-void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req) {
+void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req, bool onlySigs) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
   BIGNUM *e_client, *e_log, *auth_e, *e;
@@ -800,6 +801,11 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   req.set_e(e_buf, BN_num_bytes(e_client));
 
   stub->SendAuth(&client_ctx, req, &resp);
+
+  session_ctr = resp.session_ctr();
+  if (!onlySigs) {
+    sem_post(&session_sema);
+  }
 
   BN_bin2bn((uint8_t *)resp.d().c_str(), resp.d().size(), d_log);
   BN_bin2bn((uint8_t *)resp.e().c_str(), resp.e().size(), e_log);
@@ -877,6 +883,21 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   free(check_d_buf);
 }
 
+void Client::DispatchProof(sem_t *semas, uint8_t *proof_buf[], int *proof_buf_len, uint32_t auth_ctr_in) {
+    ProofRequest req;
+    ProofResponse resp;
+    ClientContext client_ctx;
+    for (int i = 0; i < NUM_ROUNDS; i++) {
+        sem_wait(&semas[i]);
+        req.add_proof(proof_buf[i], proof_buf_len[i]);
+    }
+    req.set_id(id);
+    req.set_auth_ctr(auth_ctr_in);
+    sem_wait(&session_sema);
+    req.set_session_ctr(session_ctr);
+    stub->SendProof(&client_ctx, req, &resp);
+}
+
 /* Authenticate at origin specified by app_id given a challenge from the origin
  * and a key handle obtained from registration. Returns length of signature. */
 int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
@@ -912,6 +933,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   int numRands = 116916;
   uint8_t *proof_buf[NUM_ROUNDS];
   thread workers[NUM_ROUNDS];
+  thread proofDispatcher;
   int proof_buf_len[NUM_ROUNDS];
   uint8_t iv_raw[16];
   BIGNUM *sk;
@@ -928,6 +950,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   AuthCheckResponse checkResp;
   ClientContext client_ctx;
   ClientContext client_ctx2;
+  sem_t proof_semas[NUM_ROUNDS];
 
   CHECK_A (out = BN_new());
   CHECK_A (sk = BN_new());
@@ -956,14 +979,16 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
-    workers[i] = thread(ProveSerializeCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof_buf[i], &proof_buf_len[i]);
+    sem_init(&proof_semas[i], 1, 0);
+    workers[i] = thread(ProveSerializeCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof_buf[i], &proof_buf_len[i], &proof_semas[i]);
   }
-  for (int i = 0; i < NUM_ROUNDS; i++) {
+  proofDispatcher = thread(&Client::DispatchProof, this, proof_semas, proof_buf, proof_buf_len, auth_ctr);
+  /*for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
     //proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len[i]);
-  }
-  STOP_TIMER("Prover time");
+  }*/
+  //STOP_TIMER("Prover time");
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
   //req.set_iv(iv_raw, 16);
@@ -971,7 +996,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
   Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
   req.set_tag(auth_sig, auth_sig_len);
-  STOP_TIMER("prove");
+  //STOP_TIMER("prove");
   START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
@@ -989,6 +1014,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   /* Output message from device. */
   *flags_out = flags;
   *ctr_out = ctr32;
+
+  for (int i = 0; i < NUM_ROUNDS; i++) {
+    workers[i].join();
+  }
+  proofDispatcher.join();
 
 cleanup:
   for (int i = 0; i < NUM_ROUNDS; i++) {
