@@ -270,7 +270,6 @@ void Client::ReadFromStorage() {
   }
   auth_key = BN_new();
   BN_bin2bn(buf, 32, auth_key);
-
   fclose(master_file);
  
 }
@@ -947,7 +946,9 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   EVP_DigestUpdate(mdctx, message_buf, message_buf_len);
   EVP_DigestFinal(mdctx, hash_out, NULL);
 
-  RAND_bytes(iv_raw, 16);
+  //RAND_bytes(iv_raw, 16);
+  memset(iv_raw, 0, 16);
+  memcpy(iv_raw, (uint8_t *)&auth_ctr, sizeof(uint32_t));
   memcpy((uint8_t *)&iv, iv_raw, 16);
 
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
@@ -965,7 +966,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   STOP_TIMER("Prover time");
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
-  req.set_iv(iv_raw, 16);
+  //req.set_iv(iv_raw, 16);
   memcpy(auth_input, iv_raw, 16);
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
   Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);

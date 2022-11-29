@@ -50,12 +50,11 @@ message AuthRequest {
     repeated bytes proof = 1;
     bytes challenge = 2;
     bytes ct = 3;
-    bytes iv = 4;
-    bytes digest = 5;
-    bytes d = 6;
-    bytes e = 7;
-    uint32 id = 8;
-    bytes tag = 9;
+    bytes digest = 4;
+    bytes d = 5;
+    bytes e = 6;
+    uint32 id = 7;
+    bytes tag = 8;
 }
 
 message AuthResponse {
