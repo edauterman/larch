@@ -85,6 +85,12 @@ void FillVerifierView(vector<CircuitView *> &proverViews, CircuitView * verifier
     }
 }
 
+void ProveSerializeCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, uint8_t **proof_bytes, int *proof_len) {
+    Proof p;
+    ProveCtCircuit(m, m_len, hashIn, in_len, hashOut, ct, key, keyComm, keyR, iv, numRands, &p);
+    *proof_bytes = p.Serialize(proof_len);
+}
+
 void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t *hashOut, uint8_t *ct, uint8_t *key, uint8_t *keyComm, uint8_t *keyR, __m128i iv, int numRands, Proof *proof) {
     vector<CircuitView *>verifierViews;
     vector<CircuitView *>proverViews;

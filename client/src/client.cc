@@ -910,11 +910,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t ct[SHA256_DIGEST_LENGTH];
   __m128i iv = makeBlock(0,0);
   __m128i enc_key_128 = makeBlock(0,0);
-  Proof proof[NUM_ROUNDS];
   int numRands = 116916;
   uint8_t *proof_buf[NUM_ROUNDS];
   thread workers[NUM_ROUNDS];
-  int proof_buf_len;
+  int proof_buf_len[NUM_ROUNDS];
   uint8_t iv_raw[16];
   BIGNUM *sk;
   uint8_t tag[SHA256_DIGEST_LENGTH];
@@ -956,12 +955,12 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
 
   START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
-    workers[i] = thread(ProveCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof[i]);
+    workers[i] = thread(ProveSerializeCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof_buf[i], &proof_buf_len[i]);
   }
   for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
-    proof_buf[i] = proof[i].Serialize(&proof_buf_len);
-    req.add_proof(proof_buf[i], proof_buf_len);
+    //proof_buf[i] = proof[i].Serialize(&proof_buf_len);
+    req.add_proof(proof_buf[i], proof_buf_len[i]);
   }
   STOP_TIMER("Prover time");
   req.set_challenge(message_buf, message_buf_len);
