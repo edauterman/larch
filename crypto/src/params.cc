@@ -307,6 +307,19 @@ cleanup:
   return rv;
 }
 
+// bytes_out of length SHA256_DIGEST_LENGHT
+int hash_to_digest(EVP_MD_CTX *mdctx, uint8_t *bytes_out,
+        const uint8_t *bytes_in, int inlen) {
+  int rv = ERROR;
+  //EVP_MD_CTX *mdctx = NULL;
+  //CHECK_A (mdctx = EVP_MD_CTX_create());
+  CHECK_C (EVP_DigestInit_ex (mdctx, EVP_sha256 (), NULL));
+  CHECK_C (EVP_DigestUpdate (mdctx, bytes_in, inlen));
+  CHECK_C (EVP_DigestFinal_ex (mdctx, bytes_out, NULL));
+cleanup:
+  //if (mdctx) EVP_MD_CTX_destroy(mdctx);
+  return rv;
+}
 
 /*
  * Output a string of pseudorandom bytes by hashing a 
@@ -322,7 +335,6 @@ hash_to_bytes (uint8_t *bytes_out, int outlen,
   uint8_t buf[SHA256_DIGEST_LENGTH];
   EVP_MD_CTX *mdctx = NULL; 
   int bytes_filled = 0;
-
   CHECK_A (mdctx = EVP_MD_CTX_create());
 
   do {
@@ -337,6 +349,29 @@ hash_to_bytes (uint8_t *bytes_out, int outlen,
 cleanup:
 
   if (mdctx) EVP_MD_CTX_destroy (mdctx);
+  return rv;
+}
+
+int
+hash_to_bytes (EVP_MD_CTX *mdctx, uint8_t *bytes_out, int outlen,
+    const uint8_t *bytes_in, int inlen)
+{
+  int rv = ERROR;
+  uint16_t counter = 0;
+  uint8_t buf[SHA256_DIGEST_LENGTH];
+  int bytes_filled = 0;
+
+  do {
+    const int to_copy = min (SHA256_DIGEST_LENGTH, outlen - bytes_filled);
+    CHECK_C (hash_once (mdctx, buf, bytes_in, inlen, counter));
+    memcpy (bytes_out + bytes_filled, buf, to_copy);
+    
+    counter++;
+    bytes_filled += SHA256_DIGEST_LENGTH;
+  } while (bytes_filled < outlen);
+
+cleanup:
+
   return rv;
 }
 

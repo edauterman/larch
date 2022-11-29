@@ -18,6 +18,7 @@
  */
 
 #include <openssl/ec.h>
+#include <openssl/evp.h>
 
 struct params {
   EC_GROUP *group;
@@ -75,6 +76,10 @@ int Params_point_to_exponent (const_Params p, BIGNUM *exp,
 int Params_hash_to_exponent (const_Params p, BIGNUM *exp, 
     const uint8_t *str, int strlen);
 int hash_to_bytes (uint8_t *bytes_out, int outlen,
+    const uint8_t *bytes_in, int inlen);
+int hash_to_bytes (EVP_MD_CTX *mdctx, uint8_t *bytes_out, int outlen,
+    const uint8_t *bytes_in, int inlen);
+int hash_to_digest (EVP_MD_CTX *mdctx, uint8_t *bytes_out,
     const uint8_t *bytes_in, int inlen);
 int Params_hash_point(const_Params p, EVP_MD_CTX *mdctx, const uint8_t *tag,
                int taglen, const EC_POINT *pt);

@@ -58,11 +58,11 @@ void ShareInput(uint8_t *input, block *inputShares, int len, uint32_t *dst[], in
         indivShares[i] = (uint32_t *)malloc(len * sizeof(uint32_t));
     }
     memset(inputShares, 0, len * sizeof(block));
+    RAND_bytes((uint8_t *)indivShares[0], len * sizeof(uint32_t));
+    RAND_bytes((uint8_t *)indivShares[1], len * sizeof(uint32_t));
     for (int i = 0; i < len; i++) {
         // individual shares of bits
         uint32_t setval = GetBit((uint32_t)input[i/8], i%8) == 0 ? 0 : 0xffffffff;
-        RAND_bytes((uint8_t *)&indivShares[0][i], sizeof(uint32_t));
-        RAND_bytes((uint8_t *)&indivShares[1][i], sizeof(uint32_t));
         indivShares[2][i] = indivShares[0][i] ^ indivShares[1][i] ^ setval;
         for (int j = 0; j < 3; j++) {
             memcpy(((uint8_t *)&inputShares[i]) + j * sizeof(uint32_t), (uint8_t *)&indivShares[j][i], sizeof(uint32_t));
@@ -96,6 +96,8 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     vector<CircuitView *>proverViews;
     RandomOracle oracle; 
     uint8_t openings[3][32][16];
+    //INIT_TIMER;
+    //START_TIMER;
 
     proof->wLen = m_len + 256 + m_len + 128 + 128 + 256 + in_len;
     uint32_t *w_tmp[3];
@@ -126,20 +128,23 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
             RAND_bytes(openings[i][j], 16);
         }
     }
+    //STOP_TIMER("before");
 
-    //INIT_TIMER;
     //START_TIMER;
     GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, out, seeds, numRands);
-    //STOP_TIMER("Gen views");
+    //STOP_TIMER("gen views");
+    //START_TIMER;
     CommitViews(proverViews, proof->comms, openings);
+    //STOP_TIMER("comm");
 
+    //START_TIMER;
     for (int i = 0; i < 32; i++) { 
         proof->idx[i] = oracle.GetRand(proof->comms[0][i], proof->comms[1][i], proof->comms[2][i]);
     }
 
     proof->view = new CircuitView();
     FillVerifierView(proverViews, proof->view, proof->idx);
- 
+
     for (int i = 0; i < 2; i++) {
         proof->w[i] = (uint32_t *)malloc(proof->wLen * sizeof(uint32_t));
         for (int j = 0; j < proof->wLen; j++) {
@@ -203,5 +208,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     free(keyRShares);
     free(keyCommShares);
     free(hashInShares);
+    //STOP_TIMER("whole thingy");
 }
 
