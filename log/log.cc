@@ -123,8 +123,9 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     if (!onlySigs) {
         START_TIMER;
         for (int i = 0; i < NUM_ROUNDS; i++) {
-            proof[i].Deserialize(proof_bytes[i], numRands);
-            workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
+            //proof[i].Deserialize(proof_bytes[i], numRands);
+            workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
+            //workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
         }
         for (int i = 0; i < NUM_ROUNDS; i++) {
             workers[i].join();

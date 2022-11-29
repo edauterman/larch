@@ -78,6 +78,12 @@ void AssembleShares(uint32_t *in0, uint32_t *in1, uint32_t *in2, uint8_t *out, i
     free(bs);
 }
 
+bool VerifyDeserializeCtCircuit(uint8_t *proof_bytes, int numRands, __m128i iv, int m_len, int in_len, uint8_t * hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw, bool *ret) {
+    Proof p;
+    p.Deserialize(proof_bytes, numRands);
+    VerifyCtCircuit(&p, iv, m_len, in_len, hashOutRaw, keyCommRaw, ctRaw, ret);
+}
+
 bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * hashOutRaw, uint8_t *keyCommRaw, uint8_t *ctRaw, bool *ret) {
     for (int i = 0; i < 32; i++) {
         CircuitComm c;
