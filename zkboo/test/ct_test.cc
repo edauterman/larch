@@ -15,13 +15,13 @@
 using namespace std;
 using namespace emp;
 
-#define NUM_ROUNDS 137
+#define NUM_REPS 10
 
 const string circuit_file_location = macro_xstr(EMP_CIRCUIT_PATH);
 
 int main() {
 
-    Proof pi[NUM_ROUNDS];
+    Proof pi;
     int numRands = 81543;
 
     int m_len = 256;
@@ -60,16 +60,16 @@ int main() {
 
     INIT_TIMER;
     START_TIMER;
-    for (int i = 0; i < 1; i++) {
-    //for (int i = 0; i < NUM_ROUNDS; i++) {
-        ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, &pi[i]);
+    //for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < NUM_REPS; i++) {
+        ProveCtCircuit(m, m_len, hash_in, in_len, hash_out, ct, key, comm, r, iv, numRands, &pi);
     }
     STOP_TIMER("Prover time (1)");
     cout << "Finished proving" << endl; 
     START_TIMER;
     bool check;
-    for (int i = 0; i < 1; i++) {
-        VerifyCtCircuit(&pi[0], iv, m_len, in_len, hash_out, comm, ct, &check);
+    for (int i = 0; i < NUM_REPS; i++) {
+        VerifyCtCircuit(&pi, iv, m_len, in_len, hash_out, comm, ct, &check);
     }
     STOP_TIMER("Verifier time");
     if (check) {
@@ -80,7 +80,7 @@ int main() {
 
     uint8_t hash_out2[32];
     memset(hash_out2, 0xff, 32);
-    VerifyCtCircuit(&pi[0], iv, m_len, in_len, hash_out2, comm, ct, &check);
+    VerifyCtCircuit(&pi, iv, m_len, in_len, hash_out2, comm, ct, &check);
     if (!check) {
         cout << "Proof correctly rejected" << endl;
     } else {

@@ -89,7 +89,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     clientMap[req->id()] = initSt;
 }
 
-void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *iv_bytes, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *cm_check_d, uint32_t *sessionCtr) {
+void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint8_t *challenge, uint8_t *ct, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *cm_check_d, uint32_t *sessionCtr) {
     Proof proof[NUM_ROUNDS];
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
@@ -111,10 +111,11 @@ void LogServer::VerifyProofAndSign(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS]
     
     uint32_t auth_ctr = clientMap[id]->auth_ctr;
 
-    uint64_t low = *((uint64_t *)iv_bytes);
-    uint64_t high = *(((uint64_t *)iv_bytes) + 1);
-    __m128i iv = makeBlock(low, high);
-    memcpy((uint8_t *)&iv, iv_bytes, 16);
+    __m128i iv;
+    uint8_t iv_raw[16];
+    memset(iv_raw, 0, 16);
+    memcpy(iv_raw, (uint8_t *)&auth_ctr, sizeof(uint32_t));
+    memcpy((uint8_t *)&iv, iv_raw, 16);
            
     bool final_check = true;
     bool check[NUM_ROUNDS];
@@ -293,10 +294,9 @@ class LogServiceImpl final : public Log::Service {
             }
             string challengeStr = req->challenge();
             string ctStr = req->ct();
-            string ivStr = req->iv();
             INIT_TIMER;
             START_TIMER;
-            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->iv().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
+            server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->challenge().c_str(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
             resp->set_cm_check_d(cm_check_d, 32);
