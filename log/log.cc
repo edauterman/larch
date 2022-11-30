@@ -65,6 +65,7 @@ void LogServer::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *
 void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     InitState *initSt = new InitState();
     memcpy(initSt->enc_key_comm, req->key_comm().c_str(), 32);
+    BN_CTX *ctx = BN_CTX_new();
 
     for (int i = 0; i < req->hints_size(); i++) {
         Hint h;
@@ -78,18 +79,19 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
     }
     initSt->auth_pk = EC_POINT_new(Params_group(params));
     memcpy(initSt->log_seed, (uint8_t *)req->log_seed().c_str(), 16);
-    EC_POINT_oct2point(Params_group(params), initSt->auth_pk, (uint8_t *)req->auth_pk().c_str(), 33, Params_ctx(params));
+    EC_POINT_oct2point(Params_group(params), initSt->auth_pk, (uint8_t *)req->auth_pk().c_str(), 33, ctx);
 
     initSt->pk = EC_POINT_new(Params_group(params));
     initSt->sk = BN_new();
     Params_rand_point_exp(params, initSt->pk, initSt->sk);
     memset(pkBuf, 0, 33);
-    EC_POINT_point2oct(Params_group(params), initSt->pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, Params_ctx(params));
+    EC_POINT_point2oct(Params_group(params), initSt->pk, POINT_CONVERSION_COMPRESSED, pkBuf, 33, ctx);
     initSt->auth_ctr = 0;
 
     clientMapLock.lock();
     clientMap[req->id()] = initSt;
     clientMapLock.unlock();
+    BN_CTX_free(ctx);
 }
 
 void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint32_t sessionCtr, uint32_t auth_ctr) {
