@@ -651,94 +651,6 @@ void Client::MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alph
     BN_CTX_free(ctx);
 }
 
-// TODO: test more thoroughly or get signature format correct to use OpenSSL
-// ECDSA signature verification directly.
-bool Client::VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s) {
-    EC_POINT *test = EC_POINT_new(Params_group(params));
-    EC_POINT *g_m = EC_POINT_new(Params_group(params));
-    EC_POINT *pk_client = EC_POINT_new(Params_group(params));
-    EC_POINT *pk = EC_POINT_new(Params_group(params));
-    BN_CTX *ctx = BN_CTX_new();
-    BIGNUM *x = BN_new();
-    BIGNUM *y = BN_new();
-    BIGNUM *s_inv = BN_mod_inverse(NULL, s, Params_order(params), ctx);
-    Params_exp(params, pk_client, sk);
-    Params_mul(params, pk, pk_client, logPk);
-    Params_exp(params, g_m, m);
-    Params_exp_base(params, test, pk, r);
-    Params_mul(params, test, test, g_m);
-    Params_exp_base(params, test, test, s_inv);
-    EC_POINT_get_affine_coordinates(Params_group(params), test, x, y, ctx);
-    bool res = BN_cmp(x, r);
-
-    EC_POINT_free(test);
-    EC_POINT_free(g_m);
-    EC_POINT_free(pk_client);
-    EC_POINT_free(pk);
-    BN_CTX_free(ctx);
-    BN_free(x);
-    BN_free(y);
-    BN_free(s_inv);
-    return res;
-}
-
-// TODO: test more thoroughly or get signature format correct to use OpenSSL
-// ECDSA signing directly.
-void Client::Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len) {
-  int rv;
-  BIGNUM *out = NULL;
-  BIGNUM *r, *r_inv, *x_coord, *y_coord, *val, *hash_bn;
-  EC_POINT *R;
-  EVP_MD_CTX *mdctx2;
-  uint8_t message[SHA256_DIGEST_LENGTH];
-  BN_CTX *ctx;
-  uint8_t len_byte;
-  uint8_t hash_out[32];
-
-  out = BN_new();
-  hash_bn = BN_new();
-  val = BN_new();
-  r = BN_new();
-  x_coord = BN_new();
-  y_coord = BN_new();
-  sk = BN_new();
-  mdctx2 = EVP_MD_CTX_create();
-  ctx = BN_CTX_new();
-  R = EC_POINT_new(Params_group(params));
-
-  EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
-  EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
-  EVP_DigestFinal(mdctx2, hash_out, NULL);
-
-  Params_rand_exponent(params, sk);
-  BN_bin2bn(hash_out, 32, hash_bn);
-  BN_mod(hash_bn, hash_bn, Params_order(params), ctx);
-  Params_rand_point_exp(params, R, r);
-  r_inv = BN_mod_inverse(NULL, r, Params_order(params), ctx);
-  EC_POINT_get_affine_coordinates_GFp(Params_group(params), R, x_coord, y_coord, NULL);
-  BN_mod_mul(val, x_coord, sk, Params_order(params), ctx);
-  BN_mod_add(val, hash_bn, val, Params_order(params), ctx);
-  BN_mod_mul(out, r_inv, val, Params_order(params), ctx);
-
-  /* Output signature. */
-  memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
-  asn1_sigp(sig_out, x_coord, out);
-  len_byte = sig_out[1];
-  *sig_len = len_byte + 2;
-
-  BN_free(out);
-  BN_free(hash_bn);
-  BN_free(val);
-  BN_free(r);
-  BN_free(r_inv);
-  BN_free(x_coord);
-  BN_free(y_coord);
-  BN_free(sk);
-  EVP_MD_CTX_free(mdctx2);
-  BN_CTX_free(ctx);
-  EC_POINT_free(R);
-}
-
 void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req, bool onlySigs) {
   BIGNUM *a, *b, *c;
   BIGNUM *d_client, *d_log, *auth_d, *d, *check_d;
@@ -848,9 +760,15 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
 
   BN_mod_add(out, out_client, out_log, Params_order(params), ctx);
 
-  if (!VerifySignature(sk, hash_bn, out, clientHints[auth_ctr].xcoord)) {
+  EC_POINT *pk_client = EC_POINT_new(Params_group(params));
+  EC_POINT *pk = EC_POINT_new(Params_group(params));
+  Params_exp(params, pk_client, sk);
+  Params_mul(params, pk, pk_client, logPk);
+  if (!VerifySignature(pk, hash_bn, out, clientHints[auth_ctr].xcoord, params)) {
     fprintf(stderr, "ERROR: signature fails\n");
   }
+  EC_POINT_free(pk_client);
+  EC_POINT_free(pk);
 
   auth_ctr++;
 
@@ -939,7 +857,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   BIGNUM *sk;
   uint8_t tag[SHA256_DIGEST_LENGTH];
   uint8_t auth_input[16 + SHA256_DIGEST_LENGTH];
-  uint8_t auth_sig[MAX_ECDSA_SIG_SIZE];
+  uint8_t *auth_sig;
   unsigned int auth_sig_len;
   INIT_TIMER;
   START_TIMER;
@@ -994,7 +912,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   //req.set_iv(iv_raw, 16);
   memcpy(auth_input, iv_raw, 16);
   memcpy(auth_input + 16, ct, SHA256_DIGEST_LENGTH);
-  Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, auth_sig, &auth_sig_len);
+  Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, &auth_sig, &auth_sig_len, params);
   req.set_tag(auth_sig, auth_sig_len);
   //STOP_TIMER("prove");
   START_TIMER;

@@ -243,15 +243,12 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
         uint8_t auth_input[48];
         memcpy(auth_input, iv_raw, 16);
         memcpy(auth_input + 16, ct, 32);
-        EC_KEY *key = EC_KEY_new();
-        EVP_PKEY *pkey = EVP_PKEY_new();
-        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-        EC_KEY_new_by_curve_name(415);
-        EC_KEY_set_public_key(key, clientMap[id]->auth_pk);
-        EVP_PKEY_assign_EC_KEY(pkey, key);
-        EVP_VerifyInit(mdctx, EVP_sha256());
-        EVP_VerifyUpdate(mdctx, auth_input, 48);
-        int ver = EVP_VerifyFinal(mdctx, auth_sig, auth_sig_len, pkey);
+        int ver = VerifySignature(clientMap[id]->auth_pk, auth_input, 48, auth_sig, params);
+        if (ver == 0) {
+            cout << "verification FAILED" << endl;
+        } else {
+            cout << "verification passed" << endl;
+        }
     }
 
     if (d_client) BN_free(d_client);

@@ -33,5 +33,8 @@ class Hint {
 
 void GetPreprocessValue(uint64_t ctr, BIGNUM *ret, uint8_t *seed_in, Params params);
 void GetPreprocessValue(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t ctr, BIGNUM *ret, Params params);
+void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t **sig_out, unsigned int *sig_len, Params params);
+bool VerifySignature(EC_POINT *pk, BIGNUM *m, BIGNUM *r, BIGNUM *s, Params params);
+bool VerifySignature(EC_POINT *pk, uint8_t *message_buf, int message_buf_len, uint8_t *signature, Params params);
 
 #endif

@@ -53,7 +53,7 @@ class Client {
         int BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                         uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                         uint8_t *sig_out, bool noRegistration = false);
-        void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len);
+        //void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len);
         void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req, bool onlySigs = false);
     private:
         Params params;
@@ -83,7 +83,7 @@ class Client {
         int StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha);
         int FinishSigning(BIGNUM *val, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha, BIGNUM *out, BIGNUM *auth_out);
         void MakeCheckVal(BIGNUM *check, BIGNUM *val, BIGNUM *auth, BIGNUM *alpha);
-        bool VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s);
+        //bool VerifySignature(BIGNUM *sk, BIGNUM *m, BIGNUM *r, BIGNUM *s);
         void DispatchProof(sem_t *semas, uint8_t *proof_buf[], int *proof_buf_len, uint32_t auth_ctr_in);
 
 };

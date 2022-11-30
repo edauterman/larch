@@ -50,6 +50,7 @@ add_executable(log log.cc ../zkboo/src/verifier.cc ../zkboo/src/proof.cc ../zkbo
 target_link_libraries(log
     Prover
     Base
+    OpenSSL::SSL
 	${_REFLECTION}
 	${_GRPC_GRPCPP}
 	${_PROTOBUF_LIBPROTOBUF})
