@@ -1,5 +1,5 @@
 bwlimit=500mbps
-delay=10ms
+delay=20ms
 
 if [ $# -lt 1 ]
 then

@@ -12,12 +12,11 @@ int main(int argc, char *argv[]) {
     uint8_t digest[32];
     BIGNUM *sk = BN_new();
     AuthRequest req;
-    c->ReadFromStorage();
+    c->Initialize();
     INIT_TIMER;
     START_TIMER;
     for (int i = 0; i < 100; i++) {
         c->ThresholdSign(out, digest, sk, req);
     }
     STOP_TIMER("signature (100 reps)");
-    c->WriteToStorage();
 }

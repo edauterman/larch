@@ -18,7 +18,7 @@ using namespace std;
 using namespace emp;
 
 #define NUM_ROUNDS 5 
-#define NUM_REPS 10
+#define NUM_REPS 100
 
 int main() {
 
