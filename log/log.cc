@@ -33,9 +33,8 @@ using grpc::Status;
 using namespace std;
 using namespace emp;
 
-Token::Token(uint8_t *ct_in, uint8_t *iv_in, uint8_t *sig_in, unsigned int sig_len) {
+Token::Token(uint8_t *ct_in, uint8_t *sig_in, unsigned int sig_len) {
     memcpy(ct, ct_in, SHA256_DIGEST_LENGTH);
-    memcpy(iv, iv_in, 16);
     memset(sig, 0, MAX_ECDSA_SIG_SIZE);
     memcpy(sig, sig_in, sig_len);
 }
@@ -238,7 +237,8 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
             cout << "verification FAILED" << endl;
             return;
         }
-        Token *token = new Token(ct, iv_raw, auth_sig, auth_sig_len);
+        // TODO ensure token only inserted if ZKP also verifies
+        Token *token = new Token(ct, auth_sig, auth_sig_len);
         tokenMapLock.lock();
         tokenMap[id].push_back(token);
         tokenMapLock.unlock();
@@ -307,7 +307,8 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     } else {
         *final_out_len = 0;
     }
-    // TODO delete saveMap entry
+    delete saveMap[sessionCtr];
+    saveMap.erase(sessionCtr);
     
     if (check_d_client) BN_free(check_d_client);
     if (sum) BN_free(sum);
