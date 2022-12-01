@@ -896,7 +896,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
   aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
 
-  START_TIMER;
+  //START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
     sem_init(&proof_semas[i], 1, 0);
     workers[i] = thread(ProveSerializeCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof_buf[i], &proof_buf_len[i], &proof_semas[i]);
@@ -904,10 +904,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   proofDispatcher = thread(&Client::DispatchProof, this, proof_semas, proof_buf, proof_buf_len, auth_ctr);
   /*for (int i = 0; i < NUM_ROUNDS; i++) {
     workers[i].join();
-    //proof_buf[i] = proof[i].Serialize(&proof_buf_len);
+    proof_buf[i] = proof[i].Serialize(&proof_buf_len);
     req.add_proof(proof_buf[i], proof_buf_len[i]);
-  }*/
-  //STOP_TIMER("Prover time");
+  }
+  STOP_TIMER("Prover time");
+  proofDispatcher = thread(&Client::DispatchProof, this, proof_semas, proof_buf, proof_buf_len, auth_ctr);*/
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
   //req.set_iv(iv_raw, 16);
@@ -922,7 +923,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   } else {
     ThresholdSign(out, hash_out, sk, req);
   }
-  STOP_TIMER("threshold sig");
+  //STOP_TIMER("threshold sig");
 
   /* Output signature. */
   memset(sig_out, 0, MAX_ECDSA_SIG_SIZE);
