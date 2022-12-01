@@ -45,7 +45,7 @@ set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.pb.cc")
 set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.grpc.pb.h")
 set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/../../network/log.grpc.pb.cc")
 
-add_library(Client asn1.cc base64.cc sig_parse.cc x509.cc client.cc ../../crypto/src/params.cc ../../crypto/src/sigs.cc ${hw_proto_srcs} ${hw_grpc_srcs})
+add_library(Client asn1.cc base64.cc sig_parse.cc client.cc ../../crypto/src/params.cc ../../crypto/src/sigs.cc ${hw_proto_srcs} ${hw_grpc_srcs})
 target_link_libraries(Client
     Prover
     Base

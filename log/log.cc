@@ -227,29 +227,29 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
     int len = BN_bn2bin(check_d, check_d_buf);
     RAND_bytes(r_buf, 16);
     Commit(cm_check_d, check_d_buf, len, r_buf);
+
+    if (!onlySigs) {
+        // TODO move earlier to abort if check fails
+        uint8_t auth_input[48];
+        memcpy(auth_input, iv_raw, 16);
+        memcpy(auth_input + 16, ct, 32);
+        int ver = VerifySignature(clientMap[id]->auth_pk, auth_input, 48, auth_sig, params);
+        if (ver != 0) {
+            cout << "verification FAILED" << endl;
+            return;
+        }
+        Token *token = new Token(ct, iv_raw, auth_sig, auth_sig_len);
+        tokenMapLock.lock();
+        tokenMap[id].push_back(token);
+        tokenMapLock.unlock();
+    }
     AuthState *state = new AuthState(digest, check_d, r_buf, out);
     sem_init(&state->proof_sema, 1, 0);
     saveMapLock.lock();
     saveMap[*sessionCtr] = state;
     saveMapLock.unlock();
 
-    if (!onlySigs) {
-        Token *token = new Token(ct, iv_raw, auth_sig, auth_sig_len);
-        tokenMapLock.lock();
-        tokenMap[id].push_back(token);
-        tokenMapLock.unlock();
 
-        // TODO move earlier to abort if check fails
-        uint8_t auth_input[48];
-        memcpy(auth_input, iv_raw, 16);
-        memcpy(auth_input + 16, ct, 32);
-        int ver = VerifySignature(clientMap[id]->auth_pk, auth_input, 48, auth_sig, params);
-        if (ver == 0) {
-            cout << "verification FAILED" << endl;
-        } else {
-            cout << "verification passed" << endl;
-        }
-    }
 
     if (d_client) BN_free(d_client);
     if (e_client) BN_free(e_client);

@@ -32,7 +32,6 @@
 #include "base64.h"
 #include "u2f.h"
 #include "client.h"
-#include "x509.h"
 #include "asn1.h"
 #include "../../zkboo/src/proof.h"
 #include "../../zkboo/src/prover.h"
@@ -499,7 +498,7 @@ int Client::Initialize() {
     auth_ctr = 0;
     STOP_TIMER("total init");
 
-    if (mdctx) EVP_MD_CTX_free(mdctx);
+    if (mdctx) EVP_MD_CTX_destroy(mdctx);
     free(buf);
     EC_POINT_free(auth_pk);
     return 0;
@@ -586,6 +585,7 @@ cleanup:
   if (y) BN_free(y);
   if (ctx) BN_CTX_free(ctx);
   return cert_len + sig_len;
+    return OKAY;
 }
 
 int Client::StartSigning(BIGNUM *msg_hash, BIGNUM *sk, BIGNUM *val, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *d, BIGNUM *e, BIGNUM *auth_d, BIGNUM *auth_e, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha) {
@@ -764,7 +764,7 @@ void Client::ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthReque
   EC_POINT *pk = EC_POINT_new(Params_group(params));
   Params_exp(params, pk_client, sk);
   Params_mul(params, pk, pk_client, logPk);
-  if (!VerifySignature(pk, hash_bn, out, clientHints[auth_ctr].xcoord, params)) {
+  if (VerifySignature(pk, hash_bn, clientHints[auth_ctr].xcoord, out, params) != 0) {
     fprintf(stderr, "ERROR: signature fails\n");
   }
   EC_POINT_free(pk_client);
@@ -875,6 +875,7 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   CHECK_A (x_coord = BN_new());
   CHECK_A (mdctx = EVP_MD_CTX_create());
   CHECK_A (ctx = BN_CTX_new());
+  Params_rand_exponent(params, sk);
 
   /* Compute signed message: hash of appId, user presence, counter, and
    * challenge. */
@@ -948,6 +949,7 @@ cleanup:
   if (x_coord) BN_free(x_coord);
   if (ctx) BN_CTX_free(ctx);
   return rv == OKAY ? sig_len : ERROR;
+  return OKAY;
 }
 
 /* Authenticate at origin specified by app_id given a challenge from the origin

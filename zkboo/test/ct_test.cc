@@ -90,6 +90,6 @@ int main() {
     free(m);
     free(ct);
     free(hash_in);
-    EVP_MD_CTX_free(mdctx);
-    EVP_MD_CTX_free(mdctx2);
+    EVP_MD_CTX_destroy(mdctx);
+    EVP_MD_CTX_destroy(mdctx2);
 }
