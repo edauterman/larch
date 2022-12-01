@@ -17,8 +17,7 @@ using namespace std;
 class Token {
     public:
         uint8_t ct[SHA256_DIGEST_LENGTH];
-        uint8_t sig[MAX_ECDSA_SIG_SIZE];
-        uint8_t digest[SHA256_DIGEST_LENGTH];
+        uint8_t sig[64];
 
         Token(uint8_t *ct, uint8_t *sig, unsigned int sig_len);
 };

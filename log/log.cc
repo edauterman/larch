@@ -107,7 +107,7 @@ void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint3
     thread workers[NUM_ROUNDS];
     INIT_TIMER;
     if (!onlySigs) {
-        START_TIMER;
+        //START_TIMER;
         for (int i = 0; i < NUM_ROUNDS; i++) {
             workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, saveMap[sessionCtr]->digest, clientMap[id]->enc_key_comm, tokenMap[id][auth_ctr]->ct, &check[i]);
         }
@@ -115,10 +115,8 @@ void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint3
             workers[i].join();
             final_check = final_check && check[i];
         }
-        STOP_TIMER("proofs");
-        if (final_check) {
-            printf("VERIFIED\n");
-        } else {
+        //STOP_TIMER("proofs");
+        if (!final_check) {
             printf("PROOF FAILED TO VERIFY\n");
         }
         saveMap[sessionCtr]->proof_verified = final_check;
@@ -218,7 +216,9 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
     BN_bn2bin(e_log, e_out);
     *e_len = BN_num_bytes(e_log);
 
-    *sessionCtr = rand();
+    uint32_t tmp;
+    RAND_bytes((uint8_t *)&tmp, sizeof(uint32_t));
+    *sessionCtr = tmp;
     BN_mod_mul(check_d, alpha, d, Params_order(params), ctx);
     BN_mod_sub(check_d, auth_d_log, check_d, Params_order(params), ctx);
     uint8_t r_buf[16];
@@ -271,6 +271,12 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
 
 void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *check_d_buf_out, unsigned int *check_d_buf_len, uint8_t *check_d_open) {
 
+    if (saveMap.find(sessionCtr) == saveMap.end()) {
+        cout << "ERROR: unknown session counter " << sessionCtr << endl;
+        for (const auto &pair : saveMap ) {
+            cout << pair.first << endl;
+        }
+    }
     memcpy(saveMap[sessionCtr]->other_cm_check_d, cm_check_d, 32);
     *check_d_buf_len = BN_bn2bin(saveMap[sessionCtr]->check_d, check_d_buf_out);
     memcpy(check_d_open, saveMap[sessionCtr]->r, 16);
@@ -307,8 +313,8 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     } else {
         *final_out_len = 0;
     }
-    delete saveMap[sessionCtr];
-    saveMap.erase(sessionCtr);
+    //delete saveMap[sessionCtr];
+    //saveMap.erase(sessionCtr);
     
     if (check_d_client) BN_free(check_d_client);
     if (sum) BN_free(sum);

@@ -57,7 +57,7 @@ void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t **sig_o
   x_coord = BN_new();
   y_coord = BN_new();
   mdctx2 = EVP_MD_CTX_create();
-  ctx = BN_CTX_new();
+  ctx = Params_ctx(params);
   R = EC_POINT_new(Params_group(params));
 
   EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
@@ -89,7 +89,6 @@ void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t **sig_o
   BN_free(x_coord);
   BN_free(y_coord);
   EVP_MD_CTX_destroy(mdctx2);
-  BN_CTX_free(ctx);
   EC_POINT_free(R);
 }
 
@@ -120,7 +119,7 @@ bool VerifySignature(EC_POINT *pk, uint8_t *message_buf, int message_buf_len, ui
 bool VerifySignature(EC_POINT *pk, BIGNUM *m, BIGNUM *r, BIGNUM *s, Params params) {
     EC_POINT *test = EC_POINT_new(Params_group(params));
     EC_POINT *g_m = EC_POINT_new(Params_group(params));
-    BN_CTX *ctx = BN_CTX_new();
+    BN_CTX *ctx = Params_ctx(params);
     BIGNUM *x = BN_new();
     BIGNUM *y = BN_new();
     BIGNUM *s_inv = BN_mod_inverse(NULL, s, Params_order(params), ctx);
@@ -133,7 +132,6 @@ bool VerifySignature(EC_POINT *pk, BIGNUM *m, BIGNUM *r, BIGNUM *s, Params param
 
     EC_POINT_free(test);
     EC_POINT_free(g_m);
-    BN_CTX_free(ctx);
     BN_free(x);
     BN_free(y);
     BN_free(s_inv);
