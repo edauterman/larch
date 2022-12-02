@@ -86,14 +86,12 @@ void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_
     EC_POINT *hash_id = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_id, id, len);
     Params_rand_exponent(params, r);
-    EC_POINT *m = EC_POINT_new(Params_group(params));
     Params_exp_base(params, ct->C, X, r);
-    Params_mul(params, ct->C, ct->C, m);
+    Params_mul(params, ct->C, ct->C, hash_id);
     Params_exp(params, ct->R, r);
     // TODO OrProof and DDHProof
     
     EC_POINT_free(hash_id);
-    EC_POINT_free(m);
 }
 
 EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof) {
