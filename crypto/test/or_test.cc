@@ -7,7 +7,7 @@
 using namespace std;
 
 bool CorrectProof() {
-    int log_len = 4;
+    int log_len = 1;
     int len = 1 << log_len;
     int idx = 0;
     EC_POINT **cms = (EC_POINT **)malloc(len * sizeof(EC_POINT *));
