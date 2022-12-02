@@ -1,12 +1,47 @@
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 #include <openssl/sha.h>
+#include <vector>
 
 #include "params.h"
 #include "shamir.h"
 #include "or_groth.h"
+
+using namespace std;
         
 OrProof::OrProof(EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT**c_d, BIGNUM **f, BIGNUM **z_a, BIGNUM **z_b, BIGNUM *z_d, int len, int log_len) : c_l(c_l), c_a(c_a), c_b(c_b), c_d(c_d), f(f), z_a(z_a), z_b(z_b), z_d(z_d), len(len), log_len(log_len) {}
+
+vector<BIGNUM *> MultiplyTwoPolys(Params params, vector<BIGNUM *> long_poly, vector<BIGNUM *> deg1_poly) {
+    vector<BIGNUM *> result;
+    BIGNUM *tmp = BN_new();
+    printf("starting poly of size %d\n", long_poly.size() + 1);
+    for (int i = 0; i < long_poly.size() + 1; i++) {
+        result.push_back(BN_new());
+        BN_zero(result[i]);
+    }
+    for (int i = 0; i < long_poly.size(); i++) {
+        for (int j = 0; j < deg1_poly.size(); j++) {
+            BN_mod_mul(tmp, long_poly[i], deg1_poly[j], Params_order(params), Params_ctx(params));
+            BN_mod_add(result[i + j], result[i + j], tmp, Params_order(params), Params_ctx(params));
+        }
+    }
+    return result;
+}
+
+vector<BIGNUM *> MultiplyManyPolys(Params params, vector<vector<BIGNUM *>> in) {
+    vector<BIGNUM *> curr = in[0];
+    for (int i = 1; i < in.size(); i++) {
+        vector<BIGNUM *> res = MultiplyTwoPolys(params, curr, in[i]);
+        if (i != 1) {
+            for (int j = 0; j < curr.size(); j++) {
+                BN_free(curr[j]);
+            }
+        }
+        curr = res;
+    }
+    return curr;
+}
+
 
 void HashTranscript(Params params, int log_len, EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT **c_d, uint8_t *digest) {
     uint8_t *buf = (uint8_t *)malloc(33 * 4 * log_len);
@@ -32,6 +67,7 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
     EC_POINT **c_b = (EC_POINT **)malloc(sizeof(EC_POINT *) * log_len);
     EC_POINT **c_d = (EC_POINT **)malloc(sizeof(EC_POINT *) * log_len);
     BIGNUM *tmp = BN_new();
+    BIGNUM *tmp2 = BN_new();
     BIGNUM *zero = BN_new();
     EC_POINT *tmp_cm = EC_POINT_new(Params_group(params));
     EC_POINT *tmp_g = EC_POINT_new(Params_group(params));
@@ -84,25 +120,31 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
         Params_com(params, c_b[i], tmp, t[i]);
     }
 
-    ShamirShare **shares = (ShamirShare **)malloc(sizeof(ShamirShare *) * log_len);
     for (int i = 0; i < len; i++) {
         p[i] = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
+        vector<vector<BIGNUM *>> factored_poly;
         for (int j = 0; j < log_len; j++) {
-            p[i][j] = BN_new();
-        }
-        for (int j = 0; j < log_len; j++) {
-            shares[j] = ShamirShare_new();
-            BN_zero(shares[j]->y);
+            vector<BIGNUM *>factor;
+            BIGNUM *t1 = BN_new();
+            BIGNUM *t2 = BN_new();
             int i_j = (i & (1 << j)) >> j;
             if (i_j == 0) {
-                BN_mod_mul(shares[j]->x, a[j], l_inv[j], Params_order(params), Params_ctx(params));
+                BN_mod_sub(t1, zero, a[j], Params_order(params), Params_ctx(params));
+                BN_copy(t2, l_inv[j]);
             } else if (i_j == 1) {
-                BN_mod_mul(shares[j]->x, a[j], l[j], Params_order(params), Params_ctx(params));
+                BN_copy(t1, a[j]);
+                BN_copy(t2, l[j]);
             }
+            factor.push_back(t1);
+            factor.push_back(t2);
+            printf("t1=%s, t2=%s\n", BN_bn2hex(t1), BN_bn2hex(t2));
+            factored_poly.push_back(factor);
         }
-        getCoefficients(log_len, log_len, shares, Params_order(params), p[i], Params_ctx(params));
+        vector<BIGNUM *>out_poly = MultiplyManyPolys(params, factored_poly);
+        printf("out_poly size = %d, log_len = %d\n", out_poly.size(), log_len);
         for (int j = 0; j < log_len; j++) {
-            ShamirShare_free(shares[j]);
+            p[i][j] = out_poly[j];
+            printf("i=%d, j=%d -- %s\n", i, j, BN_bn2hex(p[i][j]));
         }
     }
 
@@ -147,6 +189,7 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
     BN_mod_sub(z_d, tmp, z_d, Params_order(params), Params_ctx(params));
 
     BN_free(tmp);
+    BN_free(tmp2);
     BN_free(zero);
     BN_free(x);
     BN_free(x_pow);
