@@ -26,6 +26,10 @@ add_executable(or_test or_test.cc ../src/or_groth.cc ../src/params.cc)
 target_link_libraries(or_test
     OpenSSL::SSL)
 
+add_executable(pw_test pw_test.cc ../src/pw.cc ../src/or_groth.cc ../src/params.cc)
+target_link_libraries(pw_test
+    OpenSSL::SSL)
+
 add_executable(sigs_test sigs_test.cc ../src/sigs.cc ../src/params.cc)
 target_link_libraries(sigs_test
     OpenSSL::SSL)

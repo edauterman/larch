@@ -290,8 +290,8 @@ Params_inv (const_Params p, EC_POINT *point, const EC_POINT *in) {
     BIGNUM *one = BN_new();
     BN_zero(zero);
     BN_one(one);
-    BN_mod_sub(neg_one, zero, one, Params_order(params), Params_ctx(params));
-    Params_base_exp(params, point, in, neg_one);
+    BN_mod_sub(neg_one, zero, one, p->order, p->ctx);
+    Params_exp_base(p, point, in, neg_one);
     BN_free(neg_one);
     BN_free(zero);
     BN_free(one);

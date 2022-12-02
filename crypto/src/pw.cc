@@ -1,11 +1,16 @@
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 #include <cmath>
+#include <vector>
 
 #include "params.h"
 #include "or_groth.h"
+#include "ddh_proof.h"
+#include "pw.h"
 
-EC_POINT **ComputeCms(Params params, vector<EC_POINT *bases_inv>, EC_POINT *C, int *log_len) {
+using namespace std;
+
+EC_POINT **ComputeCms(Params params, vector<EC_POINT *>bases_inv, EC_POINT *C, int *log_len) {
     *log_len = ceil(log2(bases_inv.size()));
     int len = 1 << *log_len;
     EC_POINT **res = (EC_POINT **)malloc(len * sizeof(EC_POINT *));
@@ -15,6 +20,11 @@ EC_POINT **ComputeCms(Params params, vector<EC_POINT *bases_inv>, EC_POINT *C, i
     for (int i = bases_inv.size(); i < len; i++) {
         Params_rand_point(params, res[i]);
     }
+}
+
+ElGamalCt::ElGamalCt(Params params) {
+    R = EC_POINT_new(Params_group(params));
+    C = EC_POINT_new(Params_group(params));
 }
 
 PasswordClient::PasswordClient() {
@@ -30,7 +40,7 @@ EC_POINT *PasswordClient::StartEnroll() {
     Params_rand_exponent(params, x);
     X = EC_POINT_new(Params_group(params));
     Params_exp(params, X, x);
-    return EC_POINT_dup(X);
+    return EC_POINT_dup(X, Params_group(params));
 }
 
 EC_POINT *PasswordLog::Enroll(EC_POINT *X_in) {
@@ -57,10 +67,11 @@ EC_POINT *PasswordClient::StartRegister(uint8_t *id, int len) {
 }
 
 EC_POINT *PasswordLog::Register(uint8_t *id, int len, EC_POINT *base_inv) {
-    bases.push_back(base);
+    bases_inv.push_back(base_inv);
     EC_POINT *hash_pt = EC_POINT_new(Params_group(params));
-    Params_hash_to_point(params, hash_id, id, len);
-    Params_base_exp(params, hash_pt, hash_pt, sk);
+    Params_hash_to_point(params, hash_pt, id, len);
+    Params_exp_base(params, hash_pt, hash_pt, sk);
+    return hash_pt;
 }
 
 void PasswordClient::FinishRegister(EC_POINT *in, EC_POINT *pw) {
@@ -76,7 +87,7 @@ void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_
     Params_hash_to_point(params, hash_id, id, len);
     Params_rand_exponent(params, r);
     EC_POINT *m = EC_POINT_new(Params_group(params));
-    Params_base_exp(params, ct->C, X, r);
+    Params_exp_base(params, ct->C, X, r);
     Params_mul(params, ct->C, ct->C, m);
     Params_exp(params, ct->R, r);
     // TODO OrProof and DDHProof
@@ -85,24 +96,32 @@ void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_
     EC_POINT_free(m);
 }
 
-void PasswordLog::Auth(EC_POINT *out, ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof) {
+EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof) {
     double precise_log = log2(bases_inv.size());
     int log_len;
     EC_POINT **cms = ComputeCms(params, bases_inv, ct->C, &log_len);
     int len = 1 << log_len;
     // Verify OrProof
     // Verify DDHProof
-    Params_base_exp(params, out, ct->C, sk);
+    EC_POINT *out = EC_POINT_new(Params_group(params));
+    // TODO free cms
+    Params_exp_base(params, out, ct->C, sk);
+    return out;
 }
 
-void PasswordClient::FinishAuth(int register_idx, EC_POINT *out, EC_POINT *in, BIGNUM *r) {
+EC_POINT *PasswordClient::FinishAuth(int register_idx, EC_POINT *in, BIGNUM *r) {
     EC_POINT *tmp = EC_POINT_new(Params_group(params));
     BIGNUM *neg_r = BN_new();
+    EC_POINT *out = EC_POINT_new(Params_group(params));
+    BIGNUM *zero = BN_new();
+    BN_zero(zero);
     BN_mod_sub(neg_r, zero, r, Params_order(params), Params_ctx(params));
-    Params_base_exp(params, tmp, recover_pt, neg_r);
+    Params_exp_base(params, tmp, recover_pt, neg_r);
     Params_mul(params, out, in, tmp);
-    Params_mul(params, out, client_shares[register_idx]);
+    Params_mul(params, out, out, client_shares[register_idx]);
 
     EC_POINT_free(tmp);
     BN_free(neg_r);
+    BN_free(zero);
+    return out;
 }
