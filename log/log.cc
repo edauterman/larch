@@ -35,7 +35,7 @@ using namespace emp;
 
 Token::Token(uint8_t *ct_in, uint8_t *sig_in, unsigned int sig_len) {
     memcpy(ct, ct_in, SHA256_DIGEST_LENGTH);
-    memset(sig, 0, MAX_ECDSA_SIG_SIZE);
+    memset(sig, 0, 64);
     memcpy(sig, sig_in, sig_len);
 }
 
@@ -232,7 +232,9 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
         uint8_t auth_input[48];
         memcpy(auth_input, iv_raw, 16);
         memcpy(auth_input + 16, ct, 32);
-        int ver = VerifySignature(clientMap[id]->auth_pk, auth_input, 48, auth_sig, params);
+        Params p = Params_new(P256);
+        int ver = VerifySignature(clientMap[id]->auth_pk, auth_input, 48, auth_sig, p);
+        Params_free(p);
         if (ver != 0) {
             cout << "verification FAILED" << endl;
             return;
