@@ -1,21 +1,18 @@
 #ifndef _DDH_PROOF_H_
 #define _DDH_PROOF_H_
 
-#include <openssl/evp.h>
 #include <openssl/bn.h>
 #include <openssl/ec.h>
-
 #include "params.h"
 
 class DDHProof {
     public:
-        DDHProof(int n);
-        BIGNUM **c;
-        BIGNUM **r;
-        int n;
+        BIGNUM *c;
+        BIGNUM *v;
+        DDHProof(BIGNUM *c_in, BIGNUM *v_in);
 };
 
-DDHProof *DDHProve(int n, int idx, BIGNUM *x, EC_POINT **g, EC_POINT **y, Params params);
-bool DDHVerify(DDHProof *proof, EC_POINT **g, EC_POINT **y, Params params);
+DDHProof *Prove(Params params, EC_POINT *base1, EC_POINT *base2, BIGNUM *x);
+bool Verify(Params params, DDHProof *proof, EC_POINT *base1, EC_POINT *base2, EC_POINT *S1, EC_POINT *S2);
 
 #endif
