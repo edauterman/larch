@@ -15,7 +15,6 @@ OrProof::OrProof(EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT**c_d, 
 vector<BIGNUM *> MultiplyTwoPolys(Params params, vector<BIGNUM *> long_poly, vector<BIGNUM *> deg1_poly) {
     vector<BIGNUM *> result;
     BIGNUM *tmp = BN_new();
-    printf("starting poly of size %d\n", long_poly.size() + 1);
     for (int i = 0; i < long_poly.size() + 1; i++) {
         result.push_back(BN_new());
         BN_zero(result[i]);
@@ -117,7 +116,6 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
         Params_rand_exponent(params, phi[i]);
 
         Params_com(params, c_l[i], l[i], r[i]);
-        printf("l[%d] = %s, r[%d] = %s, c_l[%d] = %s\n", i,BN_bn2hex(l[i]),i,BN_bn2hex(r[i]),i,EC_POINT_point2hex(Params_group(params),c_l[i],POINT_CONVERSION_COMPRESSED,Params_ctx(params)));
         Params_com(params, c_a[i], a[i], s[i]);
         BN_mod_mul(tmp, a[i], l[i], Params_order(params), Params_ctx(params));
         Params_com(params, c_b[i], tmp, t[i]);
@@ -140,32 +138,25 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
             }
             factor.push_back(t1);
             factor.push_back(t2);
-            printf("t1=%s, t2=%s\n", BN_bn2hex(t1), BN_bn2hex(t2));
             factored_poly.push_back(factor);
         }
         vector<BIGNUM *>out_poly = MultiplyManyPolys(params, factored_poly);
-        printf("out_poly size = %d, log_len = %d\n", out_poly.size(), log_len);
         for (int j = 0; j < log_len; j++) {
             p[i][j] = out_poly[j];
-            printf("i=%d, j=%d -- %s\n", i, j, BN_bn2hex(p[i][j]));
         }
     }
 
     for (int i = 0; i < log_len; i++) {
         Params_com(params, c_d[i], zero, phi[i]);
-        printf("h^phi: %s\n", EC_POINT_point2hex(Params_group(params), c_d[i], POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
         for (int j = 0; j < len; j++) {
             Params_exp_base(params, tmp_g, cms[j], p[j][i]);
-            printf("c^p: %s\n", EC_POINT_point2hex(Params_group(params), tmp_g, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
             Params_mul(params, c_d[i], c_d[i], tmp_g);
         }
-        printf("c_d: %s\n", EC_POINT_point2hex(Params_group(params), c_d[i], POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
     }
 
     HashTranscript(params, log_len, c_l, c_a, c_b, c_d, digest);
     BN_bin2bn(digest, 32, x);
     BN_mod(x, x, Params_order(params), Params_ctx(params));
-    printf("x = %s\n", BN_bn2hex(x));
 
     BN_zero(z_d);
     BN_one(x_pow);
@@ -194,25 +185,6 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
 
     BN_mod_mul(tmp, open, x_pow, Params_order(params), Params_ctx(params));
     BN_mod_sub(z_d, tmp, z_d, Params_order(params), Params_ctx(params));
-
-
-    // JUST TESTING
-
-    BIGNUM *one = BN_new();
-    BN_one(one);
-    BN_mod_sub(tmp, x, a[0], Params_order(params), Params_ctx(params));
-    Params_exp_base2(params, tmp_g, cms[0], tmp, cms[1], a[0]);
-    printf("1st term should be: %s\n", EC_POINT_point2hex(Params_group(params), tmp_g, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
-    BN_mod_sub(tmp, zero, a[0], Params_order(params), Params_ctx(params));
-    Params_exp_base2(params, tmp_g, cms[0], tmp, cms[1], a[0]);
-    Params_exp_base_h(params, tmp_cm, phi[0]);
-    Params_mul(params, tmp_g, tmp_g, tmp_cm);
-    BN_mod_sub(tmp, zero, one, Params_order(params), Params_ctx(params));
-    Params_exp_base(params, tmp_g, tmp_g, tmp);
-    printf("2nd term should be: %s\n", EC_POINT_point2hex(Params_group(params), tmp_g, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
-    Params_exp_base(params, tmp_g, c_d[0], tmp);
-    printf("c_d^-1: %s\n", EC_POINT_point2hex(Params_group(params), tmp_g, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
- 
 
     BN_free(tmp);
     BN_free(tmp2);
@@ -255,7 +227,6 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
     HashTranscript(params, log_len, proof->c_l, proof->c_a, proof->c_b, proof->c_d, digest);
     BN_bin2bn(digest, 32, x);
     BN_mod(x, x, Params_order(params), Params_ctx(params));
-    printf("x = %s\n", BN_bn2hex(x));
 
     EC_POINT *check1 = EC_POINT_new(Params_group(params));
     EC_POINT *check2 = EC_POINT_new(Params_group(params));
@@ -295,13 +266,10 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         for (int j = 0; j < log_len; j++) {
             int bit = (i & (1 << j)) >> j;
             if (bit == 1) {
-                printf("in first case (WRONG)\n");
                 BN_mod_mul(prod, prod, proof->f[j], Params_order(params), Params_ctx(params));
             } else {
-                printf("in second case (right)\n");
                 BN_mod_sub(tmp, x, proof->f[j], Params_order(params), Params_ctx(params));
                 BN_mod_mul(prod, prod, tmp, Params_order(params), Params_ctx(params));
-                printf("prod = %s\n", BN_bn2hex(prod));
             }
         }
         Params_exp_base(params, tmp_g, cms[i], prod);
@@ -317,7 +285,6 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
     for (int i = 0; i < log_len; i++) {
         BN_mod_sub(x_pow_sub, zero, x_pow, Params_order(params), Params_ctx(params));
         Params_exp_base(params, tmp_g, proof->c_d[i], x_pow_sub);
-        printf("c_d^-1: %s\n", EC_POINT_point2hex(Params_group(params), tmp_g, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
         if (i > 0) {
             Params_mul(params, term2, term2, tmp_g);
         } else {
@@ -325,14 +292,9 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         }
         BN_mod_mul(x_pow, x_pow, x, Params_order(params), Params_ctx(params));
     }
-    printf("2nd part of 1st term actually is: %s\n", EC_POINT_point2hex(Params_group(params), term2, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
-    printf("1st part of 1st term actually is: %s\n", EC_POINT_point2hex(Params_group(params), term1, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
     Params_mul(params, check1, term1, term2);
     Params_com(params, check2, zero, proof->z_d);
     if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
-        printf("Last check failed\n");
-        printf("%s\n", EC_POINT_point2hex(Params_group(params), check1, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
-        printf("%s\n", EC_POINT_point2hex(Params_group(params), check2, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
         return false;
     }
 
