@@ -23,4 +23,6 @@ int Shamir_FindValidShares(int t, int n, ShamirShare **sharesIn, ShamirShare **s
 void Shamir_MarshalCompressed(uint8_t *buf, ShamirShare *share);
 void Shamir_UnmarshalCompressed(uint8_t *buf, uint8_t x, ShamirShare *share);
 void Shamir_UnmarshalX(ShamirShare *share, uint8_t x);
+
+int getCoefficients(int t, int n, ShamirShare **shares, const BIGNUM *prime, BIGNUM **cfs, BN_CTX *ctx);
 #endif

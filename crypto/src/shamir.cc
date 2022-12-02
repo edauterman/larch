@@ -83,7 +83,7 @@ cleanup:
     return rv;
 }
 
-int getCoefficients(int t, int n, ShamirShare **shares, BIGNUM *prime, BIGNUM **cfs, BN_CTX *ctx) {
+int getCoefficients(int t, int n, ShamirShare **shares, const BIGNUM *prime, BIGNUM **cfs, BN_CTX *ctx) {
     int rv;
     BIGNUM *denominator = NULL;
     BIGNUM *denominatorInverse = NULL;
