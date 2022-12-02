@@ -252,6 +252,12 @@ cleanup:
 }
 
 int
+Params_com(const_Params p, EC_POINT *point,
+        const BIGNUM *e1, const BIGNUM *e2) {
+    return Params_exp_base2(p, point, Params_g(p), e1, Params_h(p), e2);
+}
+
+int
 Params_exp_base_g (const_Params p, EC_POINT *point,
     const BIGNUM *exp) {
   return Params_exp (p, point, exp);

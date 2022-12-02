@@ -21,7 +21,7 @@ void makeReqs(Client *c, int *auths, std::chrono::high_resolution_clock::time_po
     uint32_t ctr;
     uint8_t sig_out[MAX_ECDSA_SIG_SIZE];
     uint8_t cert_sig[MAX_KH_SIZE + MAX_CERT_SIZE + MAX_ECDSA_SIG_SIZE];
-    fprintf(stderr, "det2f: starting initialize\n");
+    fprintf(stderr, "Starting authentications\n");
     //auto start = std::chrono::high_resolution_clock::now();
     //while (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count() < 60) {
     while(true) {
@@ -65,7 +65,7 @@ int experiment(int num_workers) {
 }
 
 int main(int argc, char *argv[]) {
-    int workers = 30;
+    int workers = 35;
     int maxAuths = 0;
     while (true) {
         int auths = experiment(workers);

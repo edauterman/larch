@@ -73,7 +73,7 @@ class Client {
         sem_t session_sema;
         uint32_t session_ctr;
 
-        const int NUM_AUTHS = 100;
+        const int NUM_AUTHS = 1000;
 
         void Preprocess(vector<Hint> &logHints, uint8_t *seed);
         void GetPreprocessValueSet(EVP_CIPHER_CTX *ctx, BN_CTX *bn_ctx, uint64_t i, BIGNUM *r, BIGNUM *auth_r, BIGNUM *a, BIGNUM *b, BIGNUM *c, BIGNUM *f, BIGNUM *g, BIGNUM *h, BIGNUM *alpha);

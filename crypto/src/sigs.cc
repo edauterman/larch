@@ -44,6 +44,7 @@ void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t **sig_o
   BIGNUM *out = NULL;
   BIGNUM *r, *r_inv, *x_coord, *y_coord, *val, *hash_bn;
   EC_POINT *R;
+  EC_POINT *pk;
   EVP_MD_CTX *mdctx2;
   uint8_t message[SHA256_DIGEST_LENGTH];
   BN_CTX *ctx;
@@ -59,6 +60,7 @@ void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t **sig_o
   mdctx2 = EVP_MD_CTX_create();
   ctx = Params_ctx(params);
   R = EC_POINT_new(Params_group(params));
+  pk = EC_POINT_new(Params_group(params));
 
   EVP_DigestInit_ex(mdctx2, EVP_sha256(), NULL);
   EVP_DigestUpdate(mdctx2, message_buf, message_buf_len);
@@ -79,7 +81,13 @@ void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t **sig_o
   *sig_out = (uint8_t *)malloc(*sig_len);
   memset(*sig_out, 0, 64);
   BN_bn2bin(x_coord, *sig_out + 32 - BN_num_bytes(x_coord)); 
-  BN_bn2bin(out, *sig_out + 64 - BN_num_bytes(out)); 
+  BN_bn2bin(out, *sig_out + 64 - BN_num_bytes(out));
+
+  // Check verifies
+  Params_exp(params, pk, sk);
+  if (VerifySignature(pk, message_buf, message_buf_len, *sig_out, params) != 0) {
+    printf("ERROR: produced signature that didn't verify\n");
+  }
 
   BN_free(out);
   BN_free(hash_bn);
