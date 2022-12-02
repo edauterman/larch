@@ -190,6 +190,8 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
     EC_POINT *check1 = EC_POINT_new(Params_group(params));
     EC_POINT *check2 = EC_POINT_new(Params_group(params));
     BIGNUM *tmp = BN_new();
+    BIGNUM *zero = BN_new();
+    BN_zero(zero);
     BIGNUM *x_pow = BN_new();
     BIGNUM *x_pow_inv = BN_new();
     BIGNUM *prod = BN_new();
@@ -203,6 +205,7 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         Params_mul(params, check1, check1, proof->c_a[i]);
         Params_com(params, check2, proof->f[i], proof->z_a[i]);
         if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
+            printf("First check failed, %d\n", i);
             return false;
         }
 
@@ -210,8 +213,9 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         BN_mod_sub(tmp, x, proof->f[i], Params_order(params), Params_ctx(params));
         Params_exp_base(params, check1, proof->c_l[i], tmp);
         Params_mul(params, check1, check1, proof->c_b[i]);
-        Params_exp_base_h(params, check2, proof->z_b[i]);
+        Params_com(params, check2, zero, proof->z_b[i]);
         if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
+            printf("Second check failed, %d\n", i);
             return false;
         }
     }
@@ -241,8 +245,9 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         BN_mod_mul(x_pow, x_pow, x, Params_order(params), Params_ctx(params));
     }
     Params_mul(params, check1, term1, term2);
-    Params_exp_base_h(params, check2, proof->z_d);
+    Params_com(params, check2, zero, proof->z_d);
     if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
+        printf("Last check failed\n");
         return false;
     }
 
