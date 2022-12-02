@@ -27,8 +27,9 @@ DDHProof *Prove(Params params, EC_POINT *base1, EC_POINT *base2, BIGNUM *x) {
     EC_POINT *R1 = EC_POINT_new(Params_group(params));
     EC_POINT *R2 = EC_POINT_new(Params_group(params));
     Params_exp_base(params, R1, base1, r);
-    Params_exp_base(params, R2, base1, r);
+    Params_exp_base(params, R2, base2, r);
     BIGNUM *c = HashTranscript(params, base1, base2, R1, R2);
+    printf("c = %s\n", BN_bn2hex(c));
     BIGNUM *v = BN_new();
     BN_mod_mul(v, c, x, Params_order(params), Params_ctx(params));
     BN_mod_sub(v, r, v, Params_order(params), Params_ctx(params));
@@ -44,6 +45,7 @@ bool Verify(Params params, DDHProof *proof, EC_POINT *base1, EC_POINT *base2, EC
     Params_exp_base2(params, R1, base1, proof->v, S1, proof->c);
     Params_exp_base2(params, R2, base2, proof->v, S2, proof->c);
     BIGNUM *c_test = HashTranscript(params, base1, base2, R1, R2);
+    printf("c = %s\n", BN_bn2hex(c_test));
     bool res = !BN_cmp(proof->c, c_test);
     EC_POINT_free(R1);
     EC_POINT_free(R2);
