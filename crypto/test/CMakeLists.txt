@@ -22,7 +22,7 @@ add_executable(ddh_test ddh_test.cc ../src/ddh_proof.cc ../src/params.cc)
 target_link_libraries(ddh_test
     OpenSSL::SSL)
 
-add_executable(or_test or_test.cc ../src/or_groth.cc ../src/shamir.cc ../src/params.cc)
+add_executable(or_test or_test.cc ../src/or_groth.cc ../src/params.cc)
 target_link_libraries(or_test
     OpenSSL::SSL)
 

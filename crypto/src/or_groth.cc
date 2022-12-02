@@ -5,7 +5,6 @@
 #include <string.h>
 
 #include "params.h"
-#include "shamir.h"
 #include "or_groth.h"
 
 using namespace std;

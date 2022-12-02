@@ -283,6 +283,21 @@ Params_exp (const_Params p, EC_POINT *point, const BIGNUM *exp)
   return EC_POINT_mul (p->group, point, exp, NULL, NULL, p->ctx); 
 }
 
+int
+Params_inv (const_Params p, EC_POINT *point, const EC_POINT *in) {
+    BIGNUM *neg_one = BN_new();
+    BIGNUM *zero = BN_new();
+    BIGNUM *one = BN_new();
+    BN_zero(zero);
+    BN_one(one);
+    BN_mod_sub(neg_one, zero, one, Params_order(params), Params_ctx(params));
+    Params_base_exp(params, point, in, neg_one);
+    BN_free(neg_one);
+    BN_free(zero);
+    BN_free(one);
+    return OKAY;
+}
+
 /*
  * Use SHA-256 to hash the string in `bytes_in`
  * with the integer given in `counter`.
