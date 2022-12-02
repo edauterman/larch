@@ -2,6 +2,7 @@
 #include <openssl/ec.h>
 #include <openssl/sha.h>
 #include <vector>
+#include <string.h>
 
 #include "params.h"
 #include "shamir.h"
@@ -46,6 +47,7 @@ vector<BIGNUM *> MultiplyManyPolys(Params params, vector<vector<BIGNUM *>> in) {
 void HashTranscript(Params params, int log_len, EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT **c_d, uint8_t *digest) {
     uint8_t *buf = (uint8_t *)malloc(33 * 4 * log_len);
     int offset = 33 * 4;
+    memset(buf, 0, offset * log_len);
     for (int i = 0; i < log_len; i++) {
         EC_POINT_point2oct(Params_group(params), c_l[i], POINT_CONVERSION_COMPRESSED, buf + (offset * i), 33, Params_ctx(params));
         EC_POINT_point2oct(Params_group(params), c_a[i], POINT_CONVERSION_COMPRESSED, buf + (offset * i) + 33, 33, Params_ctx(params));
@@ -115,6 +117,7 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
         Params_rand_exponent(params, phi[i]);
 
         Params_com(params, c_l[i], l[i], r[i]);
+        printf("l[%d] = %s, r[%d] = %s, c_l[%d] = %s\n", i,BN_bn2hex(l[i]),i,BN_bn2hex(r[i]),i,EC_POINT_point2hex(Params_group(params),c_l[i],POINT_CONVERSION_COMPRESSED,Params_ctx(params)));
         Params_com(params, c_a[i], a[i], s[i]);
         BN_mod_mul(tmp, a[i], l[i], Params_order(params), Params_ctx(params));
         Params_com(params, c_b[i], tmp, t[i]);
@@ -159,6 +162,7 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
     HashTranscript(params, log_len, c_l, c_a, c_b, c_d, digest);
     BN_bin2bn(digest, 32, x);
     BN_mod(x, x, Params_order(params), Params_ctx(params));
+    printf("x = %s\n", BN_bn2hex(x));
 
     BN_zero(z_d);
     BN_one(x_pow);
@@ -229,6 +233,7 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
     HashTranscript(params, log_len, proof->c_l, proof->c_a, proof->c_b, proof->c_d, digest);
     BN_bin2bn(digest, 32, x);
     BN_mod(x, x, Params_order(params), Params_ctx(params));
+    printf("x = %s\n", BN_bn2hex(x));
 
     EC_POINT *check1 = EC_POINT_new(Params_group(params));
     EC_POINT *check2 = EC_POINT_new(Params_group(params));
@@ -291,6 +296,8 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
     Params_com(params, check2, zero, proof->z_d);
     if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
         printf("Last check failed\n");
+        printf("%s\n", EC_POINT_point2hex(Params_group(params), check1, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
+        printf("%s\n", EC_POINT_point2hex(Params_group(params), check2, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
         return false;
     }
 

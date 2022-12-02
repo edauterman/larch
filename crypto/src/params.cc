@@ -243,7 +243,7 @@ Params_exp_base2 (const_Params p, EC_POINT *point,
   int rv;
   EC_POINT *tmp = EC_POINT_new(p->group);
   CHECK_C (EC_POINT_mul(p->group, tmp, NULL, base1, e1, p->ctx));
-  CHECK_C (EC_POINT_mul(p->group, point, NULL, base1, e1, p->ctx));
+  CHECK_C (EC_POINT_mul(p->group, point, NULL, base2, e2, p->ctx));
   CHECK_C (EC_POINT_add(p->group, point, point, tmp, p->ctx));
 
 cleanup:
@@ -254,7 +254,7 @@ cleanup:
 int
 Params_com(const_Params p, EC_POINT *point,
         const BIGNUM *e1, const BIGNUM *e2) {
-    return Params_exp_base2(p, point, Params_g(p), e1, Params_h(p), e2);
+    return Params_exp_base2(p, point, p->g, e1, p->h, e2);
 }
 
 int
