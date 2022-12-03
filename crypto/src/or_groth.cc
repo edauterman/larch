@@ -56,7 +56,7 @@ void HashTranscript(Params params, int log_len, EC_POINT **c_l, EC_POINT **c_a, 
     free(buf);
 }
 
-OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open) {
+OrProof *Prove(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open) {
     BIGNUM **r = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
     BIGNUM **a = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
     BIGNUM **s = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
@@ -114,10 +114,10 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
         Params_rand_exponent(params, t[i]);
         Params_rand_exponent(params, phi[i]);
 
-        Params_com(params, c_l[i], l[i], r[i]);
-        Params_com(params, c_a[i], a[i], s[i]);
+        Params_com(params, h, c_l[i], l[i], r[i]);
+        Params_com(params, h, c_a[i], a[i], s[i]);
         BN_mod_mul(tmp, a[i], l[i], Params_order(params), Params_ctx(params));
-        Params_com(params, c_b[i], tmp, t[i]);
+        Params_com(params, h, c_b[i], tmp, t[i]);
     }
 
     for (int i = 0; i < len; i++) {
@@ -146,7 +146,7 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
     }
 
     for (int i = 0; i < log_len; i++) {
-        Params_com(params, c_d[i], zero, phi[i]);
+        Params_com(params, h, c_d[i], zero, phi[i]);
         for (int j = 0; j < len; j++) {
             Params_exp_base(params, tmp_g, cms[j], p[j][i]);
             Params_mul(params, c_d[i], c_d[i], tmp_g);
@@ -220,7 +220,7 @@ OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIG
     return new OrProof(c_l, c_a, c_b, c_d, f, z_a, z_b, z_d, len, log_len);
 }
 
-bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len) {
+bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len, int log_len) {
     uint8_t digest[SHA256_DIGEST_LENGTH];
     BIGNUM *x = BN_new();
     HashTranscript(params, log_len, proof->c_l, proof->c_a, proof->c_b, proof->c_d, digest);
@@ -243,7 +243,7 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         // c_l[i]^x . c_a[i] ?= Commit(f[i], z_a[i])
         Params_exp_base(params, check1, proof->c_l[i], x);
         Params_mul(params, check1, check1, proof->c_a[i]);
-        Params_com(params, check2, proof->f[i], proof->z_a[i]);
+        Params_com(params, h, check2, proof->f[i], proof->z_a[i]);
         if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
             printf("First check failed, %d\n", i);
             return false;
@@ -253,7 +253,7 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         BN_mod_sub(tmp, x, proof->f[i], Params_order(params), Params_ctx(params));
         Params_exp_base(params, check1, proof->c_l[i], tmp);
         Params_mul(params, check1, check1, proof->c_b[i]);
-        Params_com(params, check2, zero, proof->z_b[i]);
+        Params_com(params, h, check2, zero, proof->z_b[i]);
         if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
             printf("Second check failed, %d\n", i);
             return false;
@@ -292,10 +292,11 @@ bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len)
         BN_mod_mul(x_pow, x_pow, x, Params_order(params), Params_ctx(params));
     }
     Params_mul(params, check1, term1, term2);
-    Params_com(params, check2, zero, proof->z_d);
+    Params_com(params, h, check2, zero, proof->z_d);
     if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
         return false;
     }
+
 
     // TODO return false should exit to cleanup first
     EC_POINT_free(check1);

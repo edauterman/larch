@@ -25,7 +25,7 @@ class PasswordClient {
         void FinishEnroll(EC_POINT *recover_pt_in);
         EC_POINT *StartRegister(uint8_t *id, int len);
         void FinishRegister(EC_POINT *in, EC_POINT *pw);
-        void StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof, BIGNUM *r);
+        void StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r, BIGNUM *r);
         EC_POINT *FinishAuth(int register_idx, EC_POINT *in, BIGNUM *r);
 
     private:
@@ -42,7 +42,7 @@ class PasswordLog {
         PasswordLog();
         EC_POINT *Enroll(EC_POINT *X_in);
         EC_POINT *Register(uint8_t *id, int len, EC_POINT *base);
-        EC_POINT *Auth(ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof);
+        EC_POINT *Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r);
 
     private:
         Params params;

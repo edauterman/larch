@@ -21,7 +21,7 @@ class OrProof {
         int log_len;
 };
 
-bool Verify(Params params, OrProof *proof, EC_POINT **cms, int len, int log_len);
-OrProof *Prove(Params params, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open);
+bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len, int log_len);
+OrProof *Prove(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open);
 
 #endif

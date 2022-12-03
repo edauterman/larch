@@ -69,7 +69,7 @@ int Params_exp_base_g (const_Params p, EC_POINT *point,
     const BIGNUM *exp);
 int Params_exp_base_h (const_Params p, EC_POINT *point,
     const BIGNUM *exp);
-int Params_com(const_Params p, EC_POINT *point,
+int Params_com(const_Params p, EC_POINT *h, EC_POINT *point,
         const BIGNUM *e1, const BIGNUM *e2);
 int Params_inv (const_Params p, EC_POINT *point, const EC_POINT *in);
 

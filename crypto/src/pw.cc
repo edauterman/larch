@@ -82,7 +82,7 @@ void PasswordClient::FinishRegister(EC_POINT *in, EC_POINT *pw) {
     client_shares.push_back(client_share); 
 }
 
-void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof, BIGNUM *r) {
+void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r, BIGNUM *r) {
     EC_POINT *hash_id = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_id, id, len);
     Params_rand_exponent(params, r);
@@ -94,11 +94,12 @@ void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_
     EC_POINT_free(hash_id);
 }
 
-EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof, DDHProof *ddh_proof) {
+EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r) {
     double precise_log = log2(bases_inv.size());
     int log_len;
     EC_POINT **cms = ComputeCms(params, bases_inv, ct->C, &log_len);
     int len = 1 << log_len;
+
     // Verify OrProof
     // Verify DDHProof
     EC_POINT *out = EC_POINT_new(Params_group(params));
