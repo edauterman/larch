@@ -18,6 +18,8 @@ bool CorrectAuth() {
     Params_rand_point(params, pw);
     ElGamalCt *ct = new ElGamalCt(params);
     BIGNUM *r = BN_new();
+    OrProof *or_proof_r;
+    OrProof *or_proof_x;
     
     EC_POINT *X = c.StartEnroll();
     EC_POINT *recover_pt = l.Enroll(X);
@@ -27,8 +29,8 @@ bool CorrectAuth() {
     EC_POINT *out = l.Register(id, len, base_inv);
     c.FinishRegister(out, pw);
 
-    c.StartAuth(id, len, ct, NULL, NULL, r);
-    EC_POINT *out2 = l.Auth(ct, NULL, NULL);
+    c.StartAuth(0, id, len, ct, &or_proof_x, &or_proof_r, r);
+    EC_POINT *out2 = l.Auth(ct, or_proof_x, or_proof_r);
     EC_POINT *ret_pw = c.FinishAuth(0, out2, r);
 
     int res = EC_POINT_cmp(Params_group(params), pw, ret_pw, Params_ctx(params));

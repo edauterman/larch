@@ -294,6 +294,9 @@ bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len,
     Params_mul(params, check1, term1, term2);
     Params_com(params, h, check2, zero, proof->z_d);
     if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
+        printf("Last check failed :(\n");
+        printf("check1 = %s\n", EC_POINT_point2hex(Params_group(params), check1, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
+        printf("check2 = %s\n", EC_POINT_point2hex(Params_group(params), check2, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
         return false;
     }
 

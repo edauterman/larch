@@ -12,14 +12,21 @@ using namespace std;
 
 EC_POINT **ComputeCms(Params params, vector<EC_POINT *>bases_inv, EC_POINT *C, int *log_len) {
     *log_len = ceil(log2(bases_inv.size()));
+    if (*log_len == 0) {
+        *log_len = 1;
+    }
     int len = 1 << *log_len;
     EC_POINT **res = (EC_POINT **)malloc(len * sizeof(EC_POINT *));
     for (int i = 0; i < bases_inv.size(); i++) {
+        res[i] = EC_POINT_new(Params_group(params));
         Params_mul(params, res[i], bases_inv[i], C);
     }
     for (int i = bases_inv.size(); i < len; i++) {
-        Params_rand_point(params, res[i]);
+        res[i] = EC_POINT_new(Params_group(params));
+        uint32_t i_buf = i;
+        Params_hash_to_point(params, res[i], (uint8_t *)&i_buf, sizeof(uint32_t));
     }
+    return res;
 }
 
 ElGamalCt::ElGamalCt(Params params) {
@@ -82,29 +89,46 @@ void PasswordClient::FinishRegister(EC_POINT *in, EC_POINT *pw) {
     client_shares.push_back(client_share); 
 }
 
-void PasswordClient::StartAuth(uint8_t *id, int len, ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r, BIGNUM *r) {
+void PasswordClient::StartAuth(int register_idx, uint8_t *id, int len, ElGamalCt *ct, OrProof **or_proof_x, OrProof **or_proof_r, BIGNUM *r) {
     EC_POINT *hash_id = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_id, id, len);
     Params_rand_exponent(params, r);
     Params_exp_base(params, ct->C, X, r);
     Params_mul(params, ct->C, ct->C, hash_id);
     Params_exp(params, ct->R, r);
-    // TODO OrProof and DDHProof
     
+    int log_len;
+    EC_POINT **cms = ComputeCms(params, bases_inv, ct->C, &log_len);
+    *or_proof_x = Prove(params, X, cms, register_idx, 1 << log_len, log_len, r);
+    *or_proof_r = Prove(params, ct->R, cms, register_idx, 1 << log_len, log_len, x);
+   
+    for (int i = 0; i < (1 << log_len); i++) {
+        EC_POINT_free(cms[i]);
+    }
+    free(cms);
     EC_POINT_free(hash_id);
 }
 
 EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r) {
-    double precise_log = log2(bases_inv.size());
     int log_len;
     EC_POINT **cms = ComputeCms(params, bases_inv, ct->C, &log_len);
-    int len = 1 << log_len;
-
-    // Verify OrProof
-    // Verify DDHProof
+    bool res_x = Verify(params, X, or_proof_x, cms, 1 << log_len, log_len);
+    if (!res_x) {
+        printf("Proof x failed to verify\n");
+        return NULL;
+    }
+    bool res_r = Verify(params, ct->R, or_proof_r, cms, 1 << log_len, log_len);
+    if (!res_r) {
+        printf("Proof r failed to verify.\n");
+        return NULL;
+    }
     EC_POINT *out = EC_POINT_new(Params_group(params));
-    // TODO free cms
     Params_exp_base(params, out, ct->C, sk);
+    for (int i = 0; i < (1 << log_len); i++) {
+        EC_POINT_free(cms[i]);
+    }
+    free(cms);
+ 
     return out;
 }
 

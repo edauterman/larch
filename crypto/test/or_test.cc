@@ -7,14 +7,16 @@
 using namespace std;
 
 bool CorrectProof() {
-    int log_len = 4;
+    int log_len = 2;
     int len = 1 << log_len;
     int idx = 0;
     EC_POINT **cms = (EC_POINT **)malloc(len * sizeof(EC_POINT *));
     BIGNUM *x = BN_new();
     BIGNUM *open = BN_new();
     Params params = Params_new(P256);
-    EC_POINT *h = EC_POINT_dup(Params_h(params), Params_group(params));
+    //EC_POINT *h = EC_POINT_dup(Params_h(params), Params_group(params));
+    EC_POINT *h = EC_POINT_new(Params_group(params));
+    Params_rand_point(params, h);
     for (int i = 0; i < len; i++) {
         cms[i] = EC_POINT_new(params->group);
         if (i == idx) {
