@@ -9,11 +9,13 @@
 
 using namespace std;
         
+OrProof::OrProof() {}
+
 OrProof::OrProof(EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT**c_d, BIGNUM **f, BIGNUM **z_a, BIGNUM **z_b, BIGNUM *z_d, int len, int log_len) : c_l(c_l), c_a(c_a), c_b(c_b), c_d(c_d), f(f), z_a(z_a), z_b(z_b), z_d(z_d), len(len), log_len(log_len) {}
 
-void OrProof::Serialize(Params params, uint8_t **buf, int *len) {
-    *len = (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + sizeof(uint32_t);
-    *buf = (uint8_t *)malloc(*len);
+void OrProof::Serialize(Params params, uint8_t **buf, int *len_in) {
+    *len_in = (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + sizeof(uint32_t);
+    *buf = (uint8_t *)malloc(*len_in);
     int offset = 0;
     uint32_t log_len_32 = log_len;
     memcpy(*buf, (uint8_t *)&log_len_32, sizeof(uint32_t));
@@ -43,22 +45,37 @@ void OrProof::Deserialize(Params params, uint8_t *buf) {
     log_len = log_len_read;
     len = 1 << log_len;
     int offset = sizeof(uint32_t);
+    c_l = (EC_POINT **)malloc(log_len * sizeof(EC_POINT *));
+    c_a = (EC_POINT **)malloc(log_len * sizeof(EC_POINT *));
+    c_b = (EC_POINT **)malloc(log_len * sizeof(EC_POINT *));
+    c_d = (EC_POINT **)malloc(log_len * sizeof(EC_POINT *));
+    f = (BIGNUM **)malloc(log_len * sizeof(BIGNUM *));
+    z_a = (BIGNUM **)malloc(log_len * sizeof(BIGNUM *));
+    z_b = (BIGNUM **)malloc(log_len * sizeof(BIGNUM *));
     for (int i = 0; i < log_len; i++) {
+        c_l[i] = EC_POINT_new(Params_group(params));
         EC_POINT_oct2point(Params_group(params), c_l[i], buf + offset, 33, Params_ctx(params));
         offset += 33;
+        c_a[i] = EC_POINT_new(Params_group(params));
         EC_POINT_oct2point(Params_group(params), c_a[i], buf + offset, 33, Params_ctx(params));
         offset += 33;
+        c_b[i] = EC_POINT_new(Params_group(params));
         EC_POINT_oct2point(Params_group(params), c_b[i], buf + offset, 33, Params_ctx(params));
         offset += 33;
+        c_d[i] = EC_POINT_new(Params_group(params));
         EC_POINT_oct2point(Params_group(params), c_d[i], buf + offset, 33, Params_ctx(params));
         offset += 33;
+        f[i] = BN_new();
         BN_bin2bn(buf + offset, 32, f[i]);
         offset += 32;
+        z_a[i] = BN_new();
         BN_bin2bn(buf + offset, 32, z_a[i]);
         offset += 32;
+        z_b[i] = BN_new();
         BN_bin2bn(buf + offset, 32, z_b[i]);
         offset += 32;
     }
+    z_d = BN_new();
     BN_bin2bn(buf + offset, 32, z_d);
 }
 
