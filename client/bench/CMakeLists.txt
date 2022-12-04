@@ -142,3 +142,11 @@ target_link_libraries(pw_auth_test
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(pw_latency_bench pw_latency_bench.cc)
+target_link_libraries(pw_latency_bench
+    PwClient
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})

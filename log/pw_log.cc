@@ -31,7 +31,7 @@ class LogServiceImpl final : public Log::Service {
             EC_POINT *recover_pt = l->Enroll(X);
 
             uint8_t recover_pt_buf[33];
-    EC_POINT_point2oct(Params_group(params), recover_pt, POINT_CONVERSION_COMPRESSED, recover_pt_buf, 33, Params_ctx(params));
+            EC_POINT_point2oct(Params_group(params), recover_pt, POINT_CONVERSION_COMPRESSED, recover_pt_buf, 33, Params_ctx(params));
             resp->set_recover_pt(recover_pt_buf, 33);
             return Status::OK;
         }
@@ -55,6 +55,7 @@ class LogServiceImpl final : public Log::Service {
 
             EC_POINT *out = l->Auth(ct, or_proof_x, or_proof_r);
             uint8_t out_buf[33];
+            EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
             resp->set_out(out_buf, 33);
  
             return Status::OK;

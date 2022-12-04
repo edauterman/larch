@@ -79,7 +79,7 @@ EC_POINT *PwClient::Authenticate(string id) {
     uint8_t *or_proof_r_buf;
     int len_r;
     or_proof_r->Serialize(c->params, &or_proof_r_buf, &len_r);
-    req.set_or_proof_r(or_proof_x_buf, len_r);
+    req.set_or_proof_r(or_proof_r_buf, len_r);
 
     stub->SendPwAuth(&client_ctx, req, &resp);
 
