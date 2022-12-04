@@ -13,6 +13,8 @@ service Log {
     rpc SendAuthCheck2 (AuthCheck2Request) returns (AuthCheck2Response) {}
     
     rpc SendPwInit (PwInitRequest) returns (PwInitResponse) {}
+    rpc SendPwRegister (PwRegisterRequest) returns (PwRegisterResponse) {}
+    rpc SendPwAuth (PwAuthRequest) returns (PwAuthResponse) {}
 }
 
 message HintMsg {
@@ -105,4 +107,22 @@ message PwInitRequest {
 
 message PwInitResponse {
     bytes recover_pt = 1;
+}
+
+message PwRegisterRequest {
+    string id = 1;
+}
+
+message PwRegisterResponse {
+    bytes out = 1;
+}
+
+message PwAuthRequest {
+    bytes ct = 1;
+    bytes or_proof_x = 2;
+    bytes or_proof_r = 3;
+}
+
+message PwAuthResponse {
+    bytes out = 1;
 }

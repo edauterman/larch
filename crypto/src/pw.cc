@@ -63,22 +63,24 @@ void PasswordClient::FinishEnroll(EC_POINT *recover_pt_in) {
     recover_pt = recover_pt_in;
 }
 
-EC_POINT *PasswordClient::StartRegister(uint8_t *id, int len) {
+void PasswordClient::StartRegister(const uint8_t *id, int len) {
     EC_POINT *hash_id = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_id, id, len);
     EC_POINT *base_inv = EC_POINT_new(Params_group(params));
     Params_inv(params, base_inv, hash_id);
     bases_inv.push_back(base_inv);
     EC_POINT_free(hash_id);
-    return base_inv;
 }
 
-EC_POINT *PasswordLog::Register(uint8_t *id, int len, EC_POINT *base_inv) {
-    bases_inv.push_back(base_inv);
+EC_POINT *PasswordLog::Register(uint8_t *id, int len) {
     EC_POINT *hash_pt = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_pt, id, len);
-    Params_exp_base(params, hash_pt, hash_pt, sk);
-    return hash_pt;
+    EC_POINT *base_inv = EC_POINT_new(Params_group(params));
+    Params_inv(params, base_inv, hash_pt);
+    bases_inv.push_back(base_inv);
+    EC_POINT *ret = EC_POINT_new(Params_group(params)); 
+    Params_exp_base(params, ret, hash_pt, sk);
+    return ret;
 }
 
 void PasswordClient::FinishRegister(EC_POINT *in, EC_POINT *pw) {
@@ -89,7 +91,7 @@ void PasswordClient::FinishRegister(EC_POINT *in, EC_POINT *pw) {
     client_shares.push_back(client_share); 
 }
 
-void PasswordClient::StartAuth(int register_idx, uint8_t *id, int len, ElGamalCt *ct, OrProof **or_proof_x, OrProof **or_proof_r, BIGNUM *r) {
+void PasswordClient::StartAuth(int register_idx, const uint8_t *id, int len, ElGamalCt *ct, OrProof **or_proof_x, OrProof **or_proof_r, BIGNUM *r) {
     EC_POINT *hash_id = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_id, id, len);
     Params_rand_exponent(params, r);

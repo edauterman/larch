@@ -25,8 +25,8 @@ bool CorrectAuth() {
     EC_POINT *recover_pt = l.Enroll(X);
     c.FinishEnroll(recover_pt);
 
-    EC_POINT *base_inv = c.StartRegister(id, len);
-    EC_POINT *out = l.Register(id, len, base_inv);
+    c.StartRegister(id, len);
+    EC_POINT *out = l.Register(id, len);
     c.FinishRegister(out, pw);
 
     c.StartAuth(0, id, len, ct, &or_proof_x, &or_proof_r, r);
