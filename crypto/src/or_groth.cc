@@ -11,6 +11,57 @@ using namespace std;
         
 OrProof::OrProof(EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT**c_d, BIGNUM **f, BIGNUM **z_a, BIGNUM **z_b, BIGNUM *z_d, int len, int log_len) : c_l(c_l), c_a(c_a), c_b(c_b), c_d(c_d), f(f), z_a(z_a), z_b(z_b), z_d(z_d), len(len), log_len(log_len) {}
 
+void OrProof::Serialize(Params params, uint8_t **buf, int *len) {
+    *len = (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + sizeof(uint32_t);
+    *buf = (uint8_t *)malloc(*len);
+    int offset = 0;
+    uint32_t log_len_32 = log_len;
+    memcpy(*buf, (uint8_t *)&log_len_32, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    for (int i = 0; i < log_len; i++) {
+        EC_POINT_point2oct(Params_group(params), c_l[i], POINT_CONVERSION_COMPRESSED, *buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        EC_POINT_point2oct(Params_group(params), c_a[i], POINT_CONVERSION_COMPRESSED, *buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        EC_POINT_point2oct(Params_group(params), c_b[i], POINT_CONVERSION_COMPRESSED, *buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        EC_POINT_point2oct(Params_group(params), c_d[i], POINT_CONVERSION_COMPRESSED, *buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        BN_bn2bin(f[i], *buf + offset);
+        offset += 32;
+        BN_bn2bin(z_a[i], *buf + offset);
+        offset += 32;
+        BN_bn2bin(z_b[i], *buf + offset);
+        offset += 32;
+    }
+    BN_bn2bin(z_d, *buf + offset);
+}
+
+void OrProof::Deserialize(Params params, uint8_t *buf) {
+    uint32_t log_len_read;
+    memcpy((uint8_t *)&log_len_read, buf, sizeof(uint32_t));
+    log_len = log_len_read;
+    len = 1 << log_len;
+    int offset = sizeof(uint32_t);
+    for (int i = 0; i < log_len; i++) {
+        EC_POINT_oct2point(Params_group(params), c_l[i], buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        EC_POINT_oct2point(Params_group(params), c_a[i], buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        EC_POINT_oct2point(Params_group(params), c_b[i], buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        EC_POINT_oct2point(Params_group(params), c_d[i], buf + offset, 33, Params_ctx(params));
+        offset += 33;
+        BN_bin2bn(buf + offset, 32, f[i]);
+        offset += 32;
+        BN_bin2bn(buf + offset, 32, z_a[i]);
+        offset += 32;
+        BN_bin2bn(buf + offset, 32, z_b[i]);
+        offset += 32;
+    }
+    BN_bin2bn(buf + offset, 32, z_d);
+}
+
 vector<BIGNUM *> MultiplyTwoPolys(Params params, vector<BIGNUM *> long_poly, vector<BIGNUM *> deg1_poly) {
     vector<BIGNUM *> result;
     BIGNUM *tmp = BN_new();
