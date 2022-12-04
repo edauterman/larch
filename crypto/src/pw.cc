@@ -72,7 +72,7 @@ void PasswordClient::StartRegister(const uint8_t *id, int len) {
     EC_POINT_free(hash_id);
 }
 
-EC_POINT *PasswordLog::Register(uint8_t *id, int len) {
+EC_POINT *PasswordLog::Register(const uint8_t *id, int len) {
     EC_POINT *hash_pt = EC_POINT_new(Params_group(params));
     Params_hash_to_point(params, hash_pt, id, len);
     EC_POINT *base_inv = EC_POINT_new(Params_group(params));

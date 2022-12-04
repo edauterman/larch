@@ -41,7 +41,7 @@ class PasswordLog {
     public:
         PasswordLog();
         EC_POINT *Enroll(EC_POINT *X_in);
-        EC_POINT *Register(uint8_t *id, int len);
+        EC_POINT *Register(const uint8_t *id, int len);
         EC_POINT *Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r);
 
     private:

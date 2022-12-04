@@ -39,7 +39,7 @@ void OrProof::Serialize(Params params, uint8_t **buf, int *len_in) {
     BN_bn2bin(z_d, *buf + offset);
 }
 
-void OrProof::Deserialize(Params params, uint8_t *buf) {
+void OrProof::Deserialize(Params params, const uint8_t *buf) {
     uint32_t log_len_read;
     memcpy((uint8_t *)&log_len_read, buf, sizeof(uint32_t));
     log_len = log_len_read;

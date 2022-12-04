@@ -11,7 +11,7 @@ class OrProof {
         OrProof();
         OrProof(EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT**c_d, BIGNUM **f, BIGNUM **z_a, BIGNUM **z_b, BIGNUM *z_d, int len, int log_len);
         void Serialize(Params params, uint8_t **buf, int *len);
-        void Deserialize(Params params, uint8_t *buf);
+        void Deserialize(Params params, const uint8_t *buf);
         EC_POINT **c_l;
         EC_POINT **c_a;
         EC_POINT **c_b;
