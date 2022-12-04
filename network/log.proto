@@ -11,6 +11,8 @@ service Log {
     rpc SendAuth (AuthRequest) returns (AuthResponse) {}
     rpc SendAuthCheck (AuthCheckRequest) returns (AuthCheckResponse) {}
     rpc SendAuthCheck2 (AuthCheck2Request) returns (AuthCheck2Response) {}
+    
+    rpc SendPwInit (PwInitRequest) returns (PwInitResponse) {}
 }
 
 message HintMsg {
@@ -97,3 +99,10 @@ message AuthCheck2Response {
     bytes out = 1;
 }
 
+message PwInitRequest {
+    bytes X = 1;
+}
+
+message PwInitResponse {
+    bytes recover_pt = 1;
+}
