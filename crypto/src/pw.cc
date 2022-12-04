@@ -47,7 +47,10 @@ EC_POINT *PasswordClient::StartEnroll() {
     Params_rand_exponent(params, x);
     X = EC_POINT_new(Params_group(params));
     Params_exp(params, X, x);
-    return EC_POINT_dup(X, Params_group(params));
+    EC_POINT *out = EC_POINT_dup(X, Params_group(params));
+    uint8_t X_buf[33];
+    EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, X_buf, 33, Params_ctx(params));
+    return out;
 }
 
 EC_POINT *PasswordLog::Enroll(EC_POINT *X_in) {

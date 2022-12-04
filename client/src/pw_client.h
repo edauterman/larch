@@ -21,7 +21,6 @@ class PwClient {
         EC_POINT *Authenticate(string id);
 
     private:
-        Params params;
         PasswordClient *c;
         string logAddr;
         unique_ptr<Log::Stub> stub;

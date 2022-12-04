@@ -20,6 +20,7 @@ class ElGamalCt {
 
 class PasswordClient {
     public:
+        Params params;
         PasswordClient();
         EC_POINT *StartEnroll();
         void FinishEnroll(EC_POINT *recover_pt_in);
@@ -29,7 +30,6 @@ class PasswordClient {
         EC_POINT *FinishAuth(int register_idx, EC_POINT *in, BIGNUM *r);
 
     private:
-        Params params;
         BIGNUM *x;
         EC_POINT *X;
         EC_POINT *recover_pt;
@@ -39,13 +39,13 @@ class PasswordClient {
 
 class PasswordLog {
     public:
+        Params params;
         PasswordLog();
         EC_POINT *Enroll(EC_POINT *X_in);
         EC_POINT *Register(const uint8_t *id, int len);
         EC_POINT *Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r);
 
     private:
-        Params params;
         BIGNUM *sk;
         EC_POINT *X;
         vector<EC_POINT *>bases_inv;

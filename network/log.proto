@@ -118,9 +118,10 @@ message PwRegisterResponse {
 }
 
 message PwAuthRequest {
-    bytes ct = 1;
-    bytes or_proof_x = 2;
-    bytes or_proof_r = 3;
+    bytes ct_c = 1;
+    bytes ct_r = 2;
+    bytes or_proof_x = 3;
+    bytes or_proof_r = 4;
 }
 
 message PwAuthResponse {

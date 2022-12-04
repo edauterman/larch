@@ -134,3 +134,11 @@ target_link_libraries(rand_sigs
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
+
+add_executable(pw_auth_test pw_auth_test.cc)
+target_link_libraries(pw_auth_test
+    PwClient
+    OpenSSL::SSL
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})

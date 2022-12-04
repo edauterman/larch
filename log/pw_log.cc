@@ -27,7 +27,7 @@ class LogServiceImpl final : public Log::Service {
 
             EC_POINT *X = EC_POINT_new(Params_group(params));
             EC_POINT_oct2point(Params_group(params), X, (const unsigned char *)req->x().c_str(), 33, Params_ctx(params));
-            
+           
             EC_POINT *recover_pt = l->Enroll(X);
 
             uint8_t recover_pt_buf[33];
@@ -38,7 +38,6 @@ class LogServiceImpl final : public Log::Service {
 
        Status SendPwRegister(ServerContext *context, const PwRegisterRequest *req, PwRegisterResponse *resp) override {
             EC_POINT *out = l->Register((const unsigned char *)req->id().c_str(), req->id().size());
-            
             uint8_t out_buf[33];
             EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
             resp->set_out(out_buf, 33);
@@ -47,17 +46,15 @@ class LogServiceImpl final : public Log::Service {
 
        Status SendPwAuth(ServerContext *context, const PwAuthRequest *req, PwAuthResponse *resp) override {
             ElGamalCt *ct = new ElGamalCt(params);
-            EC_POINT_oct2point(Params_group(params), ct->R, (const unsigned char *)req->ct().c_str(), 33, Params_ctx(params));
-            EC_POINT_oct2point(Params_group(params), ct->C, (const unsigned char *)req->ct().c_str() + 33, 33, Params_ctx(params));
+            EC_POINT_oct2point(Params_group(params), ct->R, (const unsigned char *)req->ct_r().c_str(), 33, Params_ctx(params));
+            EC_POINT_oct2point(Params_group(params), ct->C, ((const unsigned char *)req->ct_c().c_str()), 33, Params_ctx(params));
             OrProof *or_proof_x = new OrProof();
             or_proof_x->Deserialize(params, (const unsigned char *)req->or_proof_x().c_str());
             OrProof *or_proof_r = new OrProof();
-            or_proof_r->Deserialize(params, (const unsigned char *)req->or_proof_x().c_str());
+            or_proof_r->Deserialize(params, (const unsigned char *)req->or_proof_r().c_str());
 
             EC_POINT *out = l->Auth(ct, or_proof_x, or_proof_r);
-
             uint8_t out_buf[33];
-            EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
             resp->set_out(out_buf, 33);
  
             return Status::OK;
