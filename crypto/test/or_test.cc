@@ -7,7 +7,7 @@
 using namespace std;
 
 bool CorrectProof() {
-    int log_len = 2;
+    int log_len = 9;
     int len = 1 << log_len;
     int idx = 0;
     EC_POINT **cms = (EC_POINT **)malloc(len * sizeof(EC_POINT *));
@@ -46,7 +46,7 @@ bool CorrectProof() {
 }
 
 bool SerializeTest() {
-    int log_len = 2;
+    int log_len = 9;
     int len = 1 << log_len;
     int idx = 0;
     EC_POINT **cms = (EC_POINT **)malloc(len * sizeof(EC_POINT *));
@@ -90,6 +90,8 @@ bool SerializeTest() {
 }
 
 int main() {
-    CorrectProof();
-    SerializeTest();
+    //CorrectProof();
+    for (int i = 0; i < 100; i++) {
+        SerializeTest();
+    }
 }

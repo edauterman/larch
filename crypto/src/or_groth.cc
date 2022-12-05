@@ -16,6 +16,7 @@ OrProof::OrProof(EC_POINT **c_l, EC_POINT **c_a, EC_POINT **c_b, EC_POINT**c_d, 
 void OrProof::Serialize(Params params, uint8_t **buf, int *len_in) {
     *len_in = (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + sizeof(uint32_t);
     *buf = (uint8_t *)malloc(*len_in);
+    memset(*buf, 0, *len_in);
     int offset = 0;
     uint32_t log_len_32 = log_len;
     memcpy(*buf, (uint8_t *)&log_len_32, sizeof(uint32_t));
@@ -29,14 +30,14 @@ void OrProof::Serialize(Params params, uint8_t **buf, int *len_in) {
         offset += 33;
         EC_POINT_point2oct(Params_group(params), c_d[i], POINT_CONVERSION_COMPRESSED, *buf + offset, 33, Params_ctx(params));
         offset += 33;
-        BN_bn2bin(f[i], *buf + offset);
+        BN_bn2bin(f[i], *buf + offset + 32 - BN_num_bytes(f[i]));
         offset += 32;
-        BN_bn2bin(z_a[i], *buf + offset);
+        BN_bn2bin(z_a[i], *buf + offset + 32 - BN_num_bytes(z_a[i]));
         offset += 32;
-        BN_bn2bin(z_b[i], *buf + offset);
+        BN_bn2bin(z_b[i], *buf + offset + 32 - BN_num_bytes(z_b[i]));
         offset += 32;
     }
-    BN_bn2bin(z_d, *buf + offset);
+    BN_bn2bin(z_d, *buf + offset + 32 - BN_num_bytes(z_d));
 }
 
 void OrProof::Deserialize(Params params, const uint8_t *buf) {
