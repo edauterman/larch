@@ -2,6 +2,7 @@
 #include <openssl/ec.h>
 #include <cmath>
 #include <vector>
+#include <thread>
 
 #include "params.h"
 #include "or_groth.h"
@@ -36,10 +37,12 @@ ElGamalCt::ElGamalCt(Params params) {
 
 PasswordClient::PasswordClient() {
     params = Params_new(P256);
+    params2 = Params_new(P256);
 }
 
 PasswordLog::PasswordLog() {
     params = Params_new(P256);
+    params2 = Params_new(P256);
 }
 
 EC_POINT *PasswordClient::StartEnroll() {
@@ -104,8 +107,14 @@ void PasswordClient::StartAuth(int register_idx, const uint8_t *id, int len, ElG
     
     int log_len;
     EC_POINT **cms = ComputeCms(params, bases_inv, ct->C, &log_len);
-    *or_proof_x = Prove(params, X, cms, register_idx, 1 << log_len, log_len, r);
-    *or_proof_r = Prove(params, ct->R, cms, register_idx, 1 << log_len, log_len, x);
+    
+    thread workers[2];
+    int full_len = 1 << log_len;
+    //Prove(params, X, cms, register_idx, 1 << log_len, log_len, r, or_proof_x);
+    workers[0] = thread(OrProve, params, X, cms, register_idx, full_len, log_len, r, or_proof_x);
+    workers[1] = thread(OrProve, params2, ct->R, cms, register_idx, 1 << log_len, log_len, x, or_proof_r);
+    workers[0].join();
+    workers[1].join();
    
     for (int i = 0; i < (1 << log_len); i++) {
         EC_POINT_free(cms[i]);
@@ -117,12 +126,13 @@ void PasswordClient::StartAuth(int register_idx, const uint8_t *id, int len, ElG
 EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proof_r) {
     int log_len;
     EC_POINT **cms = ComputeCms(params, bases_inv, ct->C, &log_len);
-    bool res_x = Verify(params, X, or_proof_x, cms, 1 << log_len, log_len);
+    bool res_x, res_r;
+    OrVerify(params, X, or_proof_x, cms, 1 << log_len, log_len, &res_x);
     if (!res_x) {
         printf("Proof x failed to verify\n");
         return NULL;
     }
-    bool res_r = Verify(params, ct->R, or_proof_r, cms, 1 << log_len, log_len);
+    OrVerify(params2, ct->R, or_proof_r, cms, 1 << log_len, log_len, &res_r);
     if (!res_r) {
         printf("Proof r failed to verify.\n");
         return NULL;

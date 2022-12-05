@@ -124,7 +124,7 @@ void HashTranscript(Params params, int log_len, EC_POINT **c_l, EC_POINT **c_a, 
     free(buf);
 }
 
-OrProof *Prove(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open) {
+void OrProve(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open, OrProof **proof) {
     BIGNUM **r = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
     BIGNUM **a = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
     BIGNUM **s = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
@@ -285,10 +285,10 @@ OrProof *Prove(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int
     }
     free(p);
 
-    return new OrProof(c_l, c_a, c_b, c_d, f, z_a, z_b, z_d, len, log_len);
+    *proof = new OrProof(c_l, c_a, c_b, c_d, f, z_a, z_b, z_d, len, log_len);
 }
 
-bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len, int log_len) {
+void OrVerify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len, int log_len, bool *res) {
     uint8_t digest[SHA256_DIGEST_LENGTH];
     BIGNUM *x = BN_new();
     HashTranscript(params, log_len, proof->c_l, proof->c_a, proof->c_b, proof->c_d, digest);
@@ -314,7 +314,8 @@ bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len,
         Params_com(params, h, check2, proof->f[i], proof->z_a[i]);
         if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
             printf("First check failed, %d\n", i);
-            return false;
+            *res = false;
+            return;
         }
 
         // c_l[i]^{x-f[i]} . c_b[i] ?= Commit(0, z_b[i])
@@ -324,7 +325,8 @@ bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len,
         Params_com(params, h, check2, zero, proof->z_b[i]);
         if (EC_POINT_cmp(Params_group(params), check1, check2, Params_ctx(params)) != 0) {
             printf("Second check failed, %d\n", i);
-            return false;
+            *res = false;
+            return;
         }
     }
 
@@ -365,7 +367,8 @@ bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len,
         printf("Last check failed :(\n");
         printf("check1 = %s\n", EC_POINT_point2hex(Params_group(params), check1, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
         printf("check2 = %s\n", EC_POINT_point2hex(Params_group(params), check2, POINT_CONVERSION_COMPRESSED, Params_ctx(params)));
-        return false;
+        *res = false;
+        return;
     }
 
 
@@ -381,6 +384,6 @@ bool Verify(Params params, EC_POINT *h, OrProof *proof, EC_POINT **cms, int len,
     BN_free(prod);
     BN_free(x);
 
-    return true;
+    *res = true;
 
 }

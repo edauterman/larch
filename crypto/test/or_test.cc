@@ -27,8 +27,10 @@ bool CorrectProof() {
             Params_rand_point(params, cms[i]);
         }
     }
-    OrProof *proof = Prove(params, h, cms, idx, len, log_len, open);
-    bool res = Verify(params, h, proof, cms, len, log_len);
+    OrProof *proof;
+    OrProve(params, h, cms, idx, len, log_len, open, &proof);
+    bool res;
+    OrVerify(params, h, proof, cms, len, log_len, &res);
     if (res) {
         cout << "Test successfull" << endl;
     } else {
@@ -64,13 +66,15 @@ bool SerializeTest() {
             Params_rand_point(params, cms[i]);
         }
     }
-    OrProof *proof = Prove(params, h, cms, idx, len, log_len, open);
+    OrProof *proof;
+    OrProve(params, h, cms, idx, len, log_len, open, &proof);
     uint8_t *buf;
     int len_test;
     proof->Serialize(params, &buf, &len_test);
     OrProof *proof2 = new OrProof();
     proof2->Deserialize(params, buf);
-    bool res = Verify(params, h, proof2, cms, len, log_len);
+    bool res;
+    OrVerify(params, h, proof2, cms, len, log_len, &res);
     if (res) {
         cout << "Test successfull" << endl;
     } else {

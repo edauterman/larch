@@ -21,6 +21,7 @@ class ElGamalCt {
 class PasswordClient {
     public:
         Params params;
+        Params params2;
         PasswordClient();
         EC_POINT *StartEnroll();
         void FinishEnroll(EC_POINT *recover_pt_in);
@@ -40,6 +41,7 @@ class PasswordClient {
 class PasswordLog {
     public:
         Params params;
+        Params params2;
         PasswordLog();
         EC_POINT *Enroll(EC_POINT *X_in);
         EC_POINT *Register(const uint8_t *id, int len);
