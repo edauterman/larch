@@ -15,10 +15,10 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
     string id = "foo";
-    int iters = 1;
+    int iters = 10;
     int *lens = (int *)malloc(iters * sizeof(int));
     for (int i = 0; i < iters; i++) {
-        lens[i] = 1 << (i + 10);
+        lens[i] = 1 << (i + 1);
     }
     Params params = Params_new(P256);
     EC_POINT *pw = EC_POINT_new(Params_group(params));
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
         // Do registrations
         for (int j = totalRegs; j < lens[i]; j++) {
             Params_rand_point(params, pw);
-            c->Register("foo" + to_string(j), pw);
+            c->Register(to_string(j), pw);
             totalRegs++;
         }
 

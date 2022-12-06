@@ -2,6 +2,7 @@
 #include <openssl/ec.h>
 #include <openssl/sha.h>
 #include <vector>
+#include <thread>
 #include <string.h>
 
 #include "params.h"
@@ -125,6 +126,23 @@ void HashTranscript(Params params, int log_len, EC_POINT **c_l, EC_POINT **c_a, 
     free(buf);
 }
 
+void proof_task(Params params, int start_j, int end_j, int log_len, EC_POINT *h, EC_POINT **cms, EC_POINT **c_d, BIGNUM **phi, BIGNUM ***p) {
+    EC_POINT *tmp_g = EC_POINT_new(Params_group(params));
+    BIGNUM *zero = BN_new();
+    BN_zero(zero);
+    for (int i = 0; i < log_len; i++) {
+        //Params_com(params, h, c_d[i], zero, phi[i]);
+        for (int j = start_j; j < end_j; j++) {
+            Params_exp_base(params, tmp_g, cms[j], p[j][i]);
+            if (j == start_j) {
+                EC_POINT_copy(c_d[i], tmp_g);
+            } else {
+                Params_mul(params, c_d[i], c_d[i], tmp_g);
+            }
+        }
+    }
+}
+
 void OrProve(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int log_len, BIGNUM *open, OrProof **proof) {
     BIGNUM **r = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
     BIGNUM **a = (BIGNUM **)malloc(sizeof(BIGNUM *) * log_len);
@@ -213,14 +231,42 @@ void OrProve(Params params, EC_POINT *h, EC_POINT **cms, int idx, int len, int l
             p[i][j] = out_poly[j];
         }
     }
-
-    for (int i = 0; i < log_len; i++) {
-        Params_com(params, h, c_d[i], zero, phi[i]);
-        for (int j = 0; j < len; j++) {
-            Params_exp_base(params, tmp_g, cms[j], p[j][i]);
-            Params_mul(params, c_d[i], c_d[i], tmp_g);
+    
+    EC_POINT **thread_c_d[4];
+    for (int thread = 0; thread < 4; thread++) {
+        thread_c_d[thread] = (EC_POINT **)malloc(log_len * sizeof(EC_POINT *));
+        for (int i = 0; i < log_len; i++) {
+            thread_c_d[thread][i] = EC_POINT_new(Params_group(params));
         }
     }
+
+    int num_workers = 4;
+    thread workers[4];
+    Params thread_params[4];
+    for (int i = 0; i < 4; i++) {
+        thread_params[i] = Params_new(P256);
+        workers[i] = thread(proof_task, thread_params[i], i * len/4, (i + 1) * len / 4, log_len, h, cms, thread_c_d[i], phi, p);
+    }
+    for (int i = 0; i < 4; i++) {
+        workers[i].join();
+        Params_free(thread_params[i]);
+    }
+    for (int i = 0; i < log_len; i++) {
+        EC_POINT_copy(c_d[i], thread_c_d[0][i]);
+        Params_com(params, h, c_d[i], zero, phi[i]);
+        Params_mul(params, c_d[i], c_d[i], thread_c_d[0][i]);
+        Params_mul(params, c_d[i], c_d[i], thread_c_d[1][i]);
+        Params_mul(params, c_d[i], c_d[i], thread_c_d[2][i]);
+        Params_mul(params, c_d[i], c_d[i], thread_c_d[3][i]);
+        EC_POINT_free(thread_c_d[0][i]);
+        EC_POINT_free(thread_c_d[1][i]);
+        EC_POINT_free(thread_c_d[2][i]);
+        EC_POINT_free(thread_c_d[3][i]);
+    }
+    free(thread_c_d[0]);
+    free(thread_c_d[1]);
+    free(thread_c_d[2]);
+    free(thread_c_d[3]);
 
     HashTranscript(params, log_len, c_l, c_a, c_b, c_d, digest);
     BN_bin2bn(digest, 32, x);
