@@ -5,6 +5,7 @@
 
 #include "pw_client.h"
 #include "../../crypto/src/or_groth.h"
+#include "../../crypto/src/sigs.h"
 #include "../../config.h"
 #include "../../network/log.grpc.pb.h"
 #include "../../network/log.pb.h"
@@ -25,11 +26,16 @@ void PwClient::Initialize() {
     PwInitRequest req;
     PwInitResponse resp;
     ClientContext client_ctx;
+    sk = BN_new();
+    pk = EC_POINT_new(Params_group(c->params));
+    Params_rand_point_exp(c->params, pk, sk);
     EC_POINT *X = c->StartEnroll();
     uint8_t X_buf[33];
     EC_POINT_point2oct(Params_group(c->params), X, POINT_CONVERSION_COMPRESSED, X_buf, 33, Params_ctx(c->params));
     req.set_x(X_buf, 33);
- 
+    EC_POINT_point2oct(Params_group(c->params), pk, POINT_CONVERSION_COMPRESSED, X_buf, 33, Params_ctx(c->params));
+    req.set_pk(X_buf, 33);
+
     stub->SendPwInit(&client_ctx, req, &resp);
     
     EC_POINT *recover_pt = EC_POINT_new(Params_group(c->params));
@@ -80,6 +86,15 @@ EC_POINT *PwClient::Authenticate(string id) {
     int len_r;
     or_proof_r->Serialize(c->params, &or_proof_r_buf, &len_r);
     req.set_or_proof_r(or_proof_r_buf, len_r);
+
+    uint8_t *sig_buf;
+    unsigned int sig_len;
+    uint8_t msg_buf[66];
+    memcpy(msg_buf, ct_buf_r, 33);
+    memcpy(msg_buf + 33, ct_buf_c, 33);
+    Sign(msg_buf, 66, sk, &sig_buf, &sig_len, c->params);
+    req.set_sig(sig_buf, sig_len);
+    free(sig_buf);
 
     stub->SendPwAuth(&client_ctx, req, &resp);
 

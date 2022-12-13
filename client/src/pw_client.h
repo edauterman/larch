@@ -26,6 +26,8 @@ class PwClient {
         unique_ptr<Log::Stub> stub;
         map<string, int> orderMap;
         int ctr;
+        BIGNUM *sk;
+        EC_POINT *pk;
 };
 
 #endif

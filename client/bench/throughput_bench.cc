@@ -65,7 +65,7 @@ int experiment(int num_workers) {
 }
 
 int main(int argc, char *argv[]) {
-    int workers = 35;
+    int workers = 20;
     int maxAuths = 0;
     while (true) {
         int auths = experiment(workers);

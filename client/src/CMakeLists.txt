@@ -54,7 +54,7 @@ target_link_libraries(Client
     ${_GRPC_GRPCPP}
     ${PROTOBUF_LIBPROTOBUF})
 
-add_library(PwClient pw_client.cc ../../crypto/src/params.cc ../../crypto/src/pw.cc ../../crypto/src/or_groth.cc ${hw_proto_srcs} ${hw_grpc_srcs})
+add_library(PwClient pw_client.cc ../../crypto/src/params.cc ../../crypto/src/pw.cc ../../crypto/src/or_groth.cc ../../crypto/src/sigs.cc ${hw_proto_srcs} ${hw_grpc_srcs})
 target_link_libraries(PwClient
     OpenSSL::SSL
     ${_REFLECTION}

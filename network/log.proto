@@ -103,6 +103,7 @@ message AuthCheck2Response {
 
 message PwInitRequest {
     bytes X = 1;
+    bytes pk = 2;
 }
 
 message PwInitResponse {
@@ -122,6 +123,7 @@ message PwAuthRequest {
     bytes ct_r = 2;
     bytes or_proof_x = 3;
     bytes or_proof_r = 4;
+    bytes sig = 5;
 }
 
 message PwAuthResponse {
