@@ -98,8 +98,6 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     vector<CircuitView *>proverViews;
     RandomOracle oracle; 
     uint8_t openings[3][32][16];
-    //INIT_TIMER;
-    //START_TIMER;
 
     proof->wLen = m_len + 256 + m_len + 128 + 128 + 256 + in_len;
     uint32_t *w_tmp[3];
@@ -130,16 +128,10 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
             RAND_bytes(openings[i][j], 16);
         }
     }
-    //STOP_TIMER("before");
 
-    //START_TIMER;
     GenViewsCtCircuit(mShares, m_len, hashInShares, in_len, hashOutShares, ctShares, keyShares, keyCommShares, keyRShares, iv, proverViews, out, seeds, numRands);
-    //STOP_TIMER("gen views");
-    //START_TIMER;
     CommitViews(proverViews, proof->comms, openings);
-    //STOP_TIMER("comm");
 
-    //START_TIMER;
     for (int i = 0; i < 32; i++) { 
         proof->idx[i] = oracle.GetRand(proof->comms[0][i], proof->comms[1][i], proof->comms[2][i]);
     }
@@ -210,6 +202,5 @@ void ProveCtCircuit(uint8_t *m, int m_len, uint8_t *hashIn, int in_len, uint8_t 
     free(keyRShares);
     free(keyCommShares);
     free(hashInShares);
-    //STOP_TIMER("whole thingy");
 }
 

@@ -23,7 +23,6 @@ void CircuitView::Commit(CircuitComm &comm, int idx, uint8_t *opening) {
     memset(data, 0, len);
     for (int i = 0; i < wires.size(); i++) {
         data[i/8] = data[i/8] | ((wires[i] & (1 << idx)) >> idx) << (i % 8);
-        //data[i/8] = data[i/8] | (GetBit(wires[i], idx) << (i % 8));
     }
     memcpy(data + wires.size() / 8 + 1, opening, 16);
     hash_to_digest(mdctx, comm.digest, (const uint8_t *)data, len);
