@@ -8,12 +8,16 @@ Circuit source code is in [circuit-src/](./circuit-src/).
 
 Prerequisites: emp-tool, emp-ot, emp-ag2pc, gRPC, protobuf compiler
 
+First, run `gen-grpc.sh` or build `network` with CMake to generate the C++ code for gRPC and protobuf.
+
+Then build the server;
+
 ```bash
 cmake . -DCMAKE_BUILD_TYPE=Release
 make -j8
 ```
 
-If you have the dependencies installed at non-standard locations:
+If you have dependencies installed at non-standard locations:
 
 ```bash
 cmake . \
@@ -54,4 +58,4 @@ bin/clientNN-init 127.0.0.1 4:JBSWY3DPEHPK3PXP
 bin/clientNN-auth 127.0.0.1 4
 ```
 
-The server uses TCP port `44400 + NN` for gRPC and `44400 + NN + 1` for MPC, so multiple key counts can be used simultaneously.
+The server uses TCP port `44400 + NN` for gRPC and `44400 + NN + 1` for MPC, so multiple key counts can be tested simultaneously.
