@@ -1,8 +1,12 @@
 # Larch TOTP
 
+This implements the TOTP part of Larch using [emp-ag2pc](https://github.com/emp-toolkit/emp-ag2pc) for secure multi-party computation.
+
+Circuit source code is in [circuit-src/](./circuit-src/).
+
 ## Build
 
-Prerequisites: emp-tool, emp-ot, and emp-ag2pc must be installed.
+Prerequisites: emp-tool, emp-ot, emp-ag2pc, gRPC, protobuf compiler
 
 ```bash
 cmake . -DCMAKE_BUILD_TYPE=Release
