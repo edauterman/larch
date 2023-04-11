@@ -35,9 +35,6 @@ include_directories(generated)
 # add_link_options(-g -fsanitize=address -fsanitize=undefined)
 
 
-# add_executable(gen-circuit circuitgen/gen-circuit.cpp ../../emp-tool-host/emp-tool/emp-tool.cpp ../../emp-tool-host/emp-tool/circuits/files/bristol_fashion/aes_128.cpp)
-# target_compile_options(gen-circuit PRIVATE -DMAX_KEYS=64)
-
 #add_executable(preparse circuitgen/preparse.cpp ../../emp-tool-host/emp-tool/emp-tool.cpp)
 
 
