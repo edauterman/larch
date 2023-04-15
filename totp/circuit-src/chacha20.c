@@ -53,8 +53,8 @@ static void scramble_block(uint32_t *blk) {
 static void process_block(uint32_t *blk) {
     // Save the original block so we can add it later
     uint32_t unscrambled[16];
-    // memcpy(unscrambled, blk, sizeof(unscrambled));
-    // unroll the memcpy call above.
+    //memcpy(unscrambled, blk, sizeof(unscrambled));
+    // unrolled for cbmc-gc
     unscrambled[0] = blk[0];
     unscrambled[1] = blk[1];
     unscrambled[2] = blk[2];
@@ -92,37 +92,3 @@ void chacha20_block(uint32_t *blk, byte *key, uint32_t counter, char nonce[12]) 
     fill_block(blk, key, counter, nonce);
     process_block(blk);
 }
-
-// int main() {
-//     byte key[32] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f};
-//     uint64_t nonce = 0x0706050403020100;
-//     uint64_t counter = 0;
-
-//     while (1) {
-//         byte data_block[64];
-//         int ret = read(0, data_block, 64);
-//         if (ret < 0) {
-//             perror("Error reading data");
-//             return 1;
-//         } else if (ret == 0) {
-//             return 0;
-//         }
-
-//         byte chacha_block[64];
-//         chacha20_block((uint32_t *) chacha_block, key, counter, nonce);
-
-//         for (int i = 0; i < 64; i++) {
-//             data_block[i] ^= chacha_block[i];
-//         }
-
-//         ret = write(1, data_block, 64);
-//         if (ret < 0) {
-//             perror("Error writing data");
-//             return 1;
-//         }
-
-//         counter++;
-//     }
-
-//     return 0;
-// }
