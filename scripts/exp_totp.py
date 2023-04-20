@@ -1,6 +1,6 @@
 import os
 import sys
-from exp_setup import *
+from setup import *
 
 EC2_FILE = "config/ec2.json"
 MACHINES_FILE = "config/totp_machines.json"
