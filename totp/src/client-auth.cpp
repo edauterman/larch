@@ -1,7 +1,11 @@
 #include <stdio.h>
+#include <chrono>
+#include <thread>
 #include "client.hpp"
 
 using namespace std;
+using namespace std::this_thread;
+using namespace std::chrono;
 
 void read_network(unsigned long int *r_bytes, unsigned long int *t_bytes) {
     FILE *fp = fopen("/proc/net/dev", "r");
@@ -23,31 +27,69 @@ void read_network(unsigned long int *r_bytes, unsigned long int *t_bytes) {
     fclose(fp);
 }
 
-int main(int argc, char** argv) {
-    // arg 1 = server ip
-    string server_ip(argv[1]);
-
-	// arg 2 = rpid
-	int rpid = stoi(argv[2]);
-
-    auto channel = grpc::CreateChannel(server_ip + ":" + to_string(GRPC_PORT), grpc::InsecureChannelCredentials());
-	auto client = Client::from_state(channel, server_ip);
-
-	unsigned long int recv1, recv2, recv3, trans1, trans2, trans3;
-	read_network(&recv1, &trans1);
-	client->offline();
-	read_network(&recv2, &trans2);
-	auto otp = client->auth(rpid);
-	read_network(&recv3, &trans3);
-	unsigned long int offline_comm, online_comm;
-	offline_comm = double(trans2 - trans1 + recv2 - recv1);
-	online_comm = double(trans3 - trans2 + recv3 - recv2);
-	double onlineMB = online_comm / (1 << 20);
-	double offlineMB = offline_comm / (1 << 20);
-	cout << "Offline raw = " << offline_comm << endl;
-	cout << "Offline comm = " << offlineMB << endl;
-	cout << "Online comm = " << onlineMB << endl;
-	cout << "otp = " << otp << "\n";
-
-	return 0;
+double getAverage(vector<double> &v) {
+        return accumulate( v.begin(), v.end(), 0.0/ v.size());
 }
+
+
+void runBench(string server_ip, int rpid, double *offlineMB, double *onlineMB, double *offlineMS, double *onlineMS) {
+        auto channel = grpc::CreateChannel(server_ip + ":" + to_string(GRPC_PORT), grpc::InsecureChannelCredentials());
+        Client client(new ClientState(), channel, server_ip, nullptr);
+
+        client.init();
+
+        unsigned long int recv1, recv2, recv3, trans1, trans2, trans3;
+        read_network(&recv1, &trans1);
+        auto t1 = std::chrono::high_resolution_clock::now();
+        client.offline();
+        auto t2 = std::chrono::high_resolution_clock::now();
+        sleep_for(seconds(1));
+        read_network(&recv2, &trans2);
+        auto t3 = std::chrono::high_resolution_clock::now();
+        auto otp = client.auth(rpid);
+        auto t4 = std::chrono::high_resolution_clock::now();
+        read_network(&recv3, &trans3);
+        unsigned long int offline_comm, online_comm, in_comm;
+        offline_comm = double(trans2 - trans1 + recv2 - recv1);
+        online_comm = double(trans3 - trans2 + recv3 - recv2);
+        in_comm = double(recv3 - recv1);
+        *onlineMB = online_comm / (1048576.0);
+        *offlineMB = offline_comm / (1048576.0);
+        double inMB = in_comm / (1048576.0);
+        *offlineMS = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        *onlineMS = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+        cout << "In comm = " << inMB << endl;
+        cout << "Offline comm = " << *offlineMB << endl;
+        cout << "Online comm = " << *onlineMB << endl;
+        cout << "Offline ms = " << *offlineMS << endl;
+        cout << "Online ms = " << *onlineMS << endl;
+        cout << "otp = " << otp << "\n";
+
+}
+
+int main(int argc, char** argv) {
+        // arg 1 = server ip
+        string server_ip(argv[1]);
+        // arg 2 = rpid
+        int rpid = stoi(argv[2]);
+        vector<double> offlineMBs;
+        vector<double> onlineMBs;
+        vector<double> offlinetimes;
+        vector<double> onlinetimes;
+
+        for (int i = 0; i < 1; i++) {
+                double offlineMB, onlineMB, offlineMS, onlineMS;
+                runBench(server_ip, rpid, &offlineMB, &onlineMB, &offlineMS, &onlineMS);
+                offlineMBs.push_back(offlineMB);
+                onlineMBs.push_back(onlineMB);
+                offlinetimes.push_back(offlineMS);
+                onlinetimes.push_back(onlineMS);
+                //getchar();
+        }
+        cout << "offline MB = " << getAverage(offlineMBs) << endl;
+        cout << "online MB = " << getAverage(onlineMBs) << endl;
+        cout << "offline time (ms) = " << getAverage(offlinetimes) << endl;
+        cout << "online time (ms) = " << getAverage(onlinetimes) << endl;
+        return 0;
+}
+
