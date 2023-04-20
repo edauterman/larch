@@ -20,17 +20,19 @@ private:
 	vector<SerializedLogEntry> log;
 	int mpc_port;
 	uint8_t last_enc_rpid[ENC_RPID_LEN] = { 0, };
-	EC_KEY* rpid_sign_pk;
+	EC_POINT* rpid_sign_pk;
+    Params params;
 	std::thread mpc_server_thread;
 	std::thread offline_server_thread;
 	C2PC<NetIO> *twopc;
 	NetIO *io;
 
 public:
-	TotpServiceImpl(ServerState* state, int mpc_port, EC_KEY* rpid_sign_pk) : state(state), mpc_port(mpc_port), rpid_sign_pk(rpid_sign_pk) {}
+	TotpServiceImpl(ServerState* state, int mpc_port, EC_POINT* rpid_sign_pk) : state(state), mpc_port(mpc_port), rpid_sign_pk(rpid_sign_pk) {}
 
 	Status Init(ServerContext* context, const InitRequest* request, InitResponse* response) override {
-		//cout << "init\n";
+		params = Params_new(P256);
+        //cout << "init\n";
 		if (request->rpid_key_commitment().size() != COMMIT_LEN) {
 			return Status(grpc::StatusCode::INVALID_ARGUMENT, "rpid_key_commitment must be 20 bytes");
 		}
@@ -47,7 +49,7 @@ public:
 		memcpy(state->rpid_sign_pk, request->rpid_sign_pk().data(), 65);
 
 		vector<uint8_t> pk(request->rpid_sign_pk().begin(), request->rpid_sign_pk().end());
-		rpid_sign_pk = load_ecdsa_pk(pk);
+		rpid_sign_pk = load_ecdsa_pk(params, pk);
 		write_state();
 		return Status::OK;
 	}
@@ -107,7 +109,7 @@ public:
 		// verify ecdsa
 		vector<uint8_t> sig(request->signature().begin(), request->signature().end());
 		vector<uint8_t> enc_rpid(request->enc_rpid().begin(), request->enc_rpid().end());
-		if (!verify_ecdsa(rpid_sign_pk, enc_rpid, sig)) {
+		if (!verify_ecdsa(params, rpid_sign_pk, enc_rpid, sig)) {
 			return Status(grpc::StatusCode::INVALID_ARGUMENT, "ecdsa signature does not match");
 		}
 
@@ -135,7 +137,7 @@ public:
 	}
 
 	void write_state() {
-        auto pk = save_ecdsa_pk(rpid_sign_pk);
+        auto pk = save_ecdsa_pk(params, rpid_sign_pk);
         memcpy(state->rpid_sign_pk, pk.data(), pk.size());
 
         // write state to data/server.bin
@@ -154,9 +156,11 @@ public:
         ServerState* state = new ServerState();
         file.read((char*)state, sizeof(*state));
         file.close();
-
+        
+        Params params = Params_new(P256);
 		vector<uint8_t> pk(state->rpid_sign_pk, state->rpid_sign_pk + sizeof(state->rpid_sign_pk));
-		auto rpid_sign_pk = load_ecdsa_pk(pk);
+		auto rpid_sign_pk = load_ecdsa_pk(params, pk);
+        Params_free(params);
         return new TotpServiceImpl(state, mpc_port, rpid_sign_pk);
     }
 };

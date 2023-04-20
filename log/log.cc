@@ -201,7 +201,6 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
     Commit(cm_check_d, check_d_buf, len, r_buf);
 
     if (!onlySigs) {
-        // TODO move earlier to abort if check fails
         uint8_t auth_input[48];
         memcpy(auth_input, iv_raw, 16);
         memcpy(auth_input + 16, ct, 32);

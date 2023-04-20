@@ -46,12 +46,15 @@ private:
     ClientState* state;
     unique_ptr<TotpService::Stub> stub;
     string server_ip;
-    EC_KEY* rpid_sign_sk;
+    BIGNUM* rpid_sign_sk;
     C2PC<NetIO> *twopc;
     NetIO *io;
+    Params params;
 
 public:
-    Client(ClientState* state, shared_ptr<Channel> channel, string server_ip, EC_KEY* rpid_sign_sk) : state(state), stub(TotpService::NewStub(channel)), server_ip(server_ip), rpid_sign_sk(rpid_sign_sk) {}
+    Client(ClientState* state, shared_ptr<Channel> channel, string server_ip, BIGNUM* rpid_sign_sk) : state(state), stub(TotpService::NewStub(channel)), server_ip(server_ip), rpid_sign_sk(rpid_sign_sk) {
+        params = Params_new(P256);
+    }
 
     void init() {
         // generate rpid key
@@ -64,8 +67,8 @@ public:
         RAND_bytes(state->client_key_shares, KEY_LEN * MAX_KEYS);
 
         // generate rpid signing key
-        rpid_sign_sk = gen_ecdsa();
-        auto pk = derive_ecdsa_pub(rpid_sign_sk);
+        rpid_sign_sk = gen_ecdsa(params);
+        auto pk = derive_ecdsa_pub(params, rpid_sign_sk);
 
         // compute commitment = SHA256(rpid_key + rpid_commit_nonce)
         vector<uint8_t> commitment(COMMIT_LEN);
@@ -168,7 +171,7 @@ public:
 
         // sign enc_rpid with ECDSA
         vector<uint8_t> enc_rpid(out.enc_rpid, out.enc_rpid + ENC_RPID_LEN);
-        auto sig = sign_ecdsa(rpid_sign_sk, enc_rpid);
+        auto sig = sign_ecdsa(params, rpid_sign_sk, enc_rpid);
 
         // send to server
         ClientContext context2;

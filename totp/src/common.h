@@ -61,7 +61,6 @@ struct InputB {
 struct Output {
     uint32_t otp;
     uint8_t enc_rpid[ENC_RPID_LEN];
-    // unsigned char data[5];
 } __attribute__((packed));
 
 struct ClientState {
@@ -91,83 +90,60 @@ Output do_mpc_server(InputB& in_b, C2PC<NetIO> *twopc);
 Output do_mpc_client(InputA& in_a, C2PC<NetIO> *twopc);
 
 
-static EC_KEY* gen_ecdsa() {
-    EC_KEY* key = EC_KEY_new_by_curve_name(415);
-    //EC_KEY* key = EC_KEY_new_by_curve_name(NID_secp256k1);
-    EC_KEY_generate_key(key);
-    return key;
+static BIGNUM* gen_ecdsa(Params params) {
+    BIGNUM *sk = BN_new();
+    Params_rand_exponent(params, sk);
+    return sk;
 }
 
-static EC_KEY* load_ecdsa_sk(std::vector<uint8_t>& sk) {
-    EC_KEY* key = EC_KEY_new_by_curve_name(415);
-    //EC_KEY* key = EC_KEY_new_by_curve_name(NID_secp256k1);
+static BIGNUM* load_ecdsa_sk(std::vector<uint8_t>& sk) {
     BIGNUM *bn = BN_new();
     BN_bin2bn(sk.data(), sk.size(), bn);
-    EC_KEY_set_private_key(key, BN_bin2bn(sk.data(), sk.size(), NULL));
-    return key;
+    return bn;
 }
 
-static std::vector<uint8_t> save_ecdsa_sk(EC_KEY* key) {
+static std::vector<uint8_t> save_ecdsa_sk(BIGNUM* key) {
     std::vector<uint8_t> out(32);
-    BN_bn2bin(EC_KEY_get0_private_key(key), out.data());
+    BN_bn2bin(key, out.data());
     return out;
 }
 
-static EC_KEY* load_ecdsa_pk(std::vector<uint8_t>& pk) {
-    EC_KEY* key = EC_KEY_new_by_curve_name(415);
-    //EC_KEY* key = EC_KEY_new_by_curve_name(NID_secp256k1);
-    EC_POINT* point = EC_POINT_new(EC_KEY_get0_group(key));
-    EC_POINT_oct2point(EC_KEY_get0_group(key), point, pk.data(), pk.size(), NULL);
-    EC_KEY_set_public_key(key, point);
-    return key;
+static EC_POINT* load_ecdsa_pk(Params params, std::vector<uint8_t>& pk) {
+    EC_POINT *point = EC_POINT_new(Params_group(params));
+    EC_POINT_oct2point(Params_group(params), point, pk.data(), pk.size(), NULL);
+    return point;
 }
 
-static std::vector<uint8_t> save_ecdsa_pk(EC_KEY* key) {
+static std::vector<uint8_t> save_ecdsa_pk(Params params, EC_POINT* key) {
     std::vector<uint8_t> out(65);
-    EC_POINT_point2oct(EC_KEY_get0_group(key), EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, out.data(), out.size(), NULL);
+    EC_POINT_point2oct(Params_group(params), key, POINT_CONVERSION_UNCOMPRESSED, out.data(), out.size(), NULL);
     return out;
 }
 
-static std::vector<uint8_t> derive_ecdsa_pub(EC_KEY* key) {
+static std::vector<uint8_t> derive_ecdsa_pub(Params params, BIGNUM* key) {
     std::vector<uint8_t> out(65);
-    EC_KEY_set_conv_form(key, POINT_CONVERSION_UNCOMPRESSED);
-    EC_POINT_point2oct(EC_KEY_get0_group(key), EC_KEY_get0_public_key(key), POINT_CONVERSION_UNCOMPRESSED, out.data(), out.size(), NULL);
+    EC_POINT *pk = EC_POINT_new(Params_group(params));
+    Params_exp(params, pk, key);
+    EC_POINT_point2oct(Params_group(params), pk, POINT_CONVERSION_UNCOMPRESSED, out.data(), out.size(), NULL);
+    EC_POINT_free(pk);
     return out;
 }
 
-static std::vector<uint8_t> sign_ecdsa(EC_KEY* sk, std::vector<uint8_t> msg) {
+static std::vector<uint8_t> sign_ecdsa(Params params, BIGNUM* sk, std::vector<uint8_t> msg) {
     std::vector<uint8_t> sig(64);
     unsigned int sig_len;
     uint8_t *tmp_sig;
-    Params params = Params_new(P256);
-    ECDSASign(msg.data(), msg.size(), EC_KEY_get0_private_key(sk), &tmp_sig, &sig_len, params);
+    ECDSASign(msg.data(), msg.size(), sk, &tmp_sig, &sig_len, params);
     memcpy(sig.data(), tmp_sig, sig_len);
     free(tmp_sig);
-    Params_free(params);
     sig.resize(sig_len);
     return sig;
 }
 
-static bool verify_ecdsa(EC_KEY* pk, std::vector<uint8_t> msg, std::vector<uint8_t> sig) {
-   	Params params = Params_new(P256);
-	bool res = ECDSAVerify(EC_KEY_get0_public_key(pk), msg.data(), msg.size(), sig.data(), params);
-	Params_free(params);
+static bool verify_ecdsa(Params params, EC_POINT* pk, std::vector<uint8_t> msg, std::vector<uint8_t> sig) {
+	bool res = ECDSAVerify(pk, msg.data(), msg.size(), sig.data(), params);
 	return res;
-	//return 1;//ECDSA_verify(0, msg.data(), msg.size(), sig.data(), sig.size(), pk) == 1;
 }
-
-/*
-static std::vector<uint8_t> sign_ecdsa(EC_KEY* sk, std::vector<uint8_t> msg) {
-    std::vector<uint8_t> sig(128);
-    unsigned int sig_len;
-    ECDSA_sign(0, msg.data(), msg.size(), sig.data(), &sig_len, sk);
-    sig.resize(sig_len);
-    return sig;
-}
-
-static bool verify_ecdsa(EC_KEY* pk, std::vector<uint8_t> msg, std::vector<uint8_t> sig) {
-    return ECDSA_verify(0, msg.data(), msg.size(), sig.data(), sig.size(), pk) == 1;
-}*/
 
 static void print_hex(const char* label, const char* data, size_t len) {
     printf("%s: ", label);
