@@ -10,10 +10,10 @@ from util.math_util import *
 # Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY as environment variables
 
 PROJECT="larch"
-USERNAME="ubuntu"
+USERNAME="ec2-user"
 
 SERVER_NAME = "larch-bench-server"
-SERVER_NAME = "larch-bench-client"
+CLIENT_NAME = "larch-bench-client"
 
 def getHostName(ip_addr):
     return "%s@%s" % (USERNAME, ip_addr)
@@ -35,7 +35,7 @@ def getPrivateIpByName(conn, name):
     return ips[0][1]
  
 def provision(ec2_file, machines_file):
-    properties = loadPropertyFile(ec2_files)
+    properties = loadPropertyFile(ec2_file)
     machines = loadPropertyFile(machines_file)
 
     conn = startConnection(properties["region"])
@@ -43,7 +43,7 @@ def provision(ec2_file, machines_file):
     key = getOrCreateKey(conn, properties["keyname"])
     print("Got key")
 
-    print("Starting server"i)
+    print("Starting server")
     startEc2Instance(conn, properties["ami_id"], key, properties["server_instance_type"], [properties["security"]], properties["placement"], name=SERVER_NAME, disk_size=properties["disk_size"])
     print("Started all embedding servers")
 
@@ -56,17 +56,17 @@ def provision(ec2_file, machines_file):
     with open(machines_file, 'w') as f:
         json.dump(machines, f)
 
-def setup_machine(ip_addr, ec2_files):
+def setup_machine(ip_addr, ec2_file):
     properties = loadPropertyFile(ec2_file)
-    executeRemoteCommand(getHostName(ip_addr), 'cd zkboo-r1cs; git pull', key=properties['secret_key_path'], flags="-A")
+    executeRemoteCommand(getHostName(ip_addr), 'cd zkboo-r1cs; git stash; rm scripts/totp_experiments.py; git pull', key=properties['secret_key_path'], flags="-A")
     #executeRemoteCommand(getHostName(ip_addr), 'ssh-keyscan github.com >> ~/.ssh/known_hosts; git clone git@github.com:edauterman/larch.git', key=properties['secret_key_path'], flags="-A")
 
 def setupAll(ec2_file, machines_file):
     properties = loadPropertyFile(ec2_file)
     machines = loadPropertyFile(machines_file)
 
-    setup_machine(machines['server_ip_address'])
-    setup_machine(machines['client_ip_address'])
+    setup_machine(machines['server_ip_address'], ec2_file)
+    setup_machine(machines['client_ip_address'], ec2_file)
 
 def provisionAndSetupAll(ec2_file, machines_file):
     provision(ec2_file, machines_file)
