@@ -3,8 +3,8 @@
 "region": "us-east-2",
 "placement": "us-east-2c",
 "keyname": "DoryKeyPair",
-"server_instance_type": "c5.xlarge",
-"client_instance_type": "c5.xlarge",
+"server_instance_type": "c5.4xlarge",
+"client_instance_type": "c5.2xlarge",
 "ami_id": "ami-016556f98305a5bb6",
 "security": "launch-wizard-21",
 "secret_key_path": "~/.ssh/dory.pem"

@@ -73,7 +73,7 @@ def provisionAndSetupAll(ec2_file, machines_file):
     time.sleep(60)
     setupAll(ec2_file, machines_file)
 
-def teardown():
+def teardown(ec2_file):
     properties = loadPropertyFile(ec2_file)
     conn = startConnection(properties['region'])
     key = getOrCreateKey(conn, properties['keyname'])
