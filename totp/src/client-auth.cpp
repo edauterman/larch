@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <chrono>
 #include <thread>
+#include <iostream>
+#include <fstream>
 #include "client.hpp"
 
 using namespace std;
@@ -72,6 +74,8 @@ int main(int argc, char** argv) {
         string server_ip(argv[1]);
         // arg 2 = rpid
         int rpid = stoi(argv[2]);
+        // arg 3 = out_file
+        string out_file(argv[3]);
         vector<double> offlineMBs;
         vector<double> onlineMBs;
         vector<double> offlinetimes;
@@ -90,6 +94,14 @@ int main(int argc, char** argv) {
         cout << "online MB = " << getAverage(onlineMBs) << endl;
         cout << "offline time (ms) = " << getAverage(offlinetimes) << endl;
         cout << "online time (ms) = " << getAverage(onlinetimes) << endl;
+        
+        ofstream f;
+        f.open(out_file);
+        f << getAverage(offlineMBs) << endl;
+        f << getAverage(onlineMBs) << endl;
+        f << getAverage(offlinetimes) << endl;
+        f << getAverage(onlinetimes) << endl;
+        f.close();
         return 0;
 }
 
