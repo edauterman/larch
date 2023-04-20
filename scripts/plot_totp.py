@@ -1,5 +1,4 @@
 import re
-import custom_style
 from custom_style import setup_columns,col,remove_chart_junk
 import matplotlib.pyplot as plt
 import sys
@@ -19,8 +18,8 @@ y = [[], []]
 for i in range(20,120,20):
     with open("%s/out_%d" % (in_dir, i), 'r') as f:
         lines = f.readlines()
-        y[0].append(float(lines[2] / 1000.0)
-        y[1].append(float(lines[3] / 1000.0)
+        y[0].append(float(lines[2]) / 1000.0)
+        y[1].append(float(lines[3]) / 1000.0)
 
 # N = 10000, n = 100
 print(y)
@@ -52,7 +51,7 @@ labels.reverse()
 
 #ax.spines['left'].set_position("zero")
 ax.spines['bottom'].set_position("zero")
-remove_chart_junk(plt,ax,grid=True,below=False)
+#remove_chart_junk(plt,ax,grid=True,below=False)
 
 ax.yaxis.grid(which='major', color='0.9', linestyle=':')
 plt.savefig(out_name, bbox_inches='tight')
