@@ -2,6 +2,7 @@ import re
 from custom_style import setup_columns,col,remove_chart_junk
 import matplotlib.pyplot as plt
 import sys
+import custom_style
 import numpy as np
 from matplotlib.ticker import FuncFormatter
 import math
@@ -29,13 +30,13 @@ print(y)
 
 print(y)
 
-fig = plt.figure(figsize = (8,8))
+fig = plt.figure(figsize = (2.4,1.6))
 ax = fig.add_subplot(111)
 print([1,2,4,8])
 x = [20*x for x in range(1,6)]
 ax.stackplot(x, y[0], y[1], labels=labels, colors=colors)
 #ax.stackplot(np.arange(10, 110, step=10), y[0], y[1], y[2], y[3], labels=labels, colors=colors)
-ax.set_xlabel("Relying parties \n \\textbf{TOTP}")
+ax.set_xlabel("Relying parties \n TOTP")
 ax.set_ylabel("Auth time (s)")
 #ax.set_ylim([0,1.2])
 #ax.set_xlim([40,105])
