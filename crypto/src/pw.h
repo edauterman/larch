@@ -7,7 +7,6 @@
 
 #include "params.h"
 #include "or_groth.h"
-#include "ddh_proof.h"
 
 using namespace std;
 

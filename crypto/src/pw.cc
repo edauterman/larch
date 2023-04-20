@@ -6,7 +6,6 @@
 
 #include "params.h"
 #include "or_groth.h"
-#include "ddh_proof.h"
 #include "pw.h"
 
 using namespace std;
@@ -110,7 +109,6 @@ void PasswordClient::StartAuth(int register_idx, const uint8_t *id, int len, ElG
     
     thread workers[2];
     int full_len = 1 << log_len;
-    //Prove(params, X, cms, register_idx, 1 << log_len, log_len, r, or_proof_x);
     workers[0] = thread(OrProve, params, X, cms, register_idx, full_len, log_len, r, or_proof_x);
     workers[1] = thread(OrProve, params2, ct->R, cms, register_idx, 1 << log_len, log_len, x, or_proof_r);
     workers[0].join();

@@ -107,7 +107,6 @@ void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint3
     thread workers[NUM_ROUNDS];
     INIT_TIMER;
     if (!onlySigs) {
-        //START_TIMER;
         for (int i = 0; i < NUM_ROUNDS; i++) {
             workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, saveMap[sessionCtr]->digest, clientMap[id]->enc_key_comm, tokenMap[id][auth_ctr]->ct, &check[i]);
         }
@@ -115,13 +114,11 @@ void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint3
             workers[i].join();
             final_check = final_check && check[i];
         }
-        //STOP_TIMER("proofs");
         if (!final_check) {
             printf("PROOF FAILED TO VERIFY\n");
         }
         saveMap[sessionCtr]->proof_verified = final_check;
         sem_post(&saveMap[sessionCtr]->proof_sema);
-        //saveMap[sessionCtr]->proof_sema.release();
     }
 }
 
@@ -156,30 +153,6 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
     memcpy(iv_raw, (uint8_t *)&auth_ctr, sizeof(uint32_t));
     memcpy((uint8_t *)&iv, iv_raw, 16);
            
-    /*bool final_check = true;
-    bool check[NUM_ROUNDS];
-    thread workers[NUM_ROUNDS];
-    INIT_TIMER;
-    if (!onlySigs) {
-        START_TIMER;
-        for (int i = 0; i < NUM_ROUNDS; i++) {
-            //proof[i].Deserialize(proof_bytes[i], numRands);
-            workers[i] = thread(VerifyDeserializeCtCircuit, proof_bytes[i], numRands, iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, tokenMap[id][auth_ctr]->ct, &check[i]);
-            //workers[i] = thread(VerifyCtCircuit, &proof[i], iv, m_len, challenge_len, digest, clientMap[id]->enc_key_comm, ct, &check[i]);
-        }
-        for (int i = 0; i < NUM_ROUNDS; i++) {
-            workers[i].join();
-            final_check = final_check && check[i];
-        }
-        STOP_TIMER("proofs");
-        if (final_check) {
-            printf("VERIFIED\n");
-        } else {
-            printf("PROOF FAILED TO VERIFY\n");
-            return;
-        }
-    }*/
-
     GetPreprocessValueSet(auth_ctr, r, a, b, alpha, clientMap[id]->log_seed);
 
     BN_bin2bn(d_in, d_in_len, d_client);
@@ -239,7 +212,6 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
             cout << "verification FAILED" << endl;
             return;
         }
-        // TODO ensure token only inserted if ZKP also verifies
         Token *token = new Token(ct, auth_sig, auth_sig_len);
         tokenMapLock.lock();
         tokenMap[id].push_back(token);
@@ -315,8 +287,6 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     } else {
         *final_out_len = 0;
     }
-    //delete saveMap[sessionCtr];
-    //saveMap.erase(sessionCtr);
     
     if (check_d_client) BN_free(check_d_client);
     if (sum) BN_free(sum);
@@ -360,16 +330,10 @@ class LogServiceImpl final : public Log::Service {
             uint8_t cm_check_d[32];
             uint32_t sessionCtr;
             uint8_t *proof_bytes[NUM_ROUNDS];
-            /*if (!onlySigs) {
-                for (int i = 0; i < NUM_ROUNDS; i++) {
-                    proof_bytes[i] = (uint8_t *)req->proof(i).c_str();
-                }
-            }*/
             string ctStr = req->ct();
             INIT_TIMER;
             START_TIMER;
             server->StartSign(req->id(), (uint8_t *)req->ct().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
-            //server->VerifyProofAndSign(req->id(), proof_bytes, (uint8_t *)req->ct().c_str(), (uint8_t *)req->tag().c_str(), req->tag().size(), (uint8_t *)req->digest().c_str(), (uint8_t *)req->d().c_str(), req->d().size(), (uint8_t *)req->e().c_str(), req->e().size(), d, &d_len, e, &e_len, cm_check_d, &sessionCtr);
             resp->set_d(d, d_len);
             resp->set_e(e, e_len);
             resp->set_cm_check_d(cm_check_d, 32);
