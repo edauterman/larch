@@ -115,16 +115,6 @@ target_link_libraries(throughput_bench
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(baseline_bench baseline_bench.cc)
-target_link_libraries(baseline_bench
-    Client
-    Prover
-    Base
-    OpenSSL::SSL
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
-
 add_executable(rand_sigs ../../crypto/test/sigs_test.cc)
 target_link_libraries(rand_sigs
     Client

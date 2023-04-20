@@ -21,7 +21,6 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 #include <openssl/rand.h>
-#include <openssl/x509.h>
 #include <openssl/ecdsa.h>
 
 #include <emp-tool/emp-tool.h>
@@ -29,7 +28,6 @@
 //#include "agent.h"
 #include "../../crypto/src/common.h"
 #include "../../crypto/src/sigs.h"
-#include "base64.h"
 #include "u2f.h"
 #include "client.h"
 #include "asn1.h"
@@ -553,33 +551,8 @@ int Client::Register(uint8_t *app_id, uint8_t *challenge,
   BN_bn2bin(y, pk_out->y);
   pk_out->format = UNCOMPRESSED_POINT;
 
-  /* Randomly choose key for attestation. */
-  //CHECK_C (EC_KEY_set_group(anon_key, Params_group(params)));
-  //CHECK_C (EC_KEY_generate_key(anon_key));
-
-  /* Generate self-signed cert. */
-  //cert_len = generate_cert(params, anon_key, cert_sig_out);
-
-  /* Sign hash of U2F_REGISTER_ID, app_id, challenge, kh, and pk with key from
-   * self-signed attestation cert. */
-  /*memcpy(signed_data, &reg_id, 1);
-  memcpy(signed_data + 1, app_id, U2F_APPID_SIZE);
-  memcpy(signed_data + 1 + U2F_APPID_SIZE, challenge, U2F_NONCE_SIZE);
-  memcpy(signed_data + 1 + U2F_APPID_SIZE + U2F_NONCE_SIZE, key_handle_out,
-         MAX_KH_SIZE);
-  memcpy(signed_data + 1 + U2F_APPID_SIZE + U2F_NONCE_SIZE + MAX_KH_SIZE,
-         pk_out, P256_POINT_SIZE);
-  CHECK_C(EVP_PKEY_assign_EC_KEY(anon_pkey, anon_key));
-  CHECK_C(EVP_SignInit(evpctx, EVP_sha256()));
-  CHECK_C(EVP_SignUpdate(evpctx, signed_data, 1 + U2F_APPID_SIZE +
-                         U2F_NONCE_SIZE + MAX_KH_SIZE + P256_POINT_SIZE));
-  CHECK_C(EVP_SignFinal(evpctx, cert_sig_out + cert_len,
-                        (unsigned int *)&sig_len, anon_pkey)); */
-
 cleanup:
   if (rv == ERROR && pk) EC_POINT_clear_free(pk);
-  //if (cert) X509_free(cert);
-  //if (anon_pkey) EVP_PKEY_free(anon_pkey);
   if (evpctx) EVP_MD_CTX_destroy(evpctx);
   if (x) BN_free(x);
   if (y) BN_free(y);
@@ -901,9 +874,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
     sem_init(&proof_semas[i], 1, 0);
     workers[i] = thread(ProveSerializeCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof_buf[i], &proof_buf_len[i], &proof_semas[i]);
   }
-  for (int i = 0; i < NUM_ROUNDS; i++) {
-    //workers[i].join();
-  }
   //STOP_TIMER("Prover time");
   proofDispatcher = thread(&Client::DispatchProof, this, proof_semas, proof_buf, proof_buf_len, auth_ctr);
   req.set_challenge(message_buf, message_buf_len);
@@ -948,60 +918,5 @@ cleanup:
   if (ctx) BN_CTX_free(ctx);
   return rv == OKAY ? sig_len : ERROR;
   return OKAY;
-}
-
-/* Authenticate at origin specified by app_id given a challenge from the origin
- * and a key handle obtained from registration. Returns length of signature. */
-int Client::BaselineAuthenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
-                 uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
-                 uint8_t *sig_out, bool noRegistration) {
-  int rv = ERROR;
-  
-  BIGNUM *sk;
-  uint8_t message[SHA256_DIGEST_LENGTH];
-  ECDSA_SIG *sig = NULL;
-  unsigned int sig_len = 0;
-  uint8_t flags = 0x01;
-  uint8_t ctr[4];
-  EC_KEY *key;
-  memset(ctr, 0, 4 * sizeof(uint8_t));
-  uint32_t ctr32 = 11;
-  ctr[0] = 0xFF & ctr32 >> 24;
-  ctr[1] = 0xFF & ctr32 >> 16;
-  ctr[2] = 0xFF & ctr32 >> 8;
-  ctr[3] = 0xFF & ctr32;
-  EVP_PKEY *pkey;
-  int message_buf_len = SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE;
-  uint8_t message_buf[SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t) + U2F_NONCE_SIZE];
-
-  CHECK_A (sk = BN_new());
-  CHECK_A (sig = ECDSA_SIG_new());
-  CHECK_A (key = EC_KEY_new());
-  pkey = EVP_PKEY_new();
-
-  /* Compute signed message: hash of appId, user presence, counter, and
-   * challenge. */
-  memcpy(message_buf, app_id, SHA256_DIGEST_LENGTH);
-  memcpy(message_buf + SHA256_DIGEST_LENGTH, &flags, sizeof(flags));
-  memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags), ctr, 4 * sizeof(uint8_t));
-  memcpy(message_buf + SHA256_DIGEST_LENGTH + sizeof(flags) + 4 * sizeof(uint8_t), challenge, U2F_NONCE_SIZE);
-  EC_KEY_set_group(key, Params_group(params));
-  //Params_rand_exponent(params, sk);
-  EC_KEY_set_private_key(key, sk);
-  // TODO: Segfaulting on ec2 instances but fine on local machine? Problem with OpenSSL install?
-  ECDSA_sign(0, message_buf, message_buf_len, sig_out, &sig_len, key);
- 
-  /* Output message from device. */
-  *flags_out = flags;
-  *ctr_out = ctr32;
-
-  auth_ctr++;
-
-cleanup:
-  if (sk) BN_free(sk);
-  if (sig) ECDSA_SIG_free(sig);
-  if (key) EC_KEY_free(key);
-  if (pkey) EVP_PKEY_free(pkey);
-  return rv == OKAY ? sig_len : ERROR;
 }
 
