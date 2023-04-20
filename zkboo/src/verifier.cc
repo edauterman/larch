@@ -228,6 +228,8 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
             return false;
         }
     }
+
+    
     
     if (ex->verified) {
         *ret = true;
@@ -236,9 +238,6 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
         *ret = true;
         return false;
     }
-
-    // TODO: check that contents of out is correct
-    
 
     *ret = true; 
     return true;
