@@ -4,7 +4,7 @@
 #include <emp-ag2pc/emp-ag2pc.h>
 #include <thread>
 
-#include "../generated/src/totp.grpc.pb.h"
+#include "../network/totp.grpc.pb.h"
 #include "common.h"
 
 using grpc::Server;

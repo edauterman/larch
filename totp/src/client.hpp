@@ -10,7 +10,7 @@
 #include <fstream>
 #include <grpcpp/grpcpp.h>
 
-#include "../generated/src/totp.grpc.pb.h"
+#include "../network/totp.grpc.pb.h"
 #include "common.h"
 extern "C" {
 #include "base32.h"
