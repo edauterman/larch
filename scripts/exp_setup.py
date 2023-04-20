@@ -12,9 +12,6 @@ from util.math_util import *
 PROJECT="larch"
 USERNAME="ubuntu"
 
-EC2_FILE = "config/ec2.json"
-MACHINES_FILE = "config/machines.json"
-
 SERVER_NAME = "larch-bench-server"
 SERVER_NAME = "larch-bench-client"
 
@@ -37,9 +34,9 @@ def getPrivateIpByName(conn, name):
         ips = getEc2InstancesPrivateIp(conn, 'Name', {'tag:Name':name}, True)
     return ips[0][1]
  
-def provision():
-    properties = loadPropertyFile(EC2_FILE)
-    machines = loadPropertyFile(MACHINES_FILE)
+def provision(ec2_file, machines_file):
+    properties = loadPropertyFile(ec2_files)
+    machines = loadPropertyFile(machines_file)
 
     conn = startConnection(properties["region"])
     print("Started connection")
@@ -56,23 +53,28 @@ def provision():
     machines['server_ip_address'] = getIpByName(conn, SERVER_NAME)
     machines['client_ip_address'] = getIpByName(conn, CLIENT_NAME)
 
-    with open(MACHINES_FILE, 'w') as f:
+    with open(machines_file, 'w') as f:
         json.dump(machines, f)
 
-def setup_machine(ip_addr):
-    properties = loadPropertyFile(EC2_FILE)
+def setup_machine(ip_addr, ec2_files):
+    properties = loadPropertyFile(ec2_file)
     executeRemoteCommand(getHostName(ip_addr), 'cd zkboo-r1cs; git pull', key=properties['secret_key_path'], flags="-A")
     #executeRemoteCommand(getHostName(ip_addr), 'ssh-keyscan github.com >> ~/.ssh/known_hosts; git clone git@github.com:edauterman/larch.git', key=properties['secret_key_path'], flags="-A")
 
-def setupAll():
-    properties = loadPropertyFile(EC2_FILE)
-    machines = loadPropertyFile(MACHINES_FILE)
+def setupAll(ec2_file, machines_file):
+    properties = loadPropertyFile(ec2_file)
+    machines = loadPropertyFile(machines_file)
 
     setup_machine(machines['server_ip_address'])
     setup_machine(machines['client_ip_address'])
 
+def provisionAndSetupAll(ec2_file, machines_file):
+    provision(ec2_file, machines_file)
+    time.sleep(60)
+    setupAll(ec2_file, machines_file)
+
 def teardown():
-    properties = loadPropertyFile(EC2_FILE)
+    properties = loadPropertyFile(ec2_file)
     conn = startConnection(properties['region'])
     key = getOrCreateKey(conn, properties['keyname'])
     server_id = getEc2InstancesId(
