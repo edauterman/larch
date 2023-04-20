@@ -4,7 +4,8 @@
 Dependencies
 * OpenSSL 1.1
 * [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
-* [emp-toolkit](https://github.com/emp-toolkit) (install in same directory where `larch/` is installed)
+* [emp-toolkit](https://github.com/emp-toolkit) (install in same directory where `larch/` is installed, make with options `ENABLE_THREADING` and `CRYPTO_IN_CIRCUIT`)
+* [emp-ag2pc](https://github.com/emp-toolkit/emp-ag2pc) (install in same directory where `larch/` is installed, install `emp-ot` as part of dependencies)
 
 Make an `out/` directory.
 
