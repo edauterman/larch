@@ -46,66 +46,66 @@ include_directories(generated)
 #add_executable(preparse circuit-src/preparse.cpp ../../emp-tool-host/emp-tool/emp-tool.cpp)
 
 
-add_executable(client20-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client20-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client20-init PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client20-init PRIVATE -DMAX_KEYS=20)
 
-add_executable(client20-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client20-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client20-auth PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client20-auth PRIVATE -DMAX_KEYS=20)
 
-add_executable(server20 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(server20 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(server20 PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(server20 PRIVATE -DMAX_KEYS=20)
 
 
-add_executable(client40-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client40-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client40-init PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client40-init PRIVATE -DMAX_KEYS=40)
 
-add_executable(client40-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client40-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client40-auth PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client40-auth PRIVATE -DMAX_KEYS=40)
 
-add_executable(server40 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(server40 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(server40 PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(server40 PRIVATE -DMAX_KEYS=40)
 
 
-add_executable(client60-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client60-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client60-init PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client60-init PRIVATE -DMAX_KEYS=60)
 
-add_executable(client60-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client60-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client60-auth PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client60-auth PRIVATE -DMAX_KEYS=60)
 
-add_executable(server60 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(server60 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(server60 PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(server60 PRIVATE -DMAX_KEYS=60)
 
 
-add_executable(client80-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client80-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client80-init PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client80-init PRIVATE -DMAX_KEYS=80)
 
-add_executable(client80-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client80-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client80-auth PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client80-auth PRIVATE -DMAX_KEYS=80)
 
-add_executable(server80 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(server80 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(server80 PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(server80 PRIVATE -DMAX_KEYS=80)
 
 
-add_executable(client100-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client100-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client100-init PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client100-init PRIVATE -DMAX_KEYS=100)
 
-add_executable(client100-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c src/sigs.cpp src/params.cpp ./../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client100-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ./../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client100-auth PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client100-auth PRIVATE -DMAX_KEYS=100)
 
-add_executable(server100 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/sigs.cpp src/params.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(server100 src/server.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(server100 PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(server100 PRIVATE -DMAX_KEYS=100)

@@ -9,8 +9,8 @@
 #include <vector>
 #include <string>
 #include <stdio.h>
-#include "params.h"
-#include "sigs.h"
+#include "../../crypto/src/params.h"
+#include "../../crypto/src/sigs.h"
 
 #define SERVER ALICE
 #define CLIENT BOB
@@ -133,7 +133,7 @@ static std::vector<uint8_t> sign_ecdsa(Params params, BIGNUM* sk, std::vector<ui
     std::vector<uint8_t> sig(64);
     unsigned int sig_len;
     uint8_t *tmp_sig;
-    ECDSASign(msg.data(), msg.size(), sk, &tmp_sig, &sig_len, params);
+    Sign(msg.data(), msg.size(), sk, &tmp_sig, &sig_len, params);
     memcpy(sig.data(), tmp_sig, sig_len);
     free(tmp_sig);
     sig.resize(sig_len);
@@ -141,8 +141,8 @@ static std::vector<uint8_t> sign_ecdsa(Params params, BIGNUM* sk, std::vector<ui
 }
 
 static bool verify_ecdsa(Params params, EC_POINT* pk, std::vector<uint8_t> msg, std::vector<uint8_t> sig) {
-	bool res = ECDSAVerify(pk, msg.data(), msg.size(), sig.data(), params);
-	return res;
+	bool res = VerifySignature(pk, msg.data(), msg.size(), sig.data(), params);
+	return res == 0;
 }
 
 static void print_hex(const char* label, const char* data, size_t len) {
