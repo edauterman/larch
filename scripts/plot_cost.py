@@ -86,4 +86,4 @@ ax.legend(handles, labels1, bbox_to_anchor=(-0.2, 1.1, 1., .102), loc='lower lef
 
 remove_chart_junk(plt,ax, grid=False, below=False)
 ax.yaxis.grid(which='major', color='0.8', linestyle=':')
-custom_style.save_fig(fig, bbox_inches='tight')
+plt.savefig(out_name, bbox_inches='tight')

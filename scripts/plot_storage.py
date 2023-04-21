@@ -53,4 +53,4 @@ ax.spines['bottom'].set_position("zero")
 
 remove_chart_junk(plt,ax, grid=False, below=False)
 ax.yaxis.grid(which='major', color='0.9', linestyle=':')
-plt.save_fig(out_name, bbox_inches='tight')
+plt.savefig(out_name, bbox_inches='tight')
