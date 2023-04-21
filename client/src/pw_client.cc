@@ -15,7 +15,7 @@ using namespace grpc;
 
 PwClient::PwClient(string ip_addr, bool startConn) {
     c = new PasswordClient();
-    logAddr = ip_addr;
+    logAddr = ip_addr + ":12345";
     ctr = 0;
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));

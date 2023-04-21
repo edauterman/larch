@@ -43,12 +43,9 @@ def provision(ec2_file, machines_file):
     key = getOrCreateKey(conn, properties["keyname"])
     print("Got key")
 
-    print("Starting server")
     startEc2Instance(conn, properties["ami_id"], key, properties["server_instance_type"], [properties["security"]], properties["placement"], name=SERVER_NAME, disk_size=properties["disk_size"])
-    print("Started all embedding servers")
 
     startEc2Instance(conn, properties["ami_id"], key, properties["client_instance_type"], [properties["security"]], properties["placement"], name=CLIENT_NAME, disk_size=properties["disk_size"])
-    print("Started coordinator")
     
     machines['server_ip_address'] = getIpByName(conn, SERVER_NAME)
     machines['client_ip_address'] = getIpByName(conn, CLIENT_NAME)
@@ -58,7 +55,7 @@ def provision(ec2_file, machines_file):
 
 def setup_machine(ip_addr, ec2_file):
     properties = loadPropertyFile(ec2_file)
-    executeRemoteCommand(getHostName(ip_addr), 'cd zkboo-r1cs; git stash; git pull', key=properties['secret_key_path'], flags="-A")
+    executeRemoteCommand(getHostName(ip_addr), 'cd zkboo-r1cs; git stash; git pull; cd zkboo-r1cs; make', key=properties['secret_key_path'], flags="-A")
     #executeRemoteCommand(getHostName(ip_addr), 'cd zkboo-r1cs; git stash; rm scripts/totp_experiments.py; git pull', key=properties['secret_key_path'], flags="-A")
     #executeRemoteCommand(getHostName(ip_addr), 'ssh-keyscan github.com >> ~/.ssh/known_hosts; git clone git@github.com:edauterman/larch.git', key=properties['secret_key_path'], flags="-A")
 
