@@ -11,7 +11,7 @@ from matplotlib.patches import Patch
 import scipy.special
 
 out_name =  "plot_pw.pdf" 
-in_name = sys.argv[1]
+in_name = "pw_exp/out" 
 labels = ["Network", "Verify (Server)", "Prove (Client)"] 
 colors=[custom_style.hash_colors[4], custom_style.hash_colors[3], custom_style.hash_colors[1]]
 
@@ -23,21 +23,25 @@ with open(in_name, 'r') as f:
         if i > 2:
             y[i % 3].append(float(line))
 
-print(y)
 
 
-fig = plt.figure(figsize = (2.4,1.6))
+fig = plt.figure(figsize = (2.4,2))
+#fig = plt.figure(figsize = (2.4,1.6))
 ax = fig.add_subplot(111)
 x = []
 for i in range(1,10):
     if i != 1:
         x.append((1 << (i-1)) + 0.000000001)
     x.append(1 << i)
-print([1 << i for i in range(1,10)])
 #for i in range(3):
 #    ax.plot(x, y[i], label=labels[i], color=colors[i])
 #ax.plot(x, [y[0][i] + y[1][i] + y[2][i] for i in range(len(y[0]))], label=labels[3], color=colors[3])
-ax.stackplot(x, [y[2][i] - y[0][i] - y[1][i] for i in range(len(y[0]))], y[0], y[1], labels=labels, colors=colors)
+network = [y[2][i] - y[0][i] - y[1][i] for i in range(len(y[0]))]
+print(network)
+print(y[0])
+print(y[1])
+print("len network = %d, len server = %d, len client = %d, len x = %d" % (len(network), len(y[0]), len(y[1]), len(x)))
+ax.stackplot(x, network, y[0], y[1], labels=labels, colors=colors)
 ax.set_xlabel("Relying parties \n Passwords")
 ax.set_ylabel("Auth time (ms)")
 #ax.set_xscale("log")

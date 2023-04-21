@@ -17,7 +17,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
     string id = "foo";
-    int iters = 10;
+    int iters = 9;
     string ip_addr(argv[1]);
     string out_file(argv[2]);
     int *lens = (int *)malloc(iters * sizeof(int));
