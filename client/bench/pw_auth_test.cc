@@ -13,9 +13,10 @@ using namespace grpc;
 
 int main(int argc, char *argv[]) {
     string id = "foo";
+    string ip_addr(argv[1]);
     Params params = Params_new(P256);
     EC_POINT *pw = EC_POINT_new(Params_group(params));
-    PwClient *c = new PwClient();
+    PwClient *c = new PwClient(ip_addr);
     c->Initialize();
     c->Register(id, pw);
     EC_POINT *pw_test = c->Authenticate(id);

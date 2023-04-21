@@ -15,7 +15,7 @@ using namespace std;
 
 class PwClient {
     public:
-        PwClient(bool startConn=true);
+        PwClient(string ip_addr, bool startConn=true);
         void Initialize();
         void Register(string id, EC_POINT *pw);
         EC_POINT *Authenticate(string id);

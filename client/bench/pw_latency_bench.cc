@@ -18,14 +18,15 @@ using namespace std;
 int main(int argc, char *argv[]) {
     string id = "foo";
     int iters = 10;
-    string out_file(argv[1]);
+    string ip_addr(argv[1]);
+    string out_file(argv[2]);
     int *lens = (int *)malloc(iters * sizeof(int));
     for (int i = 0; i < iters; i++) {
         lens[i] = 1 << (i + 1);
     }
     Params params = Params_new(P256);
     EC_POINT *pw = EC_POINT_new(Params_group(params));
-    PwClient *c = new PwClient();
+    PwClient *c = new PwClient(ip_addr);
     c->Initialize();
     int totalRegs = 0;
     ofstream f;

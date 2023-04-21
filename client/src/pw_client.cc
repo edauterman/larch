@@ -13,9 +13,9 @@
 using namespace std;
 using namespace grpc;
 
-PwClient::PwClient(bool startConn) {
+PwClient::PwClient(string ip_addr, bool startConn) {
     c = new PasswordClient();
-    logAddr = LOG_IP_ADDR;
+    logAddr = ip_addr;
     ctr = 0;
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
