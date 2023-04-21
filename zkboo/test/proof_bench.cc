@@ -20,8 +20,9 @@ using namespace emp;
 #define NUM_ROUNDS 5 
 #define NUM_REPS 100
 
-int main() {
+int main(int argc, char **argv) {
 
+    string out_file(argv[1]);
     Proof pi[NUM_ROUNDS];
     int numRands = 81543;
 
@@ -65,6 +66,7 @@ int main() {
     uint8_t *proof_buf[NUM_ROUNDS];
     int proof_buf_len[NUM_ROUNDS];
     sem_t proof_semas[NUM_ROUNDS];
+    auto t1 = std::chrono::high_resolution_clock::now();
     for (int reps = 0; reps < NUM_REPS; reps++) {
         for (int i = 0; i < NUM_ROUNDS; i++) {
             workers[i] = thread(ProveSerializeCtCircuit, m, m_len, (uint8_t *)hash_in, in_len, (uint8_t *)hash_out, (uint8_t *)ct, (uint8_t *)key, (uint8_t *)comm, (uint8_t *)r, iv, numRands, &proof_buf[i], &proof_buf_len[i], &proof_semas[i]);
@@ -73,9 +75,8 @@ int main() {
             workers[i].join();
         }
     }
-    STOP_TIMER("Prover time (100)");
+    auto t2 = std::chrono::high_resolution_clock::now();
     cout << "Finished proving" << endl; 
-    START_TIMER;
     bool check[NUM_ROUNDS];
     bool final_check = true;
     thread workers2[NUM_ROUNDS];
@@ -88,11 +89,18 @@ int main() {
             final_check = final_check && check[i];
         }
     }
-    STOP_TIMER("Verifier time");
+    auto t3 = std::chrono::high_resolution_clock::now();
+    double proveMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / (double)NUM_REPS;
+    double verifyMs = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() / (double)NUM_REPS;
     if (final_check) {
         cout << "Proof verified" << endl;
     } else {
         cout << "Proof FAILED to verify" << endl;
     }
-
+    cout << "Prove (ms) " << proveMs << endl;
+    cout << "Verify (ms) " << verifyMs << endl;
+    ofstream f;
+    f.open(out_file);
+    f << proveMs << endl;
+    f << verifyMs << endl;
 }

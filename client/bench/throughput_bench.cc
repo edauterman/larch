@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <chrono>
 #include <thread>
+#include <fstream>
+#include <iostream>
 
 #include "../src/client.h"
 #include "../src/u2f.h"
@@ -67,15 +69,21 @@ int main(int argc, char *argv[]) {
     int workers = 20;
     int maxAuths = 0;
     string ip_addr(argv[1]);
+    string out_file(argv[2]);
     while (true) {
         int auths = experiment(ip_addr, workers);
         if (auths < maxAuths) {
             cout << "MAX AUTHS = " << maxAuths << endl;
             cout << "workers = " << workers - 5 << endl;
             cout << "throughput = " << (double)maxAuths / 60.0 << endl;
+            ofstream f;
+            f.open(out_file);
+            f << (double)maxAuths / 60.0 << endl;
+            f.close();
             return 0;
         }
         maxAuths = auths;
         workers += 5;
     }
+
 }
