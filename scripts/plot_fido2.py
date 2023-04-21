@@ -23,16 +23,17 @@ cores = [1,2,4,8]
 
 for i in cores:
     with open("%s/out_latency_%d" % (in_dir, i), 'r') as f:
-        for i, line in enumerate(f):
-            if i % 2 == 0:
+        for j, line in enumerate(f):
+            if j % 2 == 0:
                 y[0].append(float(line))
             else:
                 total.append(float(line))
     with open("%s/out_proof_%d" % (in_dir, i), 'r') as f:
-        for i, line in enumerate(f):
-            if i == 0:
+        for j, line in enumerate(f):
+            if j == 0:
                 y[2].append(float(line))
 y[1] = [total[i] - y[0][i] - y[2][i] for i in range(len(total))]
+print(total)
 
 # N = 10000, n = 100
 print(y)
@@ -47,7 +48,7 @@ ax = fig.add_subplot(111)
 print([1,2,4,8])
 ax.stackplot([1,2,4,8], y[0], y[1], y[2], labels=labels, colors=colors)
 #ax.stackplot(np.arange(10, 110, step=10), y[0], y[1], y[2], y[3], labels=labels, colors=colors)
-ax.set_xlabel("Client cores \n \\textbf{FIDO2}")
+ax.set_xlabel("Client cores \n FIDO2")
 ax.set_ylabel("Auth time (ms)")
 #ax.set_ylim([0,1.2])
 #ax.set_xlim([40,105])

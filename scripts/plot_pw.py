@@ -72,6 +72,6 @@ ax.spines['left'].set_position("zero")
 remove_chart_junk(plt,ax,grid=True,below=False)
 
 ax.yaxis.grid(which='major', color='0.9', linestyle=':')
-plt.savefig(out_name, bbox_inchex='tight')
+plt.savefig(out_name, bbox_inches='tight')
 #custom_style.save_fig(fig, out_name, [3.25, 1.8])
 #plt.show()
