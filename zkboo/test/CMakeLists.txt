@@ -49,3 +49,9 @@ target_link_libraries(parallel_test
 	Prover
     Base
     OpenSSL::SSL)
+
+add_executable(proof_bench proof_bench.cc)
+target_link_libraries(proof_bench
+	Prover
+    Base
+    OpenSSL::SSL)
