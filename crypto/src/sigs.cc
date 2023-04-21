@@ -138,6 +138,7 @@ bool VerifySignature(EC_POINT *pk, BIGNUM *m, BIGNUM *r, BIGNUM *s, Params param
     EC_POINT_get_affine_coordinates_GFp(Params_group(params), test, x, y, ctx);
     bool res = BN_cmp(x, r);
     if (res != 0) {
+        printf("pk = %s\n", EC_POINT_point2hex(Params_group(params), pk, POINT_CONVERSION_UNCOMPRESSED, Params_ctx(params)));
         printf("x = %s\n", BN_bn2hex(x));
         printf("y = %s\n", BN_bn2hex(y));
         printf("r = %s\n", BN_bn2hex(r));
