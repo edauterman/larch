@@ -51,6 +51,7 @@ InitState::InitState() {}
 LogServer::LogServer(bool onlySigs_in) {
     params = Params_new(P256);
     onlySigs = onlySigs_in;
+    server_ms = 0;
 };
 
 void LogServer::GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in) {
@@ -95,6 +96,7 @@ void LogServer::Initialize(const InitRequest *req, uint8_t *pkBuf) {
 
 void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint32_t sessionCtr, uint32_t auth_ctr) {
     Proof proof[NUM_ROUNDS];
+    auto t1 = std::chrono::high_resolution_clock::now();
 
     __m128i iv;
     uint8_t iv_raw[16];
@@ -120,10 +122,13 @@ void LogServer::VerifyProof(uint32_t id, uint8_t *proof_bytes[NUM_ROUNDS], uint3
         saveMap[sessionCtr]->proof_verified = final_check;
         sem_post(&saveMap[sessionCtr]->proof_sema);
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 }
 
 void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned int auth_sig_len, uint8_t *digest, uint8_t *d_in, unsigned int d_in_len, uint8_t *e_in, unsigned int e_in_len, uint8_t *d_out, unsigned int *d_len, uint8_t *e_out, unsigned int *e_len, uint8_t *cm_check_d, uint32_t *sessionCtr) {
     Proof proof[NUM_ROUNDS];
+    auto t1 = std::chrono::high_resolution_clock::now();
     BIGNUM *d_client = BN_new();
     BIGNUM *e_client = BN_new();
     BIGNUM *d_log = BN_new();
@@ -221,6 +226,9 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
     saveMapLock.lock();
     saveMap[*sessionCtr] = state;
     saveMapLock.unlock();
+    
+    auto t2 = std::chrono::high_resolution_clock::now();
+    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
 
 
@@ -244,6 +252,7 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
 
 void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *check_d_buf_out, unsigned int *check_d_buf_len, uint8_t *check_d_open) {
 
+    auto t1 = std::chrono::high_resolution_clock::now();
     if (saveMap.find(sessionCtr) == saveMap.end()) {
         cout << "ERROR: unknown session counter " << sessionCtr << endl;
         for (const auto &pair : saveMap ) {
@@ -253,9 +262,13 @@ void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *ch
     memcpy(saveMap[sessionCtr]->other_cm_check_d, cm_check_d, 32);
     *check_d_buf_len = BN_bn2bin(saveMap[sessionCtr]->check_d, check_d_buf_out);
     memcpy(check_d_open, saveMap[sessionCtr]->r, 16);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
 }
 
 void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_d_open, uint8_t *final_out, unsigned int *final_out_len) {
+    auto t1 = std::chrono::high_resolution_clock::now();
     BIGNUM *check_d_client = BN_new();
     BIGNUM *sum = BN_new();
     BN_CTX *ctx = BN_CTX_new();
@@ -286,6 +299,11 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     } else {
         *final_out_len = 0;
     }
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+
+
     
     if (check_d_client) BN_free(check_d_client);
     if (sum) BN_free(sum);

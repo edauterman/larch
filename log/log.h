@@ -77,6 +77,8 @@ class LogServer {
         EC_KEY *key;
         Params params;
         int port;
+
+        int server_ms = 0;
 };
 
 #endif
