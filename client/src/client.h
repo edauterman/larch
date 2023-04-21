@@ -30,7 +30,7 @@ class KeyHandle {
 
 class Client {
     public:
-        Client(bool startConn=true);
+        Client(string ip_addr, bool startConn=true);
         void ReadFromStorage();
         void WriteToStorage();
 
@@ -52,6 +52,9 @@ class Client {
                         uint8_t *sig_out, bool noRegistration = false);
         //void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len);
         void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req, bool onlySigs = false);
+
+        uint32_t GetLogMs();
+
     private:
         Params params;
         map<string, EC_POINT*> pk_map;

@@ -7,7 +7,8 @@
 #include "../../zkboo/utils/timer.h"
 
 int main(int argc, char *argv[]) {
-    Client *c = new Client(true);
+    string ip_addr(argv[1]);
+    Client *c = new Client(ip_addr, true);
     BIGNUM *out = BN_new();
     uint8_t digest[32];
     BIGNUM *sk = BN_new();

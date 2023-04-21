@@ -6,7 +6,7 @@
 #include "../../zkboo/utils/timer.h"
 
 int main(int argc, char *argv[]) {
-    Client *c = new Client();
+    Client *c = new Client("");
     //c->ReadFromStorage();
 
     std::cout << "init\n";

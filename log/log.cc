@@ -228,7 +228,7 @@ void LogServer::StartSign(uint32_t id, uint8_t *ct, uint8_t *auth_sig, unsigned 
     saveMapLock.unlock();
     
     auto t2 = std::chrono::high_resolution_clock::now();
-    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    //server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
 
 
@@ -263,7 +263,7 @@ void LogServer::FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *ch
     *check_d_buf_len = BN_bn2bin(saveMap[sessionCtr]->check_d, check_d_buf_out);
     memcpy(check_d_open, saveMap[sessionCtr]->r, 16);
     auto t2 = std::chrono::high_resolution_clock::now();
-    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    //server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
 }
 
@@ -301,7 +301,7 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     }
 
     auto t2 = std::chrono::high_resolution_clock::now();
-    server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+    //server_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
 
     
@@ -373,6 +373,12 @@ class LogServiceImpl final : public Log::Service {
             unsigned int out_len;
             server->FinalSign(req->session_ctr(), (uint8_t *)req->check_d().c_str(), req->check_d().size(), (uint8_t *)req->check_d_open().c_str(), out, &out_len);
             resp->set_out(out, out_len);
+            return Status::OK;
+        }
+
+        Status SendMs(ServerContext *context, const MsRequest *req, MsResponse *resp) override {
+            resp->set_ms(server->server_ms);
+            server->server_ms = 0;
             return Status::OK;
         }
 

@@ -58,6 +58,7 @@ class LogServer {
         void FinishSign(uint32_t sessionCtr, uint8_t *cm_check_d, uint8_t *check_d_buf_out, unsigned int *check_d_buf_len, uint8_t *check_d_open);
        void FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned int check_d_len, uint8_t *check_d_open, uint8_t *final_out, unsigned int *final_out_len); 
         void GetPreprocessValueSet(uint64_t i, BIGNUM *r, BIGNUM *a, BIGNUM *b, BIGNUM *alpha, uint8_t *seed_in);
+        int server_ms = 0;
 
     private:
         const int numRands = 104116;
@@ -78,7 +79,6 @@ class LogServer {
         Params params;
         int port;
 
-        int server_ms = 0;
 };
 
 #endif

@@ -233,7 +233,7 @@ void handle_authentication(Client *c, json request) {
 
 int main(int argc, char *argv[]) {
 
-  Client *c = new Client();
+  Client *c = new Client("");
   c->ReadFromStorage();
   fprintf(stderr, "larch: STARTUP\n");
 

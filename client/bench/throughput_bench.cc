@@ -33,17 +33,16 @@ void makeReqs(Client *c, int *auths, std::chrono::high_resolution_clock::time_po
         }
     }
     printf("returned\n");
-    fprintf(stderr, "det2f: finished initialize\n");
 }
 
-int experiment(int num_workers) {
+int experiment(string ip_addr, int num_workers) {
     int totalAuths = 0;
     cout << "workers = " << num_workers << endl;
     int *auths = (int *)malloc(num_workers * sizeof(int));
     vector<thread*> workers;
     vector<Client*> clients;
     for (int i = 0; i < num_workers; i++) {
-        clients.push_back(new Client());
+        clients.push_back(new Client(ip_addr));
         workers.push_back(new thread(init, clients[i]));
     }
     for (int i = 0; i < num_workers; i++) {
@@ -67,8 +66,9 @@ int experiment(int num_workers) {
 int main(int argc, char *argv[]) {
     int workers = 20;
     int maxAuths = 0;
+    string ip_addr(argv[1]);
     while (true) {
-        int auths = experiment(workers);
+        int auths = experiment(ip_addr, workers);
         if (auths < maxAuths) {
             cout << "MAX AUTHS = " << maxAuths << endl;
             cout << "workers = " << workers - 5 << endl;

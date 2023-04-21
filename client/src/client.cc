@@ -124,9 +124,13 @@ void pt_to_bufs(const_Params params, const EC_POINT *pt, uint8_t *x,
   memcpy(y, buf + 1 + 32, 32);
 }
 
-Client::Client(bool startConn) {
+Client::Client(string ip_addr, bool startConn) {
     params = Params_new(P256);
-    logAddr = LOG_IP_ADDR;
+    if (ip_addr.size() > 0) {
+        logAddr = ip_addr + ":12345";
+    } else {
+        logAddr = LOG_IP_ADDR;
+    }
     if (startConn) {
         stub = Log::NewStub(CreateChannel(logAddr, InsecureChannelCredentials()));
     }
@@ -793,7 +797,6 @@ void Client::DispatchProof(sem_t *semas, uint8_t *proof_buf[], int *proof_buf_le
 int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
                  uint8_t *key_handle, uint8_t *flags_out, uint32_t *ctr_out,
                  uint8_t *sig_out, bool noRegistration) {
-  int rv = ERROR;
   
   BIGNUM *out = NULL;
   BIGNUM *x_coord = NULL;
@@ -831,8 +834,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   uint8_t auth_input[16 + SHA256_DIGEST_LENGTH];
   uint8_t *auth_sig;
   unsigned int auth_sig_len;
-  INIT_TIMER;
-  START_TIMER;
 
   AuthRequest req;
   AuthCheckRequest checkReq;
@@ -842,11 +843,11 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   ClientContext client_ctx2;
   sem_t proof_semas[NUM_ROUNDS];
 
-  CHECK_A (out = BN_new());
-  CHECK_A (sk = BN_new());
-  CHECK_A (x_coord = BN_new());
-  CHECK_A (mdctx = EVP_MD_CTX_create());
-  CHECK_A (ctx = BN_CTX_new());
+  out = BN_new();
+  sk = BN_new();
+  x_coord = BN_new();
+  mdctx = EVP_MD_CTX_create();
+  ctx = BN_CTX_new();
   Params_rand_exponent(params, sk);
 
   /* Compute signed message: hash of appId, user presence, counter, and
@@ -867,12 +868,10 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   memcpy((uint8_t *)&enc_key_128, enc_key, 16);
   aes_128_ctr(enc_key_128, iv, app_id, ct, SHA256_DIGEST_LENGTH, 0);
 
-  START_TIMER;
   for (int i = 0; i < NUM_ROUNDS; i++) {
     sem_init(&proof_semas[i], 1, 0);
     workers[i] = thread(ProveSerializeCtCircuit, app_id, SHA256_DIGEST_LENGTH * 8, message_buf, message_buf_len * 8, hash_out, ct, enc_key, enc_key_comm, r_open, iv, numRands, &proof_buf[i], &proof_buf_len[i], &proof_semas[i]);
   }
-  //STOP_TIMER("Prover time");
   proofDispatcher = thread(&Client::DispatchProof, this, proof_semas, proof_buf, proof_buf_len, auth_ctr);
   req.set_challenge(message_buf, message_buf_len);
   req.set_ct(ct, SHA256_DIGEST_LENGTH);
@@ -881,7 +880,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   Sign(auth_input, 16 + SHA256_DIGEST_LENGTH, auth_key, &auth_sig, &auth_sig_len, params);
   req.set_tag(auth_sig, auth_sig_len);
   //STOP_TIMER("prove");
-  START_TIMER;
   if (!noRegistration) {
     ThresholdSign(out, hash_out, sk_map[string((const char *)key_handle, MAX_KH_SIZE)], req);
   } else {
@@ -904,7 +902,6 @@ int Client::Authenticate(uint8_t *app_id, int app_id_len, uint8_t *challenge,
   }
   proofDispatcher.join();
 
-cleanup:
   for (int i = 0; i < NUM_ROUNDS; i++) {
     free(proof_buf[i]);
   }
@@ -913,7 +910,14 @@ cleanup:
   if (sk) BN_free(sk);
   if (x_coord) BN_free(x_coord);
   if (ctx) BN_CTX_free(ctx);
-  return rv == OKAY ? sig_len : ERROR;
-  return OKAY;
+  return sig_len;
+}
+
+uint32_t Client::GetLogMs() {
+    MsRequest req;
+    MsResponse resp;
+    ClientContext client_ctx;
+    stub->SendMs(&client_ctx, req, &resp);
+    return resp.ms();
 }
 
