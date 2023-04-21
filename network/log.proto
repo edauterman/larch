@@ -15,6 +15,7 @@ service Log {
     rpc SendPwInit (PwInitRequest) returns (PwInitResponse) {}
     rpc SendPwRegister (PwRegisterRequest) returns (PwRegisterResponse) {}
     rpc SendPwAuth (PwAuthRequest) returns (PwAuthResponse) {}
+    rpc SendPwMs (PwMsRequest) returns (PwMsResponse) {}
 }
 
 message HintMsg {
@@ -128,4 +129,10 @@ message PwAuthRequest {
 
 message PwAuthResponse {
     bytes out = 1;
+}
+
+message PwMsRequest {}
+
+message PwMsResponse {
+    uint32 ms = 1;
 }

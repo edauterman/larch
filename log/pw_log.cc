@@ -18,6 +18,7 @@ class LogServiceImpl final : public Log::Service {
     public:
         Params params;
         PasswordLog *l;
+        uint32_t time_ms = 0;
 
         LogServiceImpl() {}
 
@@ -45,6 +46,7 @@ class LogServiceImpl final : public Log::Service {
         }
 
        Status SendPwAuth(ServerContext *context, const PwAuthRequest *req, PwAuthResponse *resp) override {
+            auto t1 = std::chrono::high_resolution_clock::now();
             ElGamalCt *ct = new ElGamalCt(params);
             EC_POINT_oct2point(Params_group(params), ct->R, (const unsigned char *)req->ct_r().c_str(), 33, Params_ctx(params));
             EC_POINT_oct2point(Params_group(params), ct->C, ((const unsigned char *)req->ct_c().c_str()), 33, Params_ctx(params));
@@ -57,7 +59,15 @@ class LogServiceImpl final : public Log::Service {
             uint8_t out_buf[33];
             EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
             resp->set_out(out_buf, 33);
+            auto t2 = std::chrono::high_resolution_clock::now();
+            time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
  
+            return Status::OK;
+        }
+
+        Status SendPwMs(ServerContext *context, const PwMsRequest *req, PwMsResponse *resp) override {
+            resp->set_ms(time_ms);
+            time_ms = 0;
             return Status::OK;
         }
 };

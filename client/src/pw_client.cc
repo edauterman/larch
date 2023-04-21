@@ -65,6 +65,7 @@ EC_POINT *PwClient::Authenticate(string id) {
     PwAuthRequest req;
     PwAuthResponse resp;
     ClientContext client_ctx;
+    auto t1 = std::chrono::high_resolution_clock::now();
     ElGamalCt *ct = new ElGamalCt(c->params);
     BIGNUM *r = BN_new();
     OrProof *or_proof_x;
@@ -95,12 +96,26 @@ EC_POINT *PwClient::Authenticate(string id) {
     Sign(msg_buf, 66, sk, &sig_buf, &sig_len, c->params);
     req.set_sig(sig_buf, sig_len);
     free(sig_buf);
+    auto t2 = std::chrono::high_resolution_clock::now();
 
     stub->SendPwAuth(&client_ctx, req, &resp);
+    auto t3 = std::chrono::high_resolution_clock::now();
 
     EC_POINT *out = EC_POINT_new(Params_group(c->params));
     EC_POINT_oct2point(Params_group(c->params), out, (const unsigned char *)resp.out().c_str(), 33, Params_ctx(c->params));
  
     EC_POINT *pw = c->FinishAuth(orderMap[id], out, r);
+    auto t4 = std::chrono::high_resolution_clock::now();
+    
+    clientMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() + std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+
     return pw;
+}
+
+uint32_t PwClient::GetLogMs() {
+    PwMsRequest req;
+    PwMsResponse resp;
+    ClientContext client_ctx;
+    stub->SendPwMs(&client_ctx, req, &resp);
+    return resp.ms();
 }

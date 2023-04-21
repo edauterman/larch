@@ -4,6 +4,8 @@
 #include <openssl/ec.h>
 #include <grpcpp/grpcpp.h>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 #include "../../zkboo/utils/timer.h"
 #include "../../crypto/src/params.h"
@@ -16,6 +18,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
     string id = "foo";
     int iters = 10;
+    string out_file(argv[1]);
     int *lens = (int *)malloc(iters * sizeof(int));
     for (int i = 0; i < iters; i++) {
         lens[i] = 1 << (i + 1);
@@ -25,7 +28,8 @@ int main(int argc, char *argv[]) {
     PwClient *c = new PwClient();
     c->Initialize();
     int totalRegs = 0;
-    INIT_TIMER;
+    ofstream f;
+    f.open(out_file);
     for (int i = 0; i < iters; i++) {
 
         // Do registrations
@@ -37,10 +41,22 @@ int main(int argc, char *argv[]) {
 
         // Run authentications
         cout << "Starting authentications for " << lens[i] << endl;
-        START_TIMER;
+        auto t1 = std::chrono::high_resolution_clock::now();
         for (int j = 0; j < 1; j++) {
             EC_POINT *pw_test = c->Authenticate(to_string(0));
         }
-        STOP_TIMER("authentication (10)");
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        uint32_t logMs = c->GetLogMs();
+        double clientMs = c->clientMs;
+        c->clientMs = 0;
+        cout << "Log ms: " << logMs << endl;
+        cout << "Client ms: " << clientMs << endl;
+        cout << "Total ms: " << totalMs << endl;
+        f << logMs << endl;
+        f << clientMs << endl;
+        f << totalMs << endl;
+ 
     }
+    f.close();
 }

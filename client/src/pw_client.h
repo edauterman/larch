@@ -19,6 +19,8 @@ class PwClient {
         void Initialize();
         void Register(string id, EC_POINT *pw);
         EC_POINT *Authenticate(string id);
+        uint32_t GetLogMs();
+        double clientMs;
 
     private:
         PasswordClient *c;
