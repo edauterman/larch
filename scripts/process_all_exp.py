@@ -50,6 +50,7 @@ with open('fido2_exp/out_tput', 'r') as f:
 results['log_presig_b']['fido2'] = 6 * field_elem_size
 results['auth_record_b']['fido2'] = ecdsa_sig_size + aes_ct_size + timestamp_size
 
+# TODO get the numbers for this
 results['online_comm_kb']['fido2'] = 0
 results['total_comm_kb']['fido2'] = 0
 results['out_total_comm_kb']['fido2'] = 0 
