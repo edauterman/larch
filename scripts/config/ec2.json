@@ -5,7 +5,7 @@
 "keyname": "DoryKeyPair",
 "server_instance_type": "c5.4xlarge",
 "client_instance_type": "c5.2xlarge",
-"ami_id": "ami-0a32fd0b97ea4a926",
+"ami_id": "ami-0840d9d4df37a1e1e",
 "security": "launch-wizard-21",
 "secret_key_path": "~/.ssh/dory.pem"
 }

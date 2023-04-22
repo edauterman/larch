@@ -103,4 +103,5 @@ int main(int argc, char **argv) {
     f.open(out_file);
     f << proveMs << endl;
     f << verifyMs << endl;
+    f << proof_buf_len[0] * NUM_ROUNDS << endl;
 }

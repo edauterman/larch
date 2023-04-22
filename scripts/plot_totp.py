@@ -19,8 +19,8 @@ y = [[], []]
 for i in range(20,120,20):
     with open("%s/out_%d" % (in_dir, i), 'r') as f:
         lines = f.readlines()
-        y[0].append(float(lines[2]) / 1000.0)
-        y[1].append(float(lines[3]) / 1000.0)
+        y[0].append(float(lines[3]) / 1000.0)
+        y[1].append(float(lines[4]) / 1000.0)
 
 # N = 10000, n = 100
 print(y)

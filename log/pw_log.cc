@@ -3,6 +3,7 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
+#include <list>
 
 #include "../crypto/src/params.h"
 #include "../crypto/src/pw.h"
@@ -18,6 +19,8 @@ class LogServiceImpl final : public Log::Service {
     public:
         Params params;
         PasswordLog *l;
+        list<ElGamalCt *>ctList;
+        list<string>sigList;
         uint32_t time_ms = 0;
 
         LogServiceImpl() {}
@@ -57,8 +60,13 @@ class LogServiceImpl final : public Log::Service {
 
             EC_POINT *out = l->Auth(ct, or_proof_x, or_proof_r);
             uint8_t out_buf[33];
-            EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
-            resp->set_out(out_buf, 33);
+            if (out != NULL) {
+                EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
+                resp->set_out(out_buf, 33);
+                ctList.push_back(ct);
+                sigList.push_back(string(req->sig()));
+
+            }
             auto t2 = std::chrono::high_resolution_clock::now();
             time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
  
