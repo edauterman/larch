@@ -54,10 +54,11 @@ with open('fido2_exp/out_proof_1', 'r') as f:
     lines = f.readlines()
     results['online_comm_kb']['fido2'] = float(lines[2]) / 1024.0
     results['total_comm_kb']['fido2'] = float(lines[2]) / 1024.0
-    results['out_total_comm_kb']['fido2'] = float(lines[2]) / 1024.0
+    # TODO add real value
+    results['out_total_comm_kb']['fido2'] = 0
 
-results["10M_min_cost"]["fido2"] = 10e6 * (1.0 / results['auths_per_core']['fido2'] * min_core_hour_cost + results["out_total_comm_kb"]["fido2"] / float(1<<20) * min_out_gb_cost)
-results["10M_max_cost"]["fido2"] = 10e6 * (1.0 / results['auths_per_core']['fido2'] * max_core_hour_cost + results["out_total_comm_kb"]["fido2"] / float(1<<20) * max_out_gb_cost)
+results["10M_min_cost"]["fido2"] = 10e6 * (1.0 / results['auths_per_core']['fido2'] /60.0 / 60.0 * min_core_hour_cost + results["out_total_comm_kb"]["fido2"] / float(1<<20) * min_out_gb_cost)
+results["10M_max_cost"]["fido2"] = 10e6 * (1.0 / results['auths_per_core']['fido2'] / 60.0 / 60.0 * max_core_hour_cost + results["out_total_comm_kb"]["fido2"] / float(1<<20) * max_out_gb_cost)
 
 # Parse TOTP
 # offline MB, online MB, received comm, offline ms, online ms
@@ -66,38 +67,38 @@ with open('totp_exp/out_20', 'r') as f:
     results['online_time_ms']['totp'] = float(lines[4])
     results['total_time_ms']['totp'] = float(lines[3]) + float(lines[4])
     results['online_comm_kb']['totp'] = float(lines[1]) * (1<<10)
-    results['total_comm_kb']['totp'] = (float(lines[0] + float(lines[1]))) * (1<<10)
+    results['total_comm_kb']['totp'] = (float(lines[0]) + float(lines[1])) * (1<<10)
     results['out_total_comm_kb']['totp'] = (float(lines[2])) * (1<<10)
 
 with open('totp_exp/out_20_1', 'r') as f:
     lines = f.readlines()
-    results['auths_per_core']['totp'] = 1.0 / (float(lines[3]) + float(lines[4]))
+    results['auths_per_core']['totp'] = 1.0 / ((float(lines[3]) + float(lines[4])) / 1000.0)
 
 results['log_presig_b']['totp'] = '0'
 results['auth_record_b']['totp'] = ecdsa_sig_size + aes_ct_size + timestamp_size
 
-results["10M_min_cost"]["totp"] = 10e6 * (1.0 / results['auths_per_core']['totp'] * min_core_hour_cost + results["out_total_comm_kb"]["totp"] / float(1<<20) * min_out_gb_cost)
-results["10M_max_cost"]["totp"] = 10e6 * (1.0 / results['auths_per_core']['totp'] * max_core_hour_cost + results["out_total_comm_kb"]["totp"] / float(1<<20) * max_out_gb_cost)
+results["10M_min_cost"]["totp"] = 10e6 * (1.0 / results['auths_per_core']['totp'] /60.0 / 60.0 * min_core_hour_cost + results["out_total_comm_kb"]["totp"] / float(1<<20) * min_out_gb_cost)
+results["10M_max_cost"]["totp"] = 10e6 * (1.0 / results['auths_per_core']['totp'] / 60.0 / 60.0 * max_core_hour_cost + results["out_total_comm_kb"]["totp"] / float(1<<20) * max_out_gb_cost)
 
 # Parse passwords
 with open('pw_exp/out', 'r') as f:
     lines = f.readlines()
-    results['online_time_ms']['pw'] = float(lines[6*3])
-    results['total_time_ms']['pw'] = float(lines[6*3])
+    results['online_time_ms']['pw'] = float(lines[6*3 + 2])
+    results['total_time_ms']['pw'] = float(lines[6*3 + 2])
 
 with open('pw_exp/out_1', 'r') as f:
     lines = f.readlines()
-    results['auths_per_core']['pw'] = 1.0 / float(lines[6*3])
+    results['auths_per_core']['pw'] = 1.0 / (float(lines[6*3]) / 1000.0)
     
 results['online_comm_kb']['pw'] = (2 * proof_size_bytes(128) + elgamal_ct_size) / 1024.0
 results['total_comm_kb']['pw'] = (2 * proof_size_bytes(128) + elgamal_ct_size) / 1024.0
 results['out_total_comm_kb']['pw'] = 0
 
 results['log_presig_b']['pw'] = '0'
-results['auth_record_b']['pw'] = elgamal_ct_size + timestamp + ecdsa_sig_size
+results['auth_record_b']['pw'] = elgamal_ct_size + timestamp_size + ecdsa_sig_size
 
-results["10M_min_cost"]["pw"] = 10e6 * (1.0 / results['auths_per_core']['pw'] * min_core_hour_cost + results["out_total_comm_kb"]["pw"] / float(1<<20) * min_out_gb_cost)
-results["10M_max_cost"]["pw"] = 10e6 * (1.0 / results['auths_per_core']['pw'] * max_core_hour_cost + results["out_total_comm_kb"]["pw"] / float(1<<20) * max_out_gb_cost)
+results["10M_min_cost"]["pw"] = 10e6 * (1.0 / results['auths_per_core']['pw'] / 60.0 / 60.0 * min_core_hour_cost + results["out_total_comm_kb"]["pw"] / float(1<<20) * min_out_gb_cost)
+results["10M_max_cost"]["pw"] = 10e6 * (1.0 / results['auths_per_core']['pw'] / 60.0 / 60.0 * max_core_hour_cost + results["out_total_comm_kb"]["pw"] / float(1<<20) * max_out_gb_cost)
 
 with open(OUT_FILE, 'w') as f:
     json.dump(results, f)
