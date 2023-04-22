@@ -21,7 +21,7 @@ def measure_cores(num_client_cores):
 
 
 def measure_throughput():
-    ec2_file = "config/ec2_tput_4.json"
+    ec2_file = "config/ec2_tput_1.json"
     provisionAndSetupAll(ec2_file, MACHINES_FILE)
     properties = loadPropertyFile(ec2_file)
     machines = loadPropertyFile(MACHINES_FILE)
@@ -34,9 +34,9 @@ def measure_throughput():
     teardown(ec2_file)
  
 def run_fido2_exp():
-    client_cores = [1,2,4,8]
-    for cores in client_cores:
-        measure_cores(cores)
+    #client_cores = [1,2,4,8]
+    #for cores in client_cores:
+    #    measure_cores(cores)
     measure_throughput()
 
 run_fido2_exp()

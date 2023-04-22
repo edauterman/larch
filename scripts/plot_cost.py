@@ -5,39 +5,45 @@ import sys
 import numpy as np
 import math
 from math import ceil
+import json
 
 max_cpu_hour_cost = 0.085
 network_gb_cost = 0.05
 
+IN_FILE = "perf.json"
+
+with open(IN_FILE, 'r') as f:
+  results = json.load(f)
+
 def get_fido2_cost(auths):
-    auth_tput = 6.23
+    auth_tput = results["auths_per_core"]["fido2"]
     auth_sec = auths / auth_tput
     core_hours = ceil(auth_sec/60.0/60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
-    data_gb = 352.0 / (1 << 30)
+    data_gb = results["out_total_comm_kb"]["fido2"] / (1 << 20)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost
 
 def get_pw_cost(auths):
-    auth_tput = 52.63
+    auth_tput = results["auths_per_core"]["pw"]
     auth_sec = auths / auth_tput
     core_hours = ceil(auth_sec / 60.0 / 60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
-    data_gb = 33.0 / (1 << 30)
+    data_gb = results["out_total_comm_kb"]["pw"] / (1 << 20)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost
 
 def get_totp_cost(auths):
-    auth_tput = 0.715819
+    auth_tput = results["auths_per_core"]["totp"]
     auth_sec = auths/auth_tput
     core_hours = ceil(auth_sec / 60.0 / 60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
-    data_gb = 36.78454094 / (1 << 20)
+    data_gb = results["out_total_comm_kb"]["totp"] / (1 << 20)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost

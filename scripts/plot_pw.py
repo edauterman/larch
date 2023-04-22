@@ -25,7 +25,7 @@ with open(in_name, 'r') as f:
 
 
 
-fig = plt.figure(figsize = (2.4,2))
+fig = plt.figure(figsize = (2.4,1.6))
 #fig = plt.figure(figsize = (2.4,1.6))
 ax = fig.add_subplot(111)
 x = []
@@ -69,7 +69,7 @@ labels.reverse()
 
 ax.spines['left'].set_position("zero")
 #ax.spines['bottom'].set_position("zero")
-remove_chart_junk(plt,ax,grid=True,below=False)
+#remove_chart_junk(plt,ax,grid=True,below=False)
 
 ax.yaxis.grid(which='major', color='0.9', linestyle=':')
 plt.savefig(out_name, bbox_inches='tight')

@@ -1,6 +1,8 @@
 import os
 import json
 
+OUT_FILE = "perf.json"
+
 field_elem_size = 32
 ecdsa_sig_size = 2 * field_elem_size
 aes_ct_size = 16
@@ -11,8 +13,6 @@ min_core_hour_cost = 0.0425
 max_core_hour_cost = 0.085
 min_out_gb_cost = 0.05
 max_out_gb_cost = 0.09
-
-server_cores = 8
 
 def proof_size_bytes(log_len):
     return (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + 4
@@ -45,7 +45,7 @@ with open('fido2_exp/out_latency_4', 'r') as f:
 
 with open('fido2_exp/out_tput', 'r') as f:
     lines = f.readlines()
-    results['auths_per_core']['fido2'] = float(lines[0]) / float(server_cores)
+    results['auths_per_core']['fido2'] = float(lines[0])
 
 results['log_presig_b']['fido2'] = 6 * field_elem_size
 results['auth_record_b']['fido2'] = ecdsa_sig_size + aes_ct_size + timestamp_size
@@ -99,4 +99,5 @@ results['auth_record_b']['pw'] = elgamal_ct_size + timestamp + ecdsa_sig_size
 results["10M_min_cost"]["pw"] = 10e6 * (1.0 / results['auths_per_core']['pw'] * min_core_hour_cost + results["out_total_comm_kb"]["pw"] / float(1<<20) * min_out_gb_cost)
 results["10M_max_cost"]["pw"] = 10e6 * (1.0 / results['auths_per_core']['pw'] * max_core_hour_cost + results["out_total_comm_kb"]["pw"] / float(1<<20) * max_out_gb_cost)
 
-
+with open(OUT_FILE, 'w') as f:
+    json.dump(results, f)
