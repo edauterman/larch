@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import math
 
-out_name = "plot_storage.pdf"
+out_name = "out_plots/plot_storage.pdf"
 x = []
 y1 = []
 y2 = []

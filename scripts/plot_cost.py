@@ -21,7 +21,7 @@ def get_fido2_cost(auths):
     core_hours = ceil(auth_sec/60.0/60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
-    data_gb = results["out_total_comm_kb"]["fido2"] / (1 << 20)
+    data_gb = auths * results["out_total_comm_kb"]["fido2"] / (1 << 20)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost
@@ -32,7 +32,7 @@ def get_pw_cost(auths):
     core_hours = ceil(auth_sec / 60.0 / 60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
-    data_gb = results["out_total_comm_kb"]["pw"] / (1 << 20)
+    data_gb = auths * results["out_total_comm_kb"]["pw"] / (1 << 20)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost
@@ -43,13 +43,12 @@ def get_totp_cost(auths):
     core_hours = ceil(auth_sec / 60.0 / 60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
-    data_gb = results["out_total_comm_kb"]["totp"] / (1 << 20)
+    data_gb = auths * results["out_total_comm_kb"]["totp"] / (1 << 20)
     network_cost = network_gb_cost * data_gb
-
     return core_cost + network_cost
 
 
-out_name = "plot_cost.pdf" 
+out_name = "out_plots/plot_cost.pdf" 
 numAuths = [1000 * i for i in range(1,10000)]
 fido2 = []
 pw = []
@@ -72,8 +71,8 @@ ax.set_xlabel("Authentications")
 ax.set_ylabel("Cost")
 ax.set_xscale("log")
 ax.set_yscale("log")
-ax.set_yticks([0.1, 1,10,100,1000])
-ax.set_yticklabels(["\$0.1","\$1","\$10","\$100","\$1000"])
+ax.set_yticks([0.1, 1,10,100,1000,10000,100000])
+ax.set_yticklabels(["\$0.1","\$1","\$10","\$100","\$1K", "\$10K", "\$100K"])
 ax.set_xticks([1000,10000,100000,1000000,10000000])
 ax.set_xticklabels(["1K","10K","100K","1M","10M"])
 #ax.set_yticks([0, 5, 10, 15, 20])

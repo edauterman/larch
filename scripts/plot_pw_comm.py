@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import math
 
-out_name = "plot_pw_comm.pdf"
+out_name = "out_plots/plot_pw_comm.pdf"
 
 def proof_size_bytes(log_len):
     return (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + 4
