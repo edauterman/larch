@@ -12,10 +12,10 @@ def run_pw_latency():
 
     executeRemoteCommand(getHostName(machines['client_ip_address']), 'mkdir ~/pw_exp', key=properties['secret_key_path'])
     executeRemoteCommand(getHostName(machines['server_ip_address']), 'pkill -f pw_log', key=properties['secret_key_path'])
-    executeRemoteCommand(getHostName(machines['server_ip_address']), 'cd zkboo-r1cs; nohup ./build/bin/pw_log > /dev/null 2>&1 &', key=properties['secret_key_path'])
+    executeRemoteCommand(getHostName(machines['server_ip_address']), 'cd larch; nohup ./build/bin/pw_log > /dev/null 2>&1 &', key=properties['secret_key_path'])
     time.sleep(10)
-    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd zkboo-r1cs; ./scripts/wan.sh M', key=properties['secret_key_path']) 
-    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd zkboo-r1cs; ./build/bin/pw_latency_bench %s ~/pw_exp/out' % (machines['server_ip_address']), key=properties['secret_key_path']) 
+    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd larch; ./scripts/wan.sh M', key=properties['secret_key_path']) 
+    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd larch; ./build/bin/pw_latency_bench %s ~/pw_exp/out' % (machines['server_ip_address']), key=properties['secret_key_path']) 
 
     getDirectory('.', [getHostName(machines['client_ip_address'])], '~/pw_exp', key=properties['secret_key_path'])
     teardown(EC2_FILE)
@@ -28,10 +28,10 @@ def run_pw_tput():
 
     executeRemoteCommand(getHostName(machines['client_ip_address']), 'mkdir ~/pw_exp', key=properties['secret_key_path'])
     executeRemoteCommand(getHostName(machines['server_ip_address']), 'pkill -f pw_log', key=properties['secret_key_path'])
-    executeRemoteCommand(getHostName(machines['server_ip_address']), 'cd zkboo-r1cs; nohup ./build/bin/pw_log > /dev/null 2>&1 &', key=properties['secret_key_path'])
+    executeRemoteCommand(getHostName(machines['server_ip_address']), 'cd larch; nohup ./build/bin/pw_log > /dev/null 2>&1 &', key=properties['secret_key_path'])
     time.sleep(10)
-    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd zkboo-r1cs; ./scripts/wan.sh M', key=properties['secret_key_path']) 
-    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd zkboo-r1cs; ./build/bin/pw_latency_bench %s ~/pw_exp/out_1' % (machines['server_ip_address']), key=properties['secret_key_path']) 
+    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd larch; ./scripts/wan.sh M', key=properties['secret_key_path']) 
+    executeRemoteCommand(getHostName(machines['client_ip_address']), 'cd larch; ./build/bin/pw_latency_bench %s ~/pw_exp/out_1' % (machines['server_ip_address']), key=properties['secret_key_path']) 
 
     getDirectory('.', [getHostName(machines['client_ip_address'])], '~/pw_exp', key=properties['secret_key_path'])
     teardown(ec2_file)
