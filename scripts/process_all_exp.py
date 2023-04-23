@@ -90,8 +90,9 @@ with open('pw_exp/out_1', 'r') as f:
     lines = f.readlines()
     results['auths_per_core']['pw'] = 1.0 / (float(lines[6*3]) / 1000.0)
     
-results['online_comm_kb']['pw'] = (2 * proof_size_bytes(128) + elgamal_ct_size) / 1024.0
-results['total_comm_kb']['pw'] = (2 * proof_size_bytes(128) + elgamal_ct_size) / 1024.0
+# 2^7=128
+results['online_comm_kb']['pw'] = (2 * proof_size_bytes(7) + elgamal_ct_size) / 1024.0
+results['total_comm_kb']['pw'] = (2 * proof_size_bytes(7) + elgamal_ct_size) / 1024.0
 results['out_total_comm_kb']['pw'] = 0
 
 results['log_presig_b']['pw'] = '0'
