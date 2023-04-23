@@ -1,6 +1,29 @@
 # Larch
 
-### Setup
+Larch is an accountable authentication framework with strong security and privacy properties. Larch provides strong user privacy while ensuring that every authentication is correctly recorded by the larch log server. Specifically, an attacker that compromises a user’s device cannot authenticate without creating evidence in the log, and the log cannot learn which web service (relying party) the user is authenticating to. Larch is backwards-compatible with relying parties that support FIDO2, TOTP, and password-based login.
+
+This implementation accompanies our paper "Accountable authentication with privacy protection: The Larch system for universal login" by Emma Dauterman, Danny Lin, Henry Corrigan-Gibbs, and David Mazieres.
+
+**WARNING:** This is an academic proof-of-concept prototype and has not received careful code review. This implementation is NOT ready for production use.
+
+This prototype is released under the Apache v2 license (see [License](https://github.com/edauterman/larch/LICENSE)).
+
+## Setup
+
+For our experiments, we will use a cluster of AWS EC2 instances. Reviewers should have been provided with credentials to our AWS environment with compute resources. Reviewers should also have moved `larch.pem` (provided with submission) to `~/.ssh/` and set permissions to 400.
+
+1. [2 minutes] Make sure python3 is downloaded. Then run the following:
+```
+git clone https://github.com/edauterman/larch
+cd larch/scripts
+pip3 install -r requirements.txt
+
+```
+
+2. [5 minutes] Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) (version 2 works) and run `aws configure` using the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) (use `json` as the default output format, and it does not matter what default region you choose).
+
+
+### Building from source
 Dependencies
 * OpenSSL 1.1
 * [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
@@ -39,12 +62,4 @@ If `sigs` is included, omit the ZK proof verification (used to benchmark signing
 * `zkboo/test/ct_test`: Check that proof verifies correctly.
 * `zkboo/test/serialize_test`: Check that proof serialization is correct.
 * `zkboo/test/parallel_test`: Benchmark proof with correct number of repetitions.
-TODO: write test to explicitly check for bad proofs.
 
-
-### TODOs before open source
-* Either get OpenSSL ECDSA signing working with correct signature format / correct OpenSSL
-version or do more extensive testing for ECDSA sign/verify functions (for authenticating
-ciphertexts sent to log and baseline).
-* Make sure always fully propagating errors instead of just printing error
-* More comprehensive testing (esp. for ZKBoo proofs when different types of errors introduced)
