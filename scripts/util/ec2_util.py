@@ -27,13 +27,13 @@ def waitUntilInitialised(conn,tag, nbInstances = 1):
         while (len(status) < nbInstances):
             try:
                 status = conn.get_all_instance_status(instance_ids=getEc2InstancesId(conn, 'Name', {'tag:Name':tag}, True))
-                print(status)
+                #print(status)
             except Exception as e:
                 print(e)
         status = []
         time.sleep(5)
         for s in status:
-            print(s.system_status.details['reachability'])
+            #print(s.system_status.details['reachability'])
             if (s.system_status.details['reachability'] != 'passed'):
                 initialised = False
 
