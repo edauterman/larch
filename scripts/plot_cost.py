@@ -10,7 +10,7 @@ import json
 max_cpu_hour_cost = 0.085
 network_gb_cost = 0.05
 
-IN_FILE = "perf.json"
+IN_FILE = "out_data/perf.json"
 
 with open(IN_FILE, 'r') as f:
   results = json.load(f)

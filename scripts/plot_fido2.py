@@ -10,8 +10,8 @@ from collections import defaultdict
 from matplotlib.patches import Patch
 import scipy.special
 
-out_name = "plot_fido2.pdf" 
-in_dir = "fido2_exp/"
+out_name = "out_plots/plot_fido2.pdf" 
+in_dir = "out_data/fido2_exp/"
 labels = ["Verify (Server)", "Other", "Prove (Client)"] 
 colors=[custom_style.hash_colors[3], custom_style.hash_colors[4], custom_style.hash_colors[1]]
 #colors=[custom_style.mix_colors[3], custom_style.hash_colors[4], custom_style.hash_colors[1], custom_style.hash_colors[0]]

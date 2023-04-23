@@ -1,6 +1,7 @@
 import json
+from tabulate import tabulate
 
-IN_FILE = "perf.json"
+IN_FILE = "out_data/perf.json"
 
 with open(IN_FILE, 'r') as f:
   results = json.load(f)
@@ -10,7 +11,8 @@ row_labels = ["Online time (ms)", "Total time (ms)", "Online comm (KiB)", "Total
 dict_cols = ["fido2", "totp", "pw"]
 col_labels = ["FIDO2", "TOTP", "PW"]
 
-print("\t\t\t %s \t %s \t %s" % (col_labels[0], col_labels[1], col_labels[2]))
-
+table = [col_labels]
 for i,row in enumerate(dict_rows):
-    print("%s \t %s \t %s \t %s" % (row_labels[i], results[row]['fido2'], results[row]['totp'], results[row]['pw']))
+    table.append([row_labels[i], results[row]['fido2'], results[row]['totp'], results[row]['pw']])
+
+print(tabulate(table, headers='firstrow', tablefmt='fancy_grid'))

@@ -10,8 +10,8 @@ from collections import defaultdict
 from matplotlib.patches import Patch
 import scipy.special
 
-out_name = "plot_totp.pdf" 
-in_dir = "totp_exp/"
+out_name = "out_plots/plot_totp.pdf" 
+in_dir = "out_data/totp_exp/"
 labels = ["Offline", "Online"] 
 colors=[custom_style.hash_colors[2], custom_style.mix_colors[5], custom_style.hash_colors[1], custom_style.hash_colors[0]]
 

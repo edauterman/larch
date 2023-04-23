@@ -10,8 +10,8 @@ from collections import defaultdict
 from matplotlib.patches import Patch
 import scipy.special
 
-out_name =  "plot_pw.pdf" 
-in_name = "pw_exp/out" 
+out_name =  "out_plots/plot_pw.pdf" 
+in_name = "out_data/pw_exp/out" 
 labels = ["Network", "Verify (Server)", "Prove (Client)"] 
 colors=[custom_style.hash_colors[4], custom_style.hash_colors[3], custom_style.hash_colors[1]]
 
