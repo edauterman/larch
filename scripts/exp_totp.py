@@ -37,7 +37,6 @@ def run_totp_tput():
     getDirectory('out_data/', [getHostName(machines['client_ip_address'])], '~/totp_exp', key=properties['secret_key_path'])
     teardown(ec2_file)
 
-executeCommand("mkdir totp_exp")
 run_totp_latency()
 run_totp_tput()
 
