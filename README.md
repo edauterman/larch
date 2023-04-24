@@ -10,7 +10,7 @@ This prototype is released under the Apache v2 license (see [License](https://gi
 
 ## Setup
 
-For our experiments, we will use a cluster of AWS EC2 instances. Reviewers should have been provided with credentials to our AWS environment with compute resources. Reviewers should also have moved `larch.pem` (provided with submission) to `~/.ssh/` and set permissions to 400.
+For our experiments, we will use a cluster of AWS EC2 instances. Reviewers should have been provided with credentials to our AWS environment with compute resources to set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. Reviewers should also have moved `larch.pem` (provided with submission) to `~/.ssh/` and set permissions to 400.
 
 [2 minutes] Make sure python3 is downloaded. Then run the following:
 ```
