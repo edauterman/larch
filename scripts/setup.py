@@ -55,7 +55,7 @@ def provision(ec2_file, machines_file):
 
 def setup_machine(ip_addr, ec2_file):
     properties = loadPropertyFile(ec2_file)
-    executeRemoteCommand(getHostName(ip_addr), 'cd larch; git stash; git pull; cd larch; make > /dev/null &> /dev/null', key=properties['secret_key_path'], flags="-A")
+    executeRemoteCommand(getHostName(ip_addr), 'cd larch; git stash; git pull; make > /dev/null &> /dev/null', key=properties['secret_key_path'], flags="-A")
     #executeRemoteCommand(getHostName(ip_addr), 'cd larch; git stash; rm scripts/totp_experiments.py; git pull', key=properties['secret_key_path'], flags="-A")
     #executeRemoteCommand(getHostName(ip_addr), 'ssh-keyscan github.com >> ~/.ssh/known_hosts; git clone git@github.com:edauterman/larch.git', key=properties['secret_key_path'], flags="-A")
 
