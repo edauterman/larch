@@ -49,7 +49,7 @@ These scripts will run experiments for FIDO2, TOTP, and password-based login res
 
 ## Plot figures
 
-We now describe how to generate the figures and tables in the paper. For comparison, we include the reference plots we generated in `larch/scripts/ref_plots`, and we also link them below.
+We now describe how to generate the figures and tables in the paper. The plots are generated in `larch/scripts/out_plots`. For comparison, we include the reference plots we generated in `larch/scripts/ref_plots`, and we also link them below.
 
 ### Process experiment data (before generating any plots)
 
@@ -96,7 +96,7 @@ Generate the left plot in figure 4 by running in `scripts/`:
 ```
 python3 plot_storage.py     # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. This plot is purely analytical and not based on any performance measurements.
+This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. This plot is purely analytical (based on presignature size from our ECDSA multisignature protocol) and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_storage.png" width="400">
 
@@ -108,7 +108,7 @@ python3 plot_cost.py        # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_cost.png`.
 
-Note that this figure looks slightly different than the figure in the submission draft. This is due to a bug in the script. We include a corrected figure below.
+Note that this figure looks slightly different than the figure in the submission draft. This is due to a bug in the script that we fixed since submission time. We include a corrected figure below.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_cost.png" width="400">
 
@@ -118,7 +118,7 @@ Generate the right plot in figure 4 by running in `scripts/`:
 ```
 python3 plot_pw_comm.py     # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_pw_comm.png`. This plot is purely analytical and not based on any performance measurements.
+This script will output a plot in `larch/scripts/out_plots/plot_pw_comm.png`. This plot is purely analytical (based on the size of the cryptographic proof) and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw_comm.png" width="400">
 
@@ -260,3 +260,6 @@ Initialize the state of the agent by running from the command line
 
 The web extension is not compatible with FIDO2 relying parties that require attestation certificates (for relying parties that permit self-signed certificates, this can be easily fixed by generating a self-signed certificate). You can test the web extension [here](https://webauthn.io/).
 
+## Acknowledgements
+
+Our Chrome extension is based heavily on [kr-u2f](https://github.com/kryptco/kr-u2f).
