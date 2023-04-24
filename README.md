@@ -43,20 +43,20 @@ The plot should look roughly like this:
 
 ## Run all experiments
 
-Run the following experiments sequentially in `larch/scripts`:
+Run the following experiments sequentially in `scripts`:
 ```
 cd scripts
 python3 exp_fido2.py    # 19 min 
 python3 exp_totp.py     # 13 min
 python3 exp_pw.py       # 6 min
 ```
-These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generated are included in `larch/scripts/ref_data` for comparison.
+These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `scripts/out_data`. The reference data files that we generated are included in `scripts/ref_data` for comparison.
 
-Each experiment launches 2 ec2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
+Each experiment launches 2 EC2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
 
 ## Plot figures
 
-We now describe how to generate the figures and tables in the paper. The plots are generated in `larch/scripts/out_plots`. For comparison, we include the reference plots we generated in `larch/scripts/ref_plots`, and we also link them below.
+We now describe how to generate the figures and tables in the paper. The plots are generated in `scripts/out_plots`. For comparison, we include the reference plots we generated in `scripts/ref_plots`, and we also link them below.
 
 ### Process experiment data (before generating any plots)
 
@@ -64,7 +64,7 @@ Process the experiment data by running in `scripts/`:
 ```
 python3 process_all_exp.py  # < 1 min
 ```
-This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts and (for TOTP) averages across multiple executions. (For FIDO2 and password-based login, the averaging is done within the individual experiments.)
+This script will generate `scripts/out_data/perf.json`, which gathers the performance numbers from various scripts and (for TOTP) averages across multiple executions. (For FIDO2 and password-based login, the averaging is done within the individual experiments.)
 
 ### Figure 3 (left)
 
@@ -72,7 +72,7 @@ Generate the left plot in figure 3 by running in `scripts/`:
 ```
 python3 plot_fido2.py       # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_fido2.png`.
+This script will output a plot in `scripts/out_plots/plot_fido2.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_fido2.png" width="400">
 
@@ -82,7 +82,7 @@ Generate the center plot in figure 3 by running in `scripts/`
 ```
 python3 plot_pw.py          # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_pw.png`.
+This script will output a plot in `scripts/out_plots/plot_pw.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw.png" width="400">
 
@@ -93,7 +93,7 @@ Generate the right plot in figure 3 by running in `scripts/`:
 ```
 python3 plot_totp.py        # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_totp.png`.
+This script will output a plot in `scripts/out_plots/plot_totp.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_totp.png" width="400">
 
@@ -103,7 +103,7 @@ Generate the left plot in figure 4 by running in `scripts/`:
 ```
 python3 plot_storage.py     # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. This plot is purely analytical (based on presignature size from our ECDSA multisignature protocol) and not based on any performance measurements.
+This script will output a plot in `scripts/out_plots/plot_storage.png`. This plot is purely analytical (based on presignature size from our ECDSA multisignature protocol) and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_storage.png" width="400">
 
@@ -113,7 +113,7 @@ Generate the right plot in figure 4 by running in `scripts/`:
 ```
 python3 plot_cost.py        # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_cost.png`.
+This script will output a plot in `scripts/out_plots/plot_cost.png`.
 
 Note that this figure looks slightly different than the figure in the submission draft. This is due to a bug in the script that we fixed since submission time. We include a corrected figure below.
 
@@ -125,7 +125,7 @@ Generate the figure 5 plot by running in `scripts/`:
 ```
 python3 plot_pw_comm.py     # < 1 min
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_pw_comm.png`. This plot is purely analytical (based on the size of the cryptographic proof) and not based on any performance measurements.
+This script will output a plot in `scripts/out_plots/plot_pw_comm.png`. This plot is purely analytical (based on the size of the cryptographic proof) and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw_comm.png" width="400">
 
@@ -169,9 +169,10 @@ Our larch implementation is a research prototype and so has several limitations.
 
 If you use the ec2 image, you do not need to build from source (the below steps are not necessary for reproducing results if you follow the instructions above). If you want to build from source, install the following dependencies:
 * OpenSSL 1.1
-* [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
+* [gRPC](https://grpc.io/docs/languages/cpp/quickstart/) and protoc plugin
 * [emp-toolkit](https://github.com/emp-toolkit) (install in same directory where `larch/` is installed, make with options `ENABLE_THREADING` and `CRYPTO_IN_CIRCUIT`)
-* [emp-ag2pc](https://github.com/emp-toolkit/emp-ag2pc) (install in same directory where `larch/` is installed, install `emp-ot` as part of dependencies)
+* [emp-ot](https://github.com/emp-toolkit/emp-ot) (install in same directory where `larch/` is installed)
+* [emp-ag2pc](https://github.com/emp-toolkit/emp-ag2pc) (install in same directory where `larch/` is installed)
 
 If you're planning to run the browser extension:
 * Make an `out/` directory.
@@ -197,6 +198,10 @@ cd ..
 cmake .
 make
 ```
+
+This uses a prebuilt TOTP circuit. To build the circuit from source, see [circuit-src](totp/circuit-src/README.md).
+
+Building in release mode (`-DCMAKE_BUILD_TYPE=Release`) may be necessary to match our performance results.
 
 ### Run larch with FIDO2 manually
 
@@ -271,3 +276,8 @@ The web extension is not compatible with FIDO2 relying parties that require atte
 ## Acknowledgements
 
 Our Chrome extension is based heavily on [kr-u2f](https://github.com/kryptco/kr-u2f).
+
+Our TOTP circuit includes the following implementations of crypto primitives:
+
+- SHA-1: GPL v2. Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+- SHA-256 primitive: Brad Conte (brad AT bradconte.com)
