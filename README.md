@@ -276,3 +276,8 @@ The web extension is not compatible with FIDO2 relying parties that require atte
 ## Acknowledgements
 
 Our Chrome extension is based heavily on [kr-u2f](https://github.com/kryptco/kr-u2f).
+
+Our TOTP circuit includes the following implementations of crypto primitives:
+
+- SHA-1: GPL v2. Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+- SHA-256 primitive: Brad Conte (brad AT bradconte.com)
