@@ -27,8 +27,8 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 set(sources
-    /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp
-    /home/ec2-user/emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    ../../../emp-tool/emp-tool/emp-tool.cpp
+    ../../../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )
 
 add_executable(ct_test ct_test.cc)

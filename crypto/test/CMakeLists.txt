@@ -14,8 +14,8 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
 set(sources
-    ../../emp-tool/emp-tool/emp-tool.cpp
-    ../../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
+    ../../../emp-tool/emp-tool/emp-tool.cpp
+    ../../../emp-tool/emp-tool/circuits/files/bristol_fashion/Keccak_f.txt.cpp
     )   
 
 add_executable(or_test or_test.cc ../src/or_groth.cc ../src/params.cc)

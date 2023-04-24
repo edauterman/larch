@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++14 -g")
 include_directories(${EMP-TOOL_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
 set(sources
-    /home/ec2-user/emp-tool/emp-tool/emp-tool.cpp)
+    ../emp-tool/emp-tool/emp-tool.cpp)
 
 find_path(CMAKE_FOLDER NAMES cmake/emp-tool-config.cmake)
 include(${CMAKE_FOLDER}/cmake/emp-base.cmake)
