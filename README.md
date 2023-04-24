@@ -47,7 +47,7 @@ The plot should look roughly like this:
 Run the following experiments sequentially in `scripts`:
 ```
 cd scripts
-python3 exp_fido2.py    # 14 min 
+python3 exp_fido2.py    # 12 min 
 python3 exp_totp.py     # 12 min
 python3 exp_pw.py       # 6 min
 ```
