@@ -33,4 +33,4 @@ ax.set_yticklabels(["1","2","4"])
 
 remove_chart_junk(plt,ax,xticks=True,ticks=True,grid=True)
 plt.savefig(out_name, bbox_inches='tight')
-print("Output plot at %s" % out_file)
+print("Output plot at %s" % out_name)

@@ -53,4 +53,4 @@ ax.spines['bottom'].set_position("zero")
 
 ax.yaxis.grid(which='major', color='0.9', linestyle=':')
 plt.savefig(out_name, bbox_inches='tight')
-print("Output plot at %s" % out_file)
+print("Output plot at %s" % out_name)

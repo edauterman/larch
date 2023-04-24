@@ -36,7 +36,6 @@ def run_pw_tput():
     getDirectory('out_data/', [getHostName(machines['client_ip_address'])], '~/pw_exp', key=properties['secret_key_path'])
     teardown(ec2_file)
 
-executeCommand("mkdir pw_exp")
 run_pw_latency()
 run_pw_tput()
 
