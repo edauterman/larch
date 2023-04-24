@@ -102,7 +102,7 @@ add_executable(client100-init src/client-init.cpp src/common.cpp network/totp.gr
 target_link_libraries(client100-init PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client100-init PRIVATE -DMAX_KEYS=100)
 
-add_executable(client100-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ./../emp-tool/emp-tool/emp-tool.cpp)
+add_executable(client100-auth src/client-auth.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
 target_link_libraries(client100-auth PRIVATE OpenSSL::SSL OpenSSL::Crypto gRPC::grpc++)
 target_compile_options(client100-auth PRIVATE -DMAX_KEYS=100)
 
