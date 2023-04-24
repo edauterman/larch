@@ -39,6 +39,7 @@ python3 plot_pw.py      # < 1 min
 which outputs a plot at `scripts/out_plots/plot_pw.png`.
 
 The plot should look roughly like this:
+
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw.png" width="400">
 
 ## Run all experiments
@@ -52,7 +53,7 @@ python3 exp_pw.py       # 6 min
 ```
 These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `scripts/out_data`. The reference data files that we generated are included in `scripts/ref_data` for comparison.
 
-Each experiment launches 2 EC2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
+Each experiment launches 2 EC2 instances, 1 client and 1 log server, in `us-east-2` and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
 
 Note: If you change the instance sizes or parameter settings (i.e. number of clients and number of presignatures) for the throughput experiment in `exp_fido2.py`, it is possible that the log server could run out of memory under high client load (if this happens, you will see error messages from the clients). The throughput experiment settings in our scripts are configured to minimize the likelihood of this happening (although we use a small server instance, so there is still some small chance of this happening). If you see this happen, restart the script and consider adjusting parameter settings. A real-world deployment would drop requests if it was ever under load that it could not handle.
 
