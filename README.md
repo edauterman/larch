@@ -21,13 +21,29 @@ mkdir out_data
 mkdir out_plots
 ```
 
-## Run experiments
+## Getting started
+
+After running the setup instructions above, you can test that everything is set up by running the following:
+```
+cd scripts
+python3 exp_pw.py       # 6 min
+```
+This runs the password-based login experiments, which are the fastest to run. You can verify that the outputs are correctly logged in `scripts/out_data/pw_exp` (there should be 2 files, `out` and `out_1`). 
+
+From these files, you can generate the center plot in Figure 3 by running
+```
+python3 plot_pw.py      # < 1 min
+```
+which outputs a plot at `scripts/out_plots/plot_pw.png`.
+
+## Run all experiments
 
 Run the following experiments sequentially in `larch/scripts`:
 ```
-python3 exp_fido2.py 
-python3 exp_totp.py     # 13 minutes
-python3 exp_pw.py       # 6 minutes
+cd scripts
+python3 exp_fido2.py    # 19 min 
+python3 exp_totp.py     # 13 min
+python3 exp_pw.py       # 6 min
 ```
 These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generates are included in `larch/scripts/ref_data` for comparison.
 
@@ -37,17 +53,17 @@ We now describe how to generate the figures and tables in the paper. For compari
 
 ### Process experiment data (before generating any plots)
 
-Process the experiment data by running:
+Process the experiment data by running in `scripts/`:
 ```
-python3 process_all_exp.py
+python3 process_all_exp.py  # < 1 min
 ```
 This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts and (for TOTP) averages across multiple executions.
 
 ### Figure 3 (left)
 
-Generate the left plot in figure 3 by running:
+Generate the left plot in figure 3 by running in `scripts/`:
 ```
-python3 plot_fido2.py
+python3 plot_fido2.py       # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_fido2.png`.
 
@@ -55,9 +71,9 @@ This script will output a plot in `larch/scripts/out_plots/plot_fido2.png`.
 
 ### Figure 3 (center)
 
-Generate the center plot in figure 3 by running:
+Generate the center plot in figure 3 by running in `scripts/`
 ```
-python3 plot_pw.py
+python3 plot_pw.py          # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_pw.png`.
 
@@ -66,9 +82,9 @@ This script will output a plot in `larch/scripts/out_plots/plot_pw.png`.
 
 ### Figure 3 (right)
 
-Generate the right plot in figure 3 by running:
+Generate the right plot in figure 3 by running in `scripts/`:
 ```
-python3 plot_totp.py
+python3 plot_totp.py        # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_totp.png`.
 
@@ -76,9 +92,9 @@ This script will output a plot in `larch/scripts/out_plots/plot_totp.png`.
 
 ### Figure 4 (left)
 
-Generate the left plot in figure 4 by running:
+Generate the left plot in figure 4 by running in `scripts/`:
 ```
-python3 plot_storage.py
+python3 plot_storage.py     # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. This plot is purely analytical and not based on any performance measurements.
 
@@ -86,9 +102,9 @@ This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. Th
 
 ### Figure 4 (right)
 
-Generate the right plot in figure 4 by running:
+Generate the right plot in figure 4 by running in `scripts/`:
 ```
-python3 plot_cost.py
+python3 plot_cost.py        # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_cost.png`.
 
@@ -98,9 +114,9 @@ Note that this figure looks slightly different than the figure in the submission
 
 ### Figure 5
 
-Generate the right plot in figure 4 by running:
+Generate the right plot in figure 4 by running in `scripts/`:
 ```
-python3 plot_pw_comm.py
+python3 plot_pw_comm.py     # < 1 min
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_pw_comm.png`. This plot is purely analytical and not based on any performance measurements.
 
@@ -108,9 +124,9 @@ This script will output a plot in `larch/scripts/out_plots/plot_pw_comm.png`. Th
 
 ### Table 6 
 
-Output the data in table 6 by running:
+Output the data in table 6 by running in `scripts/`:
 ```
-python3 print_table.py
+python3 print_table.py      # < 1 min
 ```
 
 ```
