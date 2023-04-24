@@ -1,6 +1,6 @@
 # Larch
 
-Larch is an accountable authentication framework with strong security and privacy properties. Larch provides strong user privacy while ensuring that every authentication is correctly recorded by the larch log server. Specifically, an attacker that compromises a user’s device cannot authenticate without creating evidence in the log, and the log cannot learn which web service (relying party) the user is authenticating to. Larch is backwards-compatible with relying parties that support FIDO2, TOTP, and password-based login.
+Larch is an accountable authentication framework with strong security and privacy properties. Larch is backwards-compatible with relying parties that support FIDO2, TOTP, and password-based login.
 
 This implementation accompanies our paper "Accountable authentication with privacy protection: The Larch system for universal login" by Emma Dauterman, Danny Lin, Henry Corrigan-Gibbs, and David Mazieres.
 
