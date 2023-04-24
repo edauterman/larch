@@ -26,7 +26,7 @@ mkdir out_plots
 After running the setup instructions above, you can test that everything is set up by running the following:
 ```
 cd scripts
-python3 exp_pw.py       # 6 min
+python3 exp_pw.py       # 4 min
 ```
 This runs the password-based login experiments, which are the fastest to run. The script launches 2 ec2 instances, 1 client and 1 log server, and then terminates the instances at the end of the experiment.
 
@@ -49,7 +49,7 @@ Run the following experiments sequentially in `scripts`:
 cd scripts
 python3 exp_fido2.py    # 12 min 
 python3 exp_totp.py     # 12 min
-python3 exp_pw.py       # 6 min
+python3 exp_pw.py       # 4 min
 ```
 These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `scripts/out_data`. The reference data files that we generated are included in `scripts/ref_data` for comparison.
 
