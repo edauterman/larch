@@ -67,23 +67,15 @@ int experiment(string ip_addr, int num_workers) {
 
 int main(int argc, char *argv[]) {
     int workers = 5;
-    int maxAuths = 0;
     string ip_addr(argv[1]);
     string out_file(argv[2]);
-    while (true) {
-        int auths = experiment(ip_addr, workers);
-        if (auths < maxAuths) {
-            cout << "MAX AUTHS = " << maxAuths << endl;
-            cout << "workers = " << workers - 5 << endl;
-            cout << "throughput = " << (double)maxAuths / 60.0 << endl;
-            ofstream f;
-            f.open(out_file);
-            f << (double)maxAuths / 60.0 << endl;
-            f.close();
-            return 0;
-        }
-        maxAuths = auths;
-        workers += 1;
-    }
+    int auths = experiment(ip_addr, workers);
+    cout << "MAX AUTHS = " << auths << endl;
+    cout << "workers = " << workers - 5 << endl;
+    cout << "throughput = " << (double)auths / 60.0 << endl;
+    ofstream f;
+    f.open(out_file);
+    f << (double)auths / 60.0 << endl;
+    f.close();
 
 }
