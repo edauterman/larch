@@ -5,7 +5,7 @@ from setup import *
 EC2_FILE = "config/ec2.json"
 MACHINES_FILE = "config/totp_machines.json"
 
-ITERS = 100
+ITERS = 10
 
 def run_totp_latency():
     provisionAndSetupAll(EC2_FILE, MACHINES_FILE)
