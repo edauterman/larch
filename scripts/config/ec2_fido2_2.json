@@ -1,0 +1,11 @@
+{
+"disk_size": 16,
+"region": "us-east-2",
+"placement": "us-east-2c",
+"keyname": "DoryKeyPair",
+"server_instance_type": "c5.4xlarge",
+"client_instance_type": "c5.xlarge",
+"ami_id": "ami-08d0640d9d42e8cb7",
+"security": "launch-wizard-21",
+"secret_key_path": "~/.ssh/larch.pem"
+}

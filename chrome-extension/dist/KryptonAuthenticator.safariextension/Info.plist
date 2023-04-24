@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Author</key>
+	<string>KryptCo, Inc.</string>
+	<key>Builder Version</key>
+	<string>14606.1.36.1.9</string>
+	<key>CFBundleDisplayName</key>
+	<string>Krypton Authenticator</string>
+	<key>CFBundleIdentifier</key>
+	<string>co.krypt.krypton.u2f</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.16</string>
+	<key>CFBundleVersion</key>
+	<string>1.0.16</string>
+	<key>Chrome</key>
+	<dict>
+		<key>Database Quota</key>
+		<integer>1048576</integer>
+		<key>Global Page</key>
+		<string>background.html</string>
+		<key>Popovers</key>
+		<array>
+			<dict>
+				<key>Filename</key>
+				<string>popup.html</string>
+				<key>Height</key>
+				<integer>600</integer>
+				<key>Identifier</key>
+				<string>Krypton U2F</string>
+				<key>Width</key>
+				<integer>360</integer>
+			</dict>
+		</array>
+		<key>Toolbar Items</key>
+		<array>
+			<dict>
+				<key>Identifier</key>
+				<string>popup</string>
+				<key>Image</key>
+				<string>Icon.png</string>
+				<key>Include By Default</key>
+				<true/>
+				<key>Label</key>
+				<string>Krypton</string>
+				<key>Popover</key>
+				<string>Krypton U2F</string>
+			</dict>
+		</array>
+	</dict>
+	<key>Companion Bundle Identifier</key>
+	<array>
+		<string>co.krypt</string>
+	</array>
+	<key>Content</key>
+	<dict>
+		<key>Blacklist</key>
+		<array>
+			<string>https://*/*.xml</string>
+		</array>
+		<key>Scripts</key>
+		<dict>
+			<key>Start</key>
+			<array>
+				<string>js/content_script.js</string>
+			</array>
+		</dict>
+	</dict>
+	<key>Description</key>
+	<string>Zero-touch, phishing proof second factor with the Krypton iOS and Android app.</string>
+	<key>DeveloperIdentifier</key>
+	<string>W7AMYM5LPN</string>
+	<key>ExtensionInfoDictionaryVersion</key>
+	<string>1.0</string>
+	<key>Permissions</key>
+	<dict>
+		<key>Website Access</key>
+		<dict>
+			<key>Include Secure Pages</key>
+			<true/>
+			<key>Level</key>
+			<string>All</string>
+		</dict>
+	</dict>
+	<key>Update Manifest URL</key>
+	<string>https://s3.amazonaws.com/safari.bin.krypt.co/KryptonAuthenticatorUpdate.plist</string>
+	<key>Website</key>
+	<string>https://krypt.co</string>
+</dict>
+</plist>

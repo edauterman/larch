@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+option java_package = "ex.grpc";
+
+// Defines the service
+service Log {
+    // Function invoked to send the request
+    rpc SendInit (InitRequest) returns (InitResponse) {}
+    rpc SendReg (RegRequest) returns (RegResponse) {}
+    rpc SendProof (ProofRequest) returns (ProofResponse) {}
+    rpc SendAuth (AuthRequest) returns (AuthResponse) {}
+    rpc SendAuthCheck (AuthCheckRequest) returns (AuthCheckResponse) {}
+    rpc SendAuthCheck2 (AuthCheck2Request) returns (AuthCheck2Response) {}
+    rpc SendMs (MsRequest) returns (MsResponse) {}
+    
+    rpc SendPwInit (PwInitRequest) returns (PwInitResponse) {}
+    rpc SendPwRegister (PwRegisterRequest) returns (PwRegisterResponse) {}
+    rpc SendPwAuth (PwAuthRequest) returns (PwAuthResponse) {}
+    rpc SendPwMs (PwMsRequest) returns (PwMsResponse) {}
+}
+
+message HintMsg {
+    bytes xcoord = 1;
+    bytes auth_xcoord = 2;
+    bytes r = 3;
+    bytes auth_r = 4;
+    bytes a = 5;
+    bytes b = 6;
+    bytes c = 7;
+    bytes f = 8;
+    bytes g = 9;
+    bytes h = 10;
+    bytes alpha = 11;
+}
+
+message InitRequest {
+    bytes key_comm = 1;
+    uint32 id = 2;
+    bytes auth_pk = 3;
+    bytes log_seed = 4;
+    repeated HintMsg hints = 5;
+}
+
+message InitResponse {
+    bytes pk = 1;
+}
+
+message RegRequest {
+}
+
+message RegResponse {
+    bytes pk_x = 1;
+    bytes pk_y = 2;
+}
+
+message ProofRequest {
+    repeated bytes proof = 1;
+    uint32 id = 2;
+    int32 session_ctr = 3;
+    uint32 auth_ctr = 4;
+}
+
+message ProofResponse {}
+
+message AuthRequest {
+    repeated bytes proof = 1;
+    bytes challenge = 2;
+    bytes ct = 3;
+    bytes digest = 4;
+    bytes d = 5;
+    bytes e = 6;
+    uint32 id = 7;
+    bytes tag = 8;
+}
+
+message AuthResponse {
+    bytes prod = 1;
+    bytes d = 2;
+    bytes e = 3;
+    int32 session_ctr = 4;
+    bytes cm_check_d = 5;
+}
+
+message AuthCheckRequest {
+    bytes cm_check_d = 1;
+    int32 session_ctr = 2;
+    uint32 id = 3;
+}
+
+message AuthCheckResponse {
+    bytes check_d = 1;
+    bytes check_d_open = 2;
+}
+
+message AuthCheck2Request {
+    bytes check_d = 1;
+    bytes check_d_open = 2;
+    int32 session_ctr = 3;
+    uint32 id = 4;
+}
+
+message AuthCheck2Response {
+    bytes out = 1;
+}
+
+message MsRequest {}
+
+message MsResponse {
+    uint32 ms = 1;
+}
+
+message PwInitRequest {
+    bytes X = 1;
+    bytes pk = 2;
+}
+
+message PwInitResponse {
+    bytes recover_pt = 1;
+}
+
+message PwRegisterRequest {
+    string id = 1;
+}
+
+message PwRegisterResponse {
+    bytes out = 1;
+}
+
+message PwAuthRequest {
+    bytes ct_c = 1;
+    bytes ct_r = 2;
+    bytes or_proof_x = 3;
+    bytes or_proof_r = 4;
+    bytes sig = 5;
+}
+
+message PwAuthResponse {
+    bytes out = 1;
+}
+
+message PwMsRequest {}
+
+message PwMsResponse {
+    uint32 ms = 1;
+}

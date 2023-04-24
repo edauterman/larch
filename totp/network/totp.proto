@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+service TotpService {
+    rpc Init (InitRequest) returns (InitResponse) {}
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc StartAuth (StartAuthRequest) returns (StartAuthResponse) {}
+    rpc StartOffline (StartOfflineRequest) returns (StartOfflineResponse) {}
+    rpc FinishAuth (FinishAuthRequest) returns (FinishAuthResponse) {}
+    rpc GetLog (GetLogRequest) returns (GetLogResponse) {}
+}
+
+message InitRequest {
+    bytes rpid_key_commitment = 1;
+    bytes server_key_shares = 2;
+    bytes rpid_sign_pk = 3;
+}
+
+message InitResponse {
+}
+
+message RegisterRequest {
+    uint32 rp_index = 1;
+    bytes server_key_share = 2;
+}
+
+message RegisterResponse {
+}
+
+message StartOfflineRequest {}
+
+message StartOfflineResponse {}
+
+message StartAuthRequest {
+}
+
+message StartAuthResponse {
+}
+
+message FinishAuthRequest {
+    bytes enc_rpid = 1;
+    bytes signature = 2;
+}
+
+message FinishAuthResponse {
+}
+
+message GetLogRequest {
+}
+
+message GetLogResponse {
+    repeated LogEntry entries = 1;
+}
+
+message LogEntry {
+    uint64 timestamp = 1;
+    bytes enc_rpid = 2;
+    bytes rpid_sig = 3;
+}

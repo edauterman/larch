@@ -1,0 +1,10 @@
+boto==2.49.0
+brewer2mpl==1.4.1
+cycler==0.11.0
+docutils==0.14
+fonttools==4.38.0
+matplotlib==3.5.3
+numpy==1.21.6
+scipy==1.7.3
+simplejson==3.2.0
+tabulate
