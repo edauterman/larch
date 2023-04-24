@@ -279,6 +279,8 @@ The web extension is not compatible with FIDO2 relying parties that require atte
 
 Our Chrome extension is based heavily on [kr-u2f](https://github.com/kryptco/kr-u2f).
 
+Our AWS EC2 scripts are based on scripts from Natacha Crooks.
+
 Our TOTP circuit includes the following implementations of crypto primitives:
 
 - SHA-1: GPL v2. Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
