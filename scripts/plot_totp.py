@@ -44,7 +44,7 @@ handles, labels = ax.get_legend_handles_labels()
 handles.reverse()
 labels.reverse()
 #ax.legend(handles, labels, bbox_to_anchor=(-0.2, 1.1, 1., .102), loc='lower left', ncol=2, borderaxespad=0., fontsize=7,labelspacing=0)
-#ax.legend(bbox_to_anchor=(-0.05, 1.2, 0.9, .102), fontsize=7.5)
+ax.legend(bbox_to_anchor=(-0.05, 1.2, 0.9, .102), fontsize=7.5)
 
 
 #ax.spines['left'].set_position("zero")
