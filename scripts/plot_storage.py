@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import math
 
-out_name = "out_plots/plot_storage.pdf"
+out_name = "out_plots/plot_storage.png"
 x = []
 y1 = []
 y2 = []
@@ -54,3 +54,4 @@ ax.spines['bottom'].set_position("zero")
 remove_chart_junk(plt,ax, grid=False, below=False)
 ax.yaxis.grid(which='major', color='0.9', linestyle=':')
 plt.savefig(out_name, bbox_inches='tight')
+print("Output plot at %s" % out_file)

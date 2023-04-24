@@ -10,7 +10,7 @@ from collections import defaultdict
 from matplotlib.patches import Patch
 import scipy.special
 
-out_name =  "out_plots/plot_pw.pdf" 
+out_name =  "out_plots/plot_pw.png" 
 in_name = "out_data/pw_exp/out" 
 labels = ["Network", "Verify (Server)", "Prove (Client)"] 
 colors=[custom_style.hash_colors[4], custom_style.hash_colors[3], custom_style.hash_colors[1]]
@@ -37,10 +37,6 @@ for i in range(1,10):
 #    ax.plot(x, y[i], label=labels[i], color=colors[i])
 #ax.plot(x, [y[0][i] + y[1][i] + y[2][i] for i in range(len(y[0]))], label=labels[3], color=colors[3])
 network = [y[2][i] - y[0][i] - y[1][i] for i in range(len(y[0]))]
-print(network)
-print(y[0])
-print(y[1])
-print("len network = %d, len server = %d, len client = %d, len x = %d" % (len(network), len(y[0]), len(y[1]), len(x)))
 ax.stackplot(x, network, y[0], y[1], labels=labels, colors=colors)
 ax.set_xlabel("Relying parties \n Passwords")
 ax.set_ylabel("Auth time (ms)")
@@ -75,3 +71,4 @@ ax.yaxis.grid(which='major', color='0.9', linestyle=':')
 plt.savefig(out_name, bbox_inches='tight')
 #custom_style.save_fig(fig, out_name, [3.25, 1.8])
 #plt.show()
+print("Output plot at %s" % out_file)

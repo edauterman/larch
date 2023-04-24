@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import math
 
-out_name = "out_plots/plot_pw_comm.pdf"
+out_name = "out_plots/plot_pw_comm.png"
 
 def proof_size_bytes(log_len):
     return (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + 4
@@ -18,8 +18,6 @@ for i in log_len:
     # add 66 for elgamal ct
     comm.append((2.0 * proof_size_bytes(i) + 66.0) / 1024.0)
 
-for i in range(len(lens)):
-    print("%d : %f" % (lens[i], comm[i]))
 fig = plt.figure(figsize = (2.2,1.7))
 ax = fig.add_subplot(111)
 ax.step(lens, comm, marker="o",markersize=1)
@@ -35,3 +33,4 @@ ax.set_yticklabels(["1","2","4"])
 
 remove_chart_junk(plt,ax,xticks=True,ticks=True,grid=True)
 plt.savefig(out_name, bbox_inches='tight')
+print("Output plot at %s" % out_file)

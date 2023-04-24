@@ -10,7 +10,7 @@ from collections import defaultdict
 from matplotlib.patches import Patch
 import scipy.special
 
-out_name = "out_plots/plot_fido2.pdf" 
+out_name = "out_plots/plot_fido2.png" 
 in_dir = "out_data/fido2_exp/"
 labels = ["Verify (Server)", "Other", "Prove (Client)"] 
 colors=[custom_style.hash_colors[3], custom_style.hash_colors[4], custom_style.hash_colors[1]]
@@ -33,19 +33,15 @@ for i in cores:
             if j == 0:
                 y[2].append(float(line))
 y[1] = [total[i] - y[0][i] - y[2][i] for i in range(len(total))]
-print(total)
 
 # N = 10000, n = 100
-print(y)
 
 #for i in range(len(y)):
 #    y[i] = y[i][3:]
 
-print(y)
 
 fig = plt.figure(figsize = (2.4,1.6))
 ax = fig.add_subplot(111)
-print([1,2,4,8])
 ax.stackplot([1,2,4,8], y[0], y[1], y[2], labels=labels, colors=colors)
 #ax.stackplot(np.arange(10, 110, step=10), y[0], y[1], y[2], y[3], labels=labels, colors=colors)
 ax.set_xlabel("Client cores \n FIDO2")
@@ -71,3 +67,4 @@ ax.yaxis.grid(which='major', color='0.9', linestyle=':')
 plt.savefig(out_name, bbox_inches='tight')
 #custom_style.save_fig(fig, out_name, [3.25, 1.8])
 #plt.show()
+print("Output plot at %s" % out_file)
