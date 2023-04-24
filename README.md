@@ -99,7 +99,7 @@ Generate the right plot in figure 4 by running:
 ```
 python3 plot_pw_comm.py
 ```
-This script will output a plot in `larch/scripts/out_plots/plot_comm.png`. This plot is purely analytical and not based on any performance measurements.
+This script will output a plot in `larch/scripts/out_plots/plot_pw_comm.png`. This plot is purely analytical and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw_comm.png" width="400">
 
