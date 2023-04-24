@@ -17,14 +17,6 @@ max_out_gb_cost = 0.09
 def proof_size_bytes(log_len):
     return (33 * 4 * log_len) + (32 * 3 * log_len) + 32 + 4
 
-comm = []
-log_len = range(1,10)
-lens = [1 << i for i in log_len]
-
-for i in log_len:
-    # add 66 for elgamal ct
-    comm.append((2.0 * proof_size_bytes(i) + 66.0) / 1024.0)
-
 results = dict()
 results["online_time_ms"] = dict()
 results["total_time_ms"] = dict()
@@ -36,6 +28,28 @@ results["log_presig_b"] = dict()
 results["auths_per_core"] = dict()
 results["10M_min_cost"] = dict()
 results["10M_max_cost"] = dict()
+
+# Average TOTP runs
+in_files = ["out_data/totp_exp/out_%d_raw" % i for i in range(20,120,20)]
+in_files.append("out_data/totp_exp/out_20_raw_1")
+out_files = ["out_data/totp_exp/out_%d" % i for i in range(20,120,20)]
+out_files.append("out_data/totp_exp/out_20_1")
+for i,in_file in enumerate(in_files):
+    with open(in_file, 'r') as f:
+        lines = f.readlines()
+        online_time = numpy.mean(numpy.asarray([float(lines[j * 5 + 4]) for j in range(len(lines)/5)]))
+        total_time = numpy.mean(numpy.asarray([float(lines[j * 5 + 3]) + float(lines[j * 5 + 4]) for j in range(len(lines)/5)]))
+        online_comm = numpy.mean(numpy.asarray([float(lines[j * 5 + 1]) for j in range(len(lines)/5)]))
+        total_comm = numpy.mean(numpy.asarray([float(lines[j * 5 + 0]) + float(lines[j * 5 + 1]) for j in range(len(lines)/5)]))
+        out_total_comm = numpy.mean(numpy.asarray([float(lines[j * 5 + 2]) for j in range(len(lines)/5)]))
+        with open(out_files[i], 'w') as f:
+            f.write("%f\n" % online_time)
+            f.write("%f\n" % total_time)
+            f.write("%f\n" % online_comm)
+            f.write("%f\n" % total_comm)
+            f.write("%f\n" % out_total_comm)
+
+with open('')
 
 # Parse FIDO2
 with open('out_data/fido2_exp/out_latency_4', 'r') as f:
