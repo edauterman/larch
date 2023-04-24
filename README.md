@@ -12,18 +12,131 @@ This prototype is released under the Apache v2 license (see [License](https://gi
 
 For our experiments, we will use a cluster of AWS EC2 instances. Reviewers should have been provided with credentials to our AWS environment with compute resources. Reviewers should also have moved `larch.pem` (provided with submission) to `~/.ssh/` and set permissions to 400.
 
-1. [2 minutes] Make sure python3 is downloaded. Then run the following:
+[2 minutes] Make sure python3 is downloaded. Then run the following:
 ```
 git clone https://github.com/edauterman/larch
 cd larch/scripts
 pip3 install -r requirements.txt
+mkdir out_data
+mkdir out_plots
 
 ```
 
-2. [5 minutes] Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) (version 2 works) and run `aws configure` using the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) (use `json` as the default output format, and it does not matter what default region you choose).
+## Run experiments
+
+Run the following experiments sequentially in `larch/scripts`:
+```
+python3 exp_fido2.py
+python3 exp_totp.py
+python3 exp_pw.py
+```
+These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. 
+
+## Plot figures
+
+Process the experiment data by running:
+```
+python3 process_all_exp.py
+```
+This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts.
+
+### Figure 3 (left)
+
+Generate the left plot in figure 3 by running:
+```
+python3 plot_fido2.py
+```
+This script will output a plot in `larch/scripts/out_plots/plot_fido2.png`.
+
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_fido2.png" width="400">
+
+### Figure 3 (center)
+
+Generate the center plot in figure 3 by running:
+```
+python3 plot_pw.py
+```
+This script will output a plot in `larch/scripts/out_plots/plot_pw.png`.
+
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw.png" width="400">
 
 
-### Building from source
+### Figure 3 (right)
+
+Generate the right plot in figure 3 by running:
+```
+python3 plot_totp.py
+```
+This script will output a plot in `larch/scripts/out_plots/plot_totp.png`.
+
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_totp.png" width="400">
+
+### Figure 4 (left)
+
+Generate the left plot in figure 4 by running:
+```
+python3 plot_storage.py
+```
+This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. This plot is purely analytical and not based on any performance measurements.
+
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_storage.png" width="400">
+
+### Figure 4 (right)
+
+Generate the right plot in figure 4 by running:
+```
+python3 plot_cost.py
+```
+This script will output a plot in `larch/scripts/out_plots/plot_cost.png`.
+
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_cost.png" width="400">
+
+TODO note bug that causes to look different from paper
+
+### Figure 5
+
+Generate the right plot in figure 4 by running:
+```
+python3 plot_pw_comm.py
+```
+This script will output a plot in `larch/scripts/out_plots/plot_comm.png`. This plot is purely analytical and not based on any performance measurements.
+
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw_comm.png" width="400">
+
+### Table 6 
+
+Output the data in table 6 by running:
+```
+python3 print_table.py
+```
+
+```
+╒════════════════════════╤════════════╤══════════════╤═══════════╕
+│                        │      FIDO2 │         TOTP │        PW │
+╞════════════════════════╪════════════╪══════════════╪═══════════╡
+│ Online time (ms)       │  148.74    │    73        │  73       │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ Total time (ms)        │  148.74    │  1176        │  73       │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ Online comm (KiB)      │ 1770.75    │   201.009    │   3.25195 │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ Total comm (KiB)       │ 1770.75    │ 66486.9      │   3.25195 │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ Auth record (B)        │   88       │    88        │ 138       │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ Log presig (B)         │  192       │     0        │   0       │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ Auths/core/s           │   16.4667  │     0.856164 │  47.619   │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ 10M auths min cost ($) │    7.27366 │ 18041.6      │   2.47917 │
+├────────────────────────┼────────────┼──────────────┼───────────┤
+│ 10M auths max cost ($) │   14.5265  │ 32502.4      │   4.95833 │
+╘════════════════════════╧════════════╧══════════════╧═══════════╛
+```
+TODO update this with correct numbers
+
+
+## Building from source
 Dependencies
 * OpenSSL 1.1
 * [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
