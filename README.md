@@ -19,7 +19,6 @@ cd larch/scripts
 pip3 install -r requirements.txt
 mkdir out_data
 mkdir out_plots
-
 ```
 
 ## Run experiments

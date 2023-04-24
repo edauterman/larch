@@ -1,0 +1,12 @@
+{
+  "name": "agent",
+  "description": "interacts directly with device",
+  "path": [FILL IN WITH PATH TO AGENT EXECUTABLE],
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://dcbkgldcfacfoalegfoekhooiemjgjjf/",
+    "chrome-extension://klnjmillfildbbimkincljmfoepfhjjj/",
+    "chrome-extension://kmendfapggjehodndflmmgagdbamhnfd/",
+    "chrome-extension://pfboblefjcgdjicmnffhdgionmgcdmne/"
+  ]
+}
