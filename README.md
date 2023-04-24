@@ -47,7 +47,7 @@ Generate the left plot in figure 3 by running:
 python3 plot_fido2.py
 ```
 
-<img src="https://github.com/edauterman/larch/blob/master/scripts/ref_plots/plot_fido2.pdf" width="400">
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_fido2.pdf" width="400">
 
 ### Figure 3 (center)
 
@@ -56,7 +56,7 @@ Generate the center plot in figure 3 by running:
 python3 plot_pw.py
 ```
 
-<img src="https://github.com/edauterman/larch/blob/master/scripts/ref_plots/plot_pw.pdf" width="400">
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw.pdf" width="400">
 
 
 ### Figure 3 (right)
@@ -66,7 +66,7 @@ Generate the right plot in figure 3 by running:
 python3 plot_totp.py
 ```
 
-<img src="https://github.com/edauterman/larch/blob/master/scripts/ref_plots/plot_totp.pdf" width="400">
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_totp.pdf" width="400">
 
 ### Figure 4 (left)
 
@@ -76,7 +76,7 @@ python3 plot_storage.py
 ```
 This plot is purely analytical and not based on any performance measurements.
 
-<img src="https://github.com/edauterman/larch/blob/master/scripts/ref_plots/plot_storage.pdf" width="400">
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_storage.pdf" width="400">
 
 ### Figure 4 (right)
 
@@ -85,7 +85,7 @@ Generate the right plot in figure 4 by running:
 python3 plot_cost.py
 ```
 
-<img src="https://github.com/edauterman/larch/blob/master/scripts/ref_plots/plot_cost.pdf" width="400">
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_cost.pdf" width="400">
 
 TODO note bug that causes to look different from paper
 
@@ -97,7 +97,7 @@ python3 plot_pw_comm.py
 ```
 This plot is purely analytical and not based on any performance measurements.
 
-<img src="https://github.com/edauterman/larch/blob/master/scripts/ref_plots/plot_pw_comm.pdf" width="400">
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw_comm.pdf" width="400">
 
 ### Table 6 
 
