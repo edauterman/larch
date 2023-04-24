@@ -38,6 +38,9 @@ python3 plot_pw.py      # < 1 min
 ```
 which outputs a plot at `scripts/out_plots/plot_pw.png`.
 
+The plot should look roughly like this:
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw.png" width="400">
+
 ## Run all experiments
 
 Run the following experiments sequentially in `larch/scripts`:
@@ -47,9 +50,9 @@ python3 exp_fido2.py    # 19 min
 python3 exp_totp.py     # 13 min
 python3 exp_pw.py       # 6 min
 ```
-These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generates are included in `larch/scripts/ref_data` for comparison.
+These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generated are included in `larch/scripts/ref_data` for comparison.
 
-Each experiment generates 2 ec2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
+Each experiment launches 2 ec2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
 
 ## Plot figures
 
@@ -61,7 +64,7 @@ Process the experiment data by running in `scripts/`:
 ```
 python3 process_all_exp.py  # < 1 min
 ```
-This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts and (for TOTP) averages across multiple executions.
+This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts and (for TOTP) averages across multiple executions. (For FIDO2 and password-based login, the averaging is done within the individual experiments.)
 
 ### Figure 3 (left)
 
@@ -118,7 +121,7 @@ Note that this figure looks slightly different than the figure in the submission
 
 ### Figure 5
 
-Generate the right plot in figure 4 by running in `scripts/`:
+Generate the figure 5 plot by running in `scripts/`:
 ```
 python3 plot_pw_comm.py     # < 1 min
 ```
@@ -133,6 +136,7 @@ Output the data in table 6 by running in `scripts/`:
 python3 print_table.py      # < 1 min
 ```
 
+We include a reference table below.
 ```
 ╒════════════════════════╤════════════╤══════════════╤═══════════╕
 │                        │      FIDO2 │         TOTP │        PW │
@@ -163,7 +167,7 @@ Our larch implementation is a research prototype and so has several limitations.
 
 ## Building from source
 
-If you use the ec2 image, you do not need to build from source. If you want to build from source, install the following dependencies:
+If you use the ec2 image, you do not need to build from source (the below steps are not necessary for reproducing results if you follow the instructions above). If you want to build from source, install the following dependencies:
 * OpenSSL 1.1
 * [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
 * [emp-toolkit](https://github.com/emp-toolkit) (install in same directory where `larch/` is installed, make with options `ENABLE_THREADING` and `CRYPTO_IN_CIRCUIT`)
@@ -203,7 +207,7 @@ Start log as
 
 Run authentication benchmarks from the client:
 ```
-./build/bin/auth_bench <log_ip_addr> <output-perf-file>
+./build/bin/auth_bench <log_ip_addr> <output_perf_file>
 ```
 
 ### Run larch with TOTP manually
@@ -235,7 +239,7 @@ Start log as
 
 Run authentication benchmarks from the client:
 ```
-./build/bin/pw_latency_bench
+./build/bin/pw_latency_bench <log_ip_addr> <output_perf_file>
 ```
 
 ### Set up the web extension for FIDO2
