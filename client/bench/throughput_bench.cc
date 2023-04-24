@@ -66,7 +66,7 @@ int experiment(string ip_addr, int num_workers) {
 }
 
 int main(int argc, char *argv[]) {
-    int workers = 10;
+    int workers = 5;
     int maxAuths = 0;
     string ip_addr(argv[1]);
     string out_file(argv[2]);
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         maxAuths = auths;
-        workers += 3;
+        workers += 1;
     }
 
 }
