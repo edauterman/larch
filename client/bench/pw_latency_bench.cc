@@ -18,6 +18,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
     string id = "foo";
     int iters = 9;
+    int rounds = 10;
     string ip_addr(argv[1]);
     string out_file(argv[2]);
     int *lens = (int *)malloc(iters * sizeof(int));
@@ -42,15 +43,20 @@ int main(int argc, char *argv[]) {
 
         // Run authentications
         cout << "Starting authentications for " << lens[i] << endl;
+        uint32_t logMs = 0;
+        double clientMs = 0;
         auto t1 = std::chrono::high_resolution_clock::now();
-        for (int j = 0; j < 1; j++) {
+        for (int j = 0; j < rounds; j++) {
             EC_POINT *pw_test = c->Authenticate(to_string(0));
+            logMs += c->GetLogMs();
+            clientMs += c->clientMs;
+            c->clientMs = 0;
+ 
         }
         auto t2 = std::chrono::high_resolution_clock::now();
-        double totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-        uint32_t logMs = c->GetLogMs();
-        double clientMs = c->clientMs;
-        c->clientMs = 0;
+        double totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() / (double)rounds;
+        logMs = (double)logMs / (double)rounds;
+        clientMs = (double)clientMs / (double)rounds;
         cout << "Log ms: " << logMs << endl;
         cout << "Client ms: " << clientMs << endl;
         cout << "Total ms: " << totalMs << endl;

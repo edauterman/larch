@@ -19,26 +19,29 @@ cd larch/scripts
 pip3 install -r requirements.txt
 mkdir out_data
 mkdir out_plots
-
 ```
 
 ## Run experiments
 
 Run the following experiments sequentially in `larch/scripts`:
 ```
-python3 exp_fido2.py
-python3 exp_totp.py
+python3 exp_fido2.py 
+python3 exp_totp.py     # 13 minutes
 python3 exp_pw.py
 ```
-These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. 
+These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generates are included in `larch/scripts/ref_data` for comparison.
 
 ## Plot figures
+
+We now describe how to generate the figures and tables in the paper. For comparison, we include the reference plots we generated in `larch/scripts/ref_plots`, and we also link them below.
+
+### Process experiment data (before generating any plots)
 
 Process the experiment data by running:
 ```
 python3 process_all_exp.py
 ```
-This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts.
+This script will generate `larch/scripts/out_data/perf.json`, which gathers the performance numbers from various scripts and (for TOTP) averages across multiple executions.
 
 ### Figure 3 (left)
 
@@ -89,9 +92,9 @@ python3 plot_cost.py
 ```
 This script will output a plot in `larch/scripts/out_plots/plot_cost.png`.
 
-<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_cost.png" width="400">
+Note that this figure looks slightly different than the figure in the submission draft. This is due to a bug in the script. We include a corrected figure below.
 
-TODO note bug that causes to look different from paper
+<img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_cost.png" width="400">
 
 ### Figure 5
 
@@ -133,21 +136,25 @@ python3 print_table.py
 │ 10M auths max cost ($) │   38.2702 │ 32500        │   4.95833 │
 ╘════════════════════════╧═══════════╧══════════════╧═══════════╛
 ```
-TODO update this with correct numbers
 
+## Limitations
+
+Our larch implementation is a research prototype and so has several limitations. A real-world deployment of larch would require TLS and require the user to authenticate to the log on every interaction (we do not implement this). We also do not implement retrieving log entries (we simply validate and store the ciphertext and corresponding signatures). For FIDO2, we generate many presignatures, but do not implement the mechanism for refreshing presignatures after these presignatures have been exhausted, and we do not implement using the slower multisignature protocol in the event that new presignatures cannot be established. For TOTP, our implementation currently takes the number of relying parties at compilation time. Our FIDO2 extension is a proof-of-concept to show compatability and not highly optimized.
 
 ## Building from source
-Dependencies
+
+If you use the ec2 image, you do not need to build from source. If you want to build from source, install the following dependencies:
 * OpenSSL 1.1
 * [gRPC](https://grpc.io/docs/languages/cpp/quickstart/)
 * [emp-toolkit](https://github.com/emp-toolkit) (install in same directory where `larch/` is installed, make with options `ENABLE_THREADING` and `CRYPTO_IN_CIRCUIT`)
 * [emp-ag2pc](https://github.com/emp-toolkit/emp-ag2pc) (install in same directory where `larch/` is installed, install `emp-ot` as part of dependencies)
 
-Make an `out/` directory.
+If you're planning to run the browser extension:
+* Make an `out/` directory.
+* In `src/config.h`, set `OUT_DIR` to the location of the `out/` directory and `PROJ_DIR` to the location of `larch/`.
+* Set `LOG_IP_ADDR` to the public IP address of the log (with the port number), and `LOG_BIND_ADDR` to `0.0.0.0:PORT_NUM`.
 
-In `src/config.h`, set `OUT_DIR` to the location of the `out/` directory and `PROJ_DIR` to the location of `larch/`.
-Set `LOG_IP_ADDR` to the public IP address of the log (with the port number), and `LOG_BIND_ADDR` to `0.0.0.0:PORT_NUM`.
-
+Build larch with FIDO2 and password-based login:
 ```
 cd network
 cmake .
@@ -157,22 +164,83 @@ cmake .
 make
 ```
 
-### Run log:
+Build larch with TOTP:
 ```
-./build/bin/log [sigs]
+cd totp/network
+cmake .
+make
+cd ..
+cmake .
+make
 ```
-If `sigs` is included, omit the ZK proof verification (used to benchmark signing time).
 
-### Client tests/benchmarks:
-* `client/bench/init`: Run to initialize state with log (log server should be running).
-* `client/bench/sigs_bench`: Benchmark online signing time (log server should be running with only signature flag, init already run).
-* `client/bench/auth_bench`: Benchmark end-to-end authentication time (log server should be running).
-* `client/bench/throughput_bench`: Measures throughput (log server should be running, do not need to run init before).
-* `client/bench/baseline_bench`: Measure baseline authentication time (do NOT need to run log server).
-* `client/bench/agent`: Executable invoked by Chrome extension to handle webauthn requests.
+### Run larch with FIDO2 manually
 
-### ZKBoo tests/benchmarks:
-* `zkboo/test/ct_test`: Check that proof verifies correctly.
-* `zkboo/test/serialize_test`: Check that proof serialization is correct.
-* `zkboo/test/parallel_test`: Benchmark proof with correct number of repetitions.
+Start log as
+```
+./build/bin/log
+```
+
+Run authentication benchmarks from the client:
+```
+./build/bin/auth_bench <log_ip_addr> <output-perf-file>
+```
+
+### Run larch with TOTP manually
+
+Start log as
+```
+./totp/bin/serverNN
+```
+where NN is the number of keys supported by the client.
+
+To register and authenticate:
+```
+# clientNN-init <server ip> <key_index1>:<totp_secret1> <key_index2>:<totp_secret2> ...
+# Initializes client and registers the given keys.
+# all key_index:secret pairs is optional; none are required.
+# key indices start at 0.
+bin/clientNN-init 127.0.0.1 4:JBSWY3DPEHPK3PXP
+
+# clientNN-auth <server ip> <key_index>
+bin/clientNN-auth 127.0.0.1 4
+```
+
+### Run larch with passwords manually
+
+Start log as
+```
+./build/bin/pw_log
+```
+
+Run authentication benchmarks from the client:
+```
+./build/bin/pw_latency_bench
+```
+
+### Set up the web extension for FIDO2
+
+Make an `out/` directory.
+
+In `src/config.h`, set `OUT_DIR` to the location of the `out/` directory and `PROJ_DIR` to the location of `larch/`.
+
+Set `LOG_IP_ADDR` to the public IP address of the log (with the port number), and `LOG_BIND_ADDR` to `0.0.0.0:PORT_NUM`.
+
+Build (following instructions above).
+
+Edit `manifest.json` so that `path` points to executable `build/bin/agent`. Move `manifest.json` to XXX (necessary for Chrome to give the `agent` executable the necessary permissions to be invoked by the browser extension).
+
+Load the browser extension in Chrome.
+
+Start the log by running
+```
+./build/bin/log
+```
+
+Initialize the state of the agent by running from the command line
+```
+./build/bin/init
+```
+
+The web extension is not compatible with FIDO2 relying parties that require attestation certificates (for relying parties that permit self-signed certificates, this can be easily fixed by generating a self-signed certificate). You can test the web extension [here](https://webauthn.io/).
 
