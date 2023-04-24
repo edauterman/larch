@@ -46,6 +46,7 @@ Generate the left plot in figure 3 by running:
 ```
 python3 plot_fido2.py
 ```
+This script will output a plot in `larch/scripts/out_plots/plot_fido2.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_fido2.png" width="400">
 
@@ -55,6 +56,7 @@ Generate the center plot in figure 3 by running:
 ```
 python3 plot_pw.py
 ```
+This script will output a plot in `larch/scripts/out_plots/plot_pw.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw.png" width="400">
 
@@ -65,6 +67,7 @@ Generate the right plot in figure 3 by running:
 ```
 python3 plot_totp.py
 ```
+This script will output a plot in `larch/scripts/out_plots/plot_totp.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_totp.png" width="400">
 
@@ -74,7 +77,7 @@ Generate the left plot in figure 4 by running:
 ```
 python3 plot_storage.py
 ```
-This plot is purely analytical and not based on any performance measurements.
+This script will output a plot in `larch/scripts/out_plots/plot_storage.png`. This plot is purely analytical and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_storage.png" width="400">
 
@@ -84,6 +87,7 @@ Generate the right plot in figure 4 by running:
 ```
 python3 plot_cost.py
 ```
+This script will output a plot in `larch/scripts/out_plots/plot_cost.png`.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_cost.png" width="400">
 
@@ -95,7 +99,7 @@ Generate the right plot in figure 4 by running:
 ```
 python3 plot_pw_comm.py
 ```
-This plot is purely analytical and not based on any performance measurements.
+This script will output a plot in `larch/scripts/out_plots/plot_comm.png`. This plot is purely analytical and not based on any performance measurements.
 
 <img src="https://github.com/edauterman/larch/blob/main/scripts/ref_plots/plot_pw_comm.png" width="400">
 
