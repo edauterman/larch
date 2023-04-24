@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
         cout << "online time (ms) = " << getAverage(onlinetimes) << endl;
         
         ofstream f;
-        f.open(out_file);
+        f.open(out_file, ios::app);
         f << getAverage(offlineMBs) << endl;
         f << getAverage(onlineMBs) << endl;
         f << getAverage(recvMBs) << endl;
