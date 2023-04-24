@@ -54,7 +54,7 @@ These scripts will run experiments for FIDO2, TOTP, and password-based login res
 
 Each experiment launches 2 EC2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
 
-Note: Very infrequently, you might see error messages during the throughput experiment in `exp_fido2.py`. This is due to the server running out of memory under high client load (we run the server on a small instance and co-locate many clients on a more powerful instance). If you see this error, simply restart the experiment. We could avoid this by running the server on a larger instance, but we require a relatively small server instance for our benchmarks. A real-world deployment would drop requests if it was ever under load that it could not handle. 
+Note: If you change the instance sizes or parameter settings (i.e. number of clients and number of presignatures) for the throughput experiment in `exp_fido2.py`, it is possible that the log server could run out of memory under high client load (if this happens, you will see error messages from the clients). The throughput experiment settings in our scripts are configured to minimize the likelihood of this happening (although we use a small server instance). If you see this happen, restart the script and consider adjusting parameter settings. A real-world deployment would drop requests if it was ever under load that it could not handle.
 
 ## Plot figures
 
