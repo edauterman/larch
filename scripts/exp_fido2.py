@@ -34,11 +34,9 @@ def measure_throughput():
     teardown(ec2_file)
  
 def run_fido2_exp():
-    """
     client_cores = [1,2,4,8]
     for cores in client_cores:
         measure_cores(cores)
-    """
     measure_throughput()
 
 run_fido2_exp()
