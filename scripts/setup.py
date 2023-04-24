@@ -2,6 +2,8 @@ import time
 from multiprocessing import Pool
 import concurrent.futures
 import argparse
+import random
+import string
 from util.ssh_util import *
 from util.ec2_util import *
 from util.prop_util import *
@@ -12,8 +14,17 @@ from util.math_util import *
 PROJECT="larch"
 USERNAME="ec2-user"
 
-SERVER_NAME = "larch-bench-server"
-CLIENT_NAME = "larch-bench-client"
+SERVER_NAME = "server"
+CLIENT_NAME = "client"
+
+def genPrefix(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def getServerName(prefix):
+    return "%s-%s" % (prefix, SERVER_NAME)
+
+def getClientName(prefix):
+    return "%s-%s" % (prefix, CLIENT_NAME)
 
 def getHostName(ip_addr):
     return "%s@%s" % (USERNAME, ip_addr)
@@ -34,7 +45,7 @@ def getPrivateIpByName(conn, name):
         ips = getEc2InstancesPrivateIp(conn, 'Name', {'tag:Name':name}, True)
     return ips[0][1]
  
-def provision(ec2_file, machines_file):
+def provision(prefix, ec2_file, machines_file):
     properties = loadPropertyFile(ec2_file)
     machines = loadPropertyFile(machines_file)
 
@@ -43,12 +54,12 @@ def provision(ec2_file, machines_file):
     key = getOrCreateKey(conn, properties["keyname"])
     print("Got key")
 
-    startEc2Instance(conn, properties["ami_id"], key, properties["server_instance_type"], [properties["security"]], properties["placement"], name=SERVER_NAME, disk_size=properties["disk_size"])
+    startEc2Instance(conn, properties["ami_id"], key, properties["server_instance_type"], [properties["security"]], properties["placement"], name=getServerName(prefix), disk_size=properties["disk_size"])
 
-    startEc2Instance(conn, properties["ami_id"], key, properties["client_instance_type"], [properties["security"]], properties["placement"], name=CLIENT_NAME, disk_size=properties["disk_size"])
+    startEc2Instance(conn, properties["ami_id"], key, properties["client_instance_type"], [properties["security"]], properties["placement"], name=getClientName(prefix), disk_size=properties["disk_size"])
     
-    machines['server_ip_address'] = getIpByName(conn, SERVER_NAME)
-    machines['client_ip_address'] = getIpByName(conn, CLIENT_NAME)
+    machines['server_ip_address'] = getIpByName(conn, getServerName(prefix))
+    machines['client_ip_address'] = getIpByName(conn, getClientName(prefix))
 
     with open(machines_file, 'w') as f:
         json.dump(machines, f)
@@ -66,18 +77,18 @@ def setupAll(ec2_file, machines_file):
     setup_machine(machines['server_ip_address'], ec2_file)
     setup_machine(machines['client_ip_address'], ec2_file)
 
-def provisionAndSetupAll(ec2_file, machines_file):
-    provision(ec2_file, machines_file)
+def provisionAndSetupAll(prefix, ec2_file, machines_file):
+    provision(prefix, ec2_file, machines_file)
     time.sleep(60)
     setupAll(ec2_file, machines_file)
 
-def teardown(ec2_file):
+def teardown(prefix, ec2_file):
     properties = loadPropertyFile(ec2_file)
     conn = startConnection(properties['region'])
     key = getOrCreateKey(conn, properties['keyname'])
     server_id = getEc2InstancesId(
-        conn, 'Name', {'tag:Name':SERVER_NAME}, True)
+        conn, 'Name', {'tag:Name':getServerName(prefix)}, True)
     terminateEc2Instances(conn, server_id)
     client_id = getEc2InstancesId(
-        conn, 'Name', {'tag:Name':CLIENT_NAME}, True)
+        conn, 'Name', {'tag:Name':getClientName(prefix)}, True)
     terminateEc2Instances(conn, client_id)

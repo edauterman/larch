@@ -174,7 +174,7 @@ void Client::WriteToStorage() {
   EC_POINT_point2oct(Params_group(params), logPk,
                        POINT_CONVERSION_COMPRESSED, pt, 33,
                        Params_ctx(params));
-  fwrite(pt, 33, 1, hint_file);
+  fwrite(pt, 33, 1, master_file);
   fwrite(enc_key, 16, 1, master_file);
   fwrite(r_open, 16, 1, master_file);
   fwrite(enc_key_comm, 32, 1, master_file);

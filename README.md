@@ -28,7 +28,9 @@ After running the setup instructions above, you can test that everything is set 
 cd scripts
 python3 exp_pw.py       # 6 min
 ```
-This runs the password-based login experiments, which are the fastest to run. You can verify that the outputs are correctly logged in `scripts/out_data/pw_exp` (there should be 2 files, `out` and `out_1`). 
+This runs the password-based login experiments, which are the fastest to run. The script launches 2 ec2 instances, 1 client and 1 log server, and then terminates the instances at the end of the experiment.
+
+You can verify that the outputs are correctly logged in `scripts/out_data/pw_exp` (there should be 2 files, `out` and `out_1`). 
 
 From these files, you can generate the center plot in Figure 3 by running
 ```
@@ -46,6 +48,8 @@ python3 exp_totp.py     # 13 min
 python3 exp_pw.py       # 6 min
 ```
 These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generates are included in `larch/scripts/ref_data` for comparison.
+
+Each experiment generates 2 ec2 instances, 1 client and 1 log server, and terminates the instances at the end of the experiment. If you interrupt an experiment (e.g. CTRL-C), please check the ec2 console to make sure that the instances are properly terminated.
 
 ## Plot figures
 
@@ -155,7 +159,7 @@ python3 print_table.py      # < 1 min
 
 ## Limitations
 
-Our larch implementation is a research prototype and so has several limitations. A real-world deployment of larch would require TLS and require the user to authenticate to the log on every interaction (we do not implement this). We also do not implement retrieving log entries (we simply validate and store the ciphertext and corresponding signatures). For FIDO2, we generate many presignatures, but do not implement the mechanism for refreshing presignatures after these presignatures have been exhausted, and we do not implement using the slower multisignature protocol in the event that new presignatures cannot be established. For TOTP, our implementation currently takes the number of relying parties at compilation time. Our FIDO2 extension is a proof-of-concept to show compatability and not highly optimized.
+Our larch implementation is a research prototype and so has several limitations. A real-world deployment of larch would require TLS and require the user to authenticate to the log on every interaction (we do not implement this). We also do not implement retrieving log entries (we simply validate and store the ciphertext and corresponding signatures). For FIDO2, we generate many presignatures, but do not implement the mechanism for refreshing presignatures after these presignatures have been exhausted, and we do not implement using the slower multisignature protocol in the event that new presignatures cannot be established. For TOTP, our implementation currently takes the number of relying parties at compilation time. Our FIDO2 Chrome extension is a proof-of-concept to show compatability and not optimized.
 
 ## Building from source
 
@@ -244,7 +248,7 @@ Set `LOG_IP_ADDR` to the public IP address of the log (with the port number), an
 
 Build (following instructions above).
 
-Edit `manifest.json` so that `path` points to executable `build/bin/agent`. Move `manifest.json` to XXX (necessary for Chrome to give the `agent` executable the necessary permissions to be invoked by the browser extension).
+Edit `manifest.json` so that `path` points to executable `build/bin/agent`. 
 
 Load the browser extension in Chrome.
 
