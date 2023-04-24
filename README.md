@@ -25,8 +25,8 @@ mkdir out_plots
 
 Run the following experiments sequentially in `larch/scripts`:
 ```
-python3 exp_fido2.py
-python3 exp_totp.py
+python3 exp_fido2.py 
+python3 exp_totp.py     # 13 minutes
 python3 exp_pw.py
 ```
 These scripts will run experiments for FIDO2, TOTP, and password-based login respectively and output measurements to `larch/scripts/out_data`. The reference data files that we generates are included in `larch/scripts/ref_data` for comparison.
