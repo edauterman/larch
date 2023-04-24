@@ -12,15 +12,15 @@ This prototype is released under the Apache v2 license (see [License](https://gi
 
 For our experiments, we will use a cluster of AWS EC2 instances. Reviewers should have been provided with credentials to our AWS environment with compute resources. Reviewers should also have moved `larch.pem` (provided with submission) to `~/.ssh/` and set permissions to 400.
 
-1. [2 minutes] Make sure python3 is downloaded. Then run the following:
+[2 minutes] Make sure python3 is downloaded. Then run the following:
 ```
 git clone https://github.com/edauterman/larch
 cd larch/scripts
 pip3 install -r requirements.txt
+mkdir out_data
+mkdir out_plots
 
 ```
-
-2. [5 minutes] Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) (version 2 works) and run `aws configure` using the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html) (use `json` as the default output format, and it does not matter what default region you choose).
 
 
 ### Building from source
