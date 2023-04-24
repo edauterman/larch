@@ -229,7 +229,13 @@ bool VerifyCtCircuit(Proof *proof, __m128i iv, int m_len, int in_len, uint8_t * 
         }
     }
 
-    
+    delete m;
+    delete hashOut;
+    delete ct;
+    delete key;
+    delete keyR;
+    delete keyComm;
+    delete hashIn; 
     
     if (ex->verified) {
         *ret = true;
