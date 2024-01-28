@@ -310,7 +310,7 @@ void LogServer::FinalSign(uint32_t sessionCtr, uint8_t *check_d_buf, unsigned in
     if (ctx) BN_CTX_free(ctx);
 }
 
-void LogServer::GetLogState(uint32_t id, vector<Token *> &tokens) {
+vector<Token *> LogServer::GetLogState(uint32_t id) {
     return tokenMap[id];
 }
 
@@ -387,8 +387,7 @@ class LogServiceImpl final : public Log::Service {
         }
 
         Status SendAudit(ServerContext *context, const AuditRequest *req, AuditResponse *resp) override {
-            vector<Token *> tokens;
-            server->GetLogState(req->id(), tokens);
+            vector<Token *> tokens = server->GetLogState(req->id());
             for (int i = 0; i < tokens.size(); i++) {
                 TokenMsg *t = resp->add_tokens();
                 t->set_ct(tokens[i]->ct, SHA256_DIGEST_LENGTH);

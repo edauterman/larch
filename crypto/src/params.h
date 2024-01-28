@@ -93,12 +93,4 @@ void Commit(uint8_t *cm, uint8_t *m, int m_len, uint8_t *r);
 //static inline bool GetBit(uint32_t x, int bit);
 //static inline void SetBit(uint32_t *x, int bit, bool val);
 
-template<typename T>
-int aes_128_ctr_decrypt(const __m128i key,
-        const __m128i iv, 
-        T * input, // if this is null, we'll just do a blind of length length
-        uint8_t * output = nullptr, // if this is null, we'll encrypt in place
-        const size_t length = 1,
-        const uint64_t start_chunk = 0);
-
 #endif

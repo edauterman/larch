@@ -53,6 +53,7 @@ class Client {
         //void Sign(uint8_t *message_buf, int message_buf_len, BIGNUM *sk, uint8_t *sig_out, unsigned int *sig_len);
         void ThresholdSign(BIGNUM *out, uint8_t *hash_out, BIGNUM *sk, AuthRequest &req, bool onlySigs = false);
 
+	void PrintAuditLog();
         uint32_t GetLogMs();
 
     private:

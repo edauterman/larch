@@ -921,6 +921,80 @@ uint32_t Client::GetLogMs() {
     return resp.ms();
 }
 
+// Adapted from: https://github.com/emp-toolkit/emp-tool/blob/6e75f6d03e622ca6a2a23ba0c1c82fdd93f2c733/emp-tool/circuits/aes_128_ctr.h
+// Calculate the AES_128_CTR encryption of some bytes
+// (length refers to the number of elements of type T in the array "input").
+template<typename T>
+int aes_128_ctr_decrypt(const __m128i key,
+        const __m128i iv,
+        T * input, // if this is null, we'll just do a blind of length length
+        uint8_t * output = nullptr, // if this is null, we'll encrypt in place        
+	const size_t length = 1,
+        const uint64_t start_chunk = 0) {
+    const size_t num_bytes = (input == nullptr) ? length : (length * sizeof(T));
+    __m128i counter = iv;
+    if (start_chunk != 0) { // increment iv, but it's big-endian, so it's funky
+        uint64_t count; 
+        for(size_t i = 0; i < 8; ++i) {
+            ((uint8_t *)(&count))[i] = ((uint8_t *)(&counter))[15 - i];
+        }   
+        count += start_chunk; 
+        for(size_t i = 0; i < 8; ++i) {
+            ((uint8_t *)(&counter))[15 - i] = ((uint8_t *)(&count))[i];
+        }   
+    }       
+    if (input == nullptr && output == nullptr) {
+        std::cerr << "input and output of aes_128_ctr can't both be null pointers\n"<<std::flush;
+                return -1;
+        }   
+    if (output == nullptr) { // then we're encrypting in place
+        output = (uint8_t *) input;
+    }       
+    if (input == nullptr) { // then we're just doing a blind
+        input = (T*) output;
+        for (size_t i = 0; i < num_bytes; ++i) {
+            output[i] = 0;
+        }   
+    }       
+    EVP_CIPHER_CTX *ctx;
+    int len;
+    // Create and initialise the context
+    if(!(ctx = EVP_CIPHER_CTX_new())) {
+        std::cerr<< "EVP_CIPHER_CTX_new gave me a null pointer\n"<<std::flush;
+        return -1;
+    }
+    // Initialise the encryption operation. IMPORTANT - ensure you use a key
+    // and IV size appropriate for your cipher
+    if(1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_ctr(), NULL,
+                (const unsigned char *) (&key), (const unsigned char *) (&counter))) {
+        std::cerr<< "EVP_EncryptInit_ex gave something besides 1\n"<<std::flush;
+        EVP_CIPHER_CTX_free(ctx);
+        return -2;
+    }
+    // Provide the message to be encrypted, and obtain the encrypted output.
+    // EVP_EncryptUpdate can be called multiple times if necessary
+    if(1 != EVP_DecryptUpdate(ctx, (unsigned char *) output, &len, (unsigned char *) input, num_bytes)) {
+        std::cerr<< "EVP_EncryptUpdate gave something besides 1\n"<<std::flush;
+        EVP_CIPHER_CTX_free(ctx);
+        return -3;
+    }
+    size_t ciphertext_len = len;
+    // Finalise the encryption. Further ciphertext bytes may be written at
+    // this stage.
+    if(1 != EVP_DecryptFinal_ex(ctx, ((unsigned char *) output) + len, &len)) {
+        std::cerr<< "EVP_EncryptFinal gave something besides 1\n"<<std::flush;
+        EVP_CIPHER_CTX_free(ctx);
+        return -4;
+    }
+    ciphertext_len += len;
+    EVP_CIPHER_CTX_free(ctx);
+    if (ciphertext_len != num_bytes) {
+        std::cerr << "ciphertext length did not end up being the correct number of bytes\n" <<std::flush;
+    }
+    return 0;
+}
+
+
 void Client::PrintAuditLog() {
     AuditRequest req;
     AuditResponse resp;
@@ -936,10 +1010,13 @@ void Client::PrintAuditLog() {
         memcpy(iv_raw, (uint8_t *)&i, sizeof(uint32_t));
         uint8_t auth_input[48];
         memcpy(auth_input, iv_raw, 16);
-        memcpy(auth_input + 16, ct, 32);
+        memcpy(auth_input + 16, resp.tokens(i).ct().c_str(), 32);
+	uint8_t *sig_buf = (uint8_t *)malloc(resp.tokens(i).sig().size());
+	memcpy(sig_buf, resp.tokens(i).sig().c_str(), resp.tokens(i).sig().size());
         // check sig
-        int ver = VerifySignature(auth_pk, auth_input, 48, resp.tokens(i).sig(), params);
-        if (ver == 0) {
+        int ver = VerifySignature(auth_pk, auth_input, 48, sig_buf, params);
+        free(sig_buf);
+	if (ver == 0) {
             // if verifies, decrypt ct
             // decrypt with enc_key
             __m128i iv = makeBlock(0,0);
@@ -947,8 +1024,10 @@ void Client::PrintAuditLog() {
             memcpy((uint8_t *)&iv, iv_raw, 16);
             memcpy((uint8_t *)&enc_key_128, enc_key, 16);
             uint8_t app_id[SHA256_DIGEST_LENGTH];
+            uint8_t ct[SHA256_DIGEST_LENGTH];
+	    memcpy(ct, resp.tokens(i).ct().c_str(), SHA256_DIGEST_LENGTH);
             // TODO: decrypt like this https://github.com/emp-toolkit/emp-tool/blob/6e75f6d03e622ca6a2a23ba0c1c82fdd93f2c733/emp-tool/circuits/aes_128_ctr.h
-           aes_128_ctr_decrpyt(enc_key_128, iv, ct, app_id, SHA256_DIGEST_LENGTH, 0); 
+           aes_128_ctr_decrypt(enc_key_128, iv, ct, app_id, SHA256_DIGEST_LENGTH, 0); 
            printf("App id = "); 
            for (int j = 0; j < SHA256_DIGEST_LENGTH; j++) {
                 printf("%02x",app_id[j]);
