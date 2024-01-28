@@ -921,3 +921,40 @@ uint32_t Client::GetLogMs() {
     return resp.ms();
 }
 
+void Client::PrintAuditLog() {
+    AuditRequest req;
+    AuditResponse resp;
+    ClientContext client_ctx;
+    req.set_id(id);
+    stub->SendAudit(&client_ctx, req, &resp);
+    // TODO: auth_pk from auth_key BIGNUM
+    EC_POINT *auth_pk = EC_POINT_new(Params_group(params));
+    Params_exp(params, auth_pk, auth_key);
+    for (uint32_t i = 0; i < resp.tokens_size(); i++) {
+        uint8_t iv_raw[16];
+        memset(iv_raw, 0, 16);
+        memcpy(iv_raw, (uint8_t *)&i, sizeof(uint32_t));
+        uint8_t auth_input[48];
+        memcpy(auth_input, iv_raw, 16);
+        memcpy(auth_input + 16, ct, 32);
+        // check sig
+        int ver = VerifySignature(auth_pk, auth_input, 48, resp.tokens(i).sig(), params);
+        if (ver == 0) {
+            // if verifies, decrypt ct
+            // decrypt with enc_key
+            __m128i iv = makeBlock(0,0);
+            __m128i enc_key_128 = makeBlock(0,0);
+            memcpy((uint8_t *)&iv, iv_raw, 16);
+            memcpy((uint8_t *)&enc_key_128, enc_key, 16);
+            uint8_t app_id[SHA256_DIGEST_LENGTH];
+            // TODO: decrypt like this https://github.com/emp-toolkit/emp-tool/blob/6e75f6d03e622ca6a2a23ba0c1c82fdd93f2c733/emp-tool/circuits/aes_128_ctr.h
+           aes_128_ctr_decrpyt(enc_key_128, iv, ct, app_id, SHA256_DIGEST_LENGTH, 0); 
+           printf("App id = "); 
+           for (int j = 0; j < SHA256_DIGEST_LENGTH; j++) {
+                printf("%02x",app_id[j]);
+            }
+            printf("\n");
+        }
+    }
+    EC_POINT_free(auth_pk);
+}

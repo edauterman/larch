@@ -22,6 +22,8 @@ for i in range(20,120,20):
         y[0].append(float(lines[3]) / 1000.0)
         y[1].append(float(lines[4]) / 1000.0)
 
+print(y[0])
+print(y[1])
 # N = 10000, n = 100
 
 #for i in range(len(y)):

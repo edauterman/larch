@@ -5,7 +5,7 @@
 "keyname": "DoryKeyPair",
 "server_instance_type": "c5.4xlarge",
 "client_instance_type": "c5.2xlarge",
-"ami_id": "ami-05e03e245db92e2a3",
+"ami_id": "ami-0bb3f5fb16986dadb",
 "security": "launch-wizard-21",
 "secret_key_path": "~/.ssh/larch.pem"
 }

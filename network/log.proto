@@ -12,6 +12,7 @@ service Log {
     rpc SendAuthCheck (AuthCheckRequest) returns (AuthCheckResponse) {}
     rpc SendAuthCheck2 (AuthCheck2Request) returns (AuthCheck2Response) {}
     rpc SendMs (MsRequest) returns (MsResponse) {}
+    rpc SendAudit (AuditRequest) returns (AuditResponse) {}
     
     rpc SendPwInit (PwInitRequest) returns (PwInitResponse) {}
     rpc SendPwRegister (PwRegisterRequest) returns (PwRegisterResponse) {}
@@ -107,6 +108,19 @@ message MsRequest {}
 
 message MsResponse {
     uint32 ms = 1;
+}
+
+message AuditRequest {
+    uint32 id = 1;
+}
+
+message TokenMsg {
+    bytes ct = 1;
+    bytes sig = 2;
+}
+
+message AuditResponse {
+    repeated TokenMsg tokens = 1;
 }
 
 message PwInitRequest {

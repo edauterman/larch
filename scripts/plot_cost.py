@@ -17,33 +17,39 @@ with open(IN_FILE, 'r') as f:
 
 def get_fido2_cost(auths):
     auth_tput = results["auths_per_core"]["fido2"]
+    print(auth_tput)
     auth_sec = auths / auth_tput
     core_hours = ceil(auth_sec/60.0/60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
     data_gb = auths * results["out_total_comm_kb"]["fido2"] / (1 << 20)
+    print(data_gb)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost
 
 def get_pw_cost(auths):
     auth_tput = results["auths_per_core"]["pw"]
+    print(auth_tput)
     auth_sec = auths / auth_tput
     core_hours = ceil(auth_sec / 60.0 / 60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
     data_gb = auths * results["out_total_comm_kb"]["pw"] / (1 << 20)
+    print(data_gb)
     network_cost = network_gb_cost * data_gb
 
     return core_cost + network_cost
 
 def get_totp_cost(auths):
     auth_tput = results["auths_per_core"]["totp"]
+    print(auth_tput)
     auth_sec = auths/auth_tput
     core_hours = ceil(auth_sec / 60.0 / 60.0)
     core_cost = max_cpu_hour_cost * core_hours
 
     data_gb = auths * results["out_total_comm_kb"]["totp"] / (1 << 20)
+    print(data_gb)
     network_cost = network_gb_cost * data_gb
     return core_cost + network_cost
 

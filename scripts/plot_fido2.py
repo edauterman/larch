@@ -33,6 +33,7 @@ for i in cores:
             if j == 0:
                 y[2].append(float(line))
 y[1] = [total[i] - y[0][i] - y[2][i] for i in range(len(total))]
+print(y)
 
 # N = 10000, n = 100
 

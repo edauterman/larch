@@ -19,11 +19,10 @@ colors=[custom_style.hash_colors[4], custom_style.hash_colors[3], custom_style.h
 y = [[], [], []]
 with open(in_name, 'r') as f:
     for i, line in enumerate(f):
+        print(line.strip())
         y[i % 3].append(float(line))
         if i > 2:
             y[i % 3].append(float(line))
-
-
 
 fig = plt.figure(figsize = (2.4,1.6))
 #fig = plt.figure(figsize = (2.4,1.6))
