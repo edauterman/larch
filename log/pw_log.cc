@@ -31,8 +31,10 @@ class LogServiceImpl final : public Log::Service {
 
             EC_POINT *X = EC_POINT_new(Params_group(params));
             EC_POINT_oct2point(Params_group(params), X, (const unsigned char *)req->x().c_str(), 33, Params_ctx(params));
+            EC_POINT *pk = EC_POINT_new(Params_group(params));
+            EC_POINT_oct2point(Params_group(params), pk, (const unsigned char *)req->pk().c_str(), 33, Params_ctx(params));
            
-            EC_POINT *recover_pt = l->Enroll(X);
+            EC_POINT *recover_pt = l->Enroll(X,pk);
 
             uint8_t recover_pt_buf[33];
             EC_POINT_point2oct(Params_group(params), recover_pt, POINT_CONVERSION_COMPRESSED, recover_pt_buf, 33, Params_ctx(params));
@@ -58,7 +60,9 @@ class LogServiceImpl final : public Log::Service {
             OrProof *or_proof_r = new OrProof();
             or_proof_r->Deserialize(params, (const unsigned char *)req->or_proof_r().c_str());
 
-            EC_POINT *out = l->Auth(ct, or_proof_x, or_proof_r);
+            uint8_t sig_buf[64];
+            memcpy(sig_buf, req->sig().c_str(), req->sig().size());
+            EC_POINT *out = l->Auth(ct, or_proof_x, or_proof_r, sig_buf);
             uint8_t out_buf[33];
             if (out != NULL) {
                 EC_POINT_point2oct(Params_group(params), out, POINT_CONVERSION_COMPRESSED, out_buf, 33, Params_ctx(params));
@@ -76,6 +80,20 @@ class LogServiceImpl final : public Log::Service {
         Status SendPwMs(ServerContext *context, const PwMsRequest *req, PwMsResponse *resp) override {
             resp->set_ms(time_ms);
             time_ms = 0;
+            return Status::OK;
+        }
+
+        Status SendPwAudit(ServerContext *context, const PwAuditRequest *req, PwAuditResponse *resp) override {
+            for (int i = 0; i < ctList.size(); i++) {
+                PwTokenMsg *t = resp->add_tokens();
+                uint8_t ct_buf_r[33];
+                uint8_t ct_buf_c[33];
+                EC_POINT_point2oct(Params_group(params), ctList[i]->R, POINT_CONVERSION_COMPRESSED, ct_buf_r, 33, Params_ctx(params));
+                EC_POINT_point2oct(Params_group(params), ctList[i]->C, POINT_CONVERSION_COMPRESSED, ct_buf_c, 33, Params_ctx(params));
+                t->set_ct_r(ct_buf_r, 33);
+                t->set_ct_c(ct_buf_c, 33);
+                t->set_sig(sigList[i].c_str(), 64);
+            }
             return Status::OK;
         }
 };

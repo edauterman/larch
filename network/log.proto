@@ -17,6 +17,7 @@ service Log {
     rpc SendPwInit (PwInitRequest) returns (PwInitResponse) {}
     rpc SendPwRegister (PwRegisterRequest) returns (PwRegisterResponse) {}
     rpc SendPwAuth (PwAuthRequest) returns (PwAuthResponse) {}
+    rpc SendPwAudit (PwAuditRequest) returns (PwAuditResponse) {}
     rpc SendPwMs (PwMsRequest) returns (PwMsResponse) {}
 }
 
@@ -150,6 +151,18 @@ message PwAuthRequest {
 
 message PwAuthResponse {
     bytes out = 1;
+}
+
+message PwTokenMsg {
+    bytes ct_r = 1;
+    bytes ct_c = 2;
+    bytes sig = 3;
+}
+
+message PwAuditRequest {}
+
+message PwAuditResponse {
+    repeated PwTokenMsg tokens = 1;
 }
 
 message PwMsRequest {}

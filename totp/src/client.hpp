@@ -177,7 +177,12 @@ public:
 
         // sign enc_rpid with ECDSA
         vector<uint8_t> enc_rpid(out.enc_rpid, out.enc_rpid + ENC_RPID_LEN);
-        auto sig = sign_ecdsa(params, rpid_sign_sk, enc_rpid);
+        uint8_t verify_bytes[ENC_RPID_LEN + AUTH_NONCE_LEN];
+        memcpy(verify_bytes, enc_rpid, ENC_RPID_LEN);
+        memset(verify_bytes + 2, 0, AUTH_NONCE_LEN);
+        memcpy(verify_bytes + 2, (uint8_t *)(&auth_ctr), sizeof(auth_ctr);
+        vector<uint8_t> verify_bytes_vec(verify_bytes.begin(), verify_bytes.end());
+        auto sig = sign_ecdsa(params, rpid_sign_sk, verify_bytes_vec);
 
         // send to server
         ClientContext context2;
@@ -217,7 +222,13 @@ public:
 
         for (uint32_t i = 0 ; i < resp.entries.size(); i++) {
             // Verify signature
-            if (!verify_ecdsa(params, pk, resp.entries(i).enc_rpid(), resp.entries(i).rpid_sig())) {
+            uint8_t verify_bytes[ENC_RPID_LEN + AUTH_NONCE_LEN];
+            memcpy(verify_bytes, resp.entries(i).enc_rpid(), ENC_RPID_LEN);
+            memset(verify_bytes + 2, 0, AUTH_NONCE_LEN);
+            memcpy(verify_bytes + 2, (uint8_t *)(&auth_ctr), sizeof(auth_ctr);
+            vector<uint8_t> verify_bytes_vec(verify_bytes.begin(), verify_bytes.end());
+            
+            if (!verify_ecdsa(params, pk, verify_bytes_vec, resp.entries(i).rpid_sig())) {
                 printf("signature verification FAILED\n");
             }
             // Decrypt RPID

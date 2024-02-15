@@ -26,6 +26,7 @@ private:
 	std::thread offline_server_thread;
 	C2PC<NetIO> *twopc;
 	NetIO *io;
+    uint32_t auth_ctr;
 
 public:
 	TotpServiceImpl(ServerState* state, int mpc_port, EC_POINT* rpid_sign_pk) : state(state), mpc_port(mpc_port), rpid_sign_pk(rpid_sign_pk) {}
@@ -50,6 +51,7 @@ public:
 
 		vector<uint8_t> pk(request->rpid_sign_pk().begin(), request->rpid_sign_pk().end());
 		rpid_sign_pk = load_ecdsa_pk(params, pk);
+        auth_ctr = 0;
 		write_state();
 		return Status::OK;
 	}
@@ -109,7 +111,12 @@ public:
 		// verify ecdsa
 		vector<uint8_t> sig(request->signature().begin(), request->signature().end());
 		vector<uint8_t> enc_rpid(request->enc_rpid().begin(), request->enc_rpid().end());
-		if (!verify_ecdsa(params, rpid_sign_pk, enc_rpid, sig)) {
+        uint8_t verify_bytes[ENC_RPID_LEN + AUTH_NONCE_LEN];
+        memcpy(verify_bytes, enc_rpid, ENC_RPID_LEN);
+        memset(verify_bytes + 2, 0, AUTH_NONCE_LEN);
+        memcpy(verify_bytes + 2, (uint8_t *)(&auth_ctr), sizeof(auth_ctr));
+        vector<uint8_t> verify_bytes_vec(verify_bytes.begin(), verify_bytes.end());
+		if (!verify_ecdsa(params, rpid_sign_pk, verify_bytes_vec, sig)) {
 			return Status(grpc::StatusCode::INVALID_ARGUMENT, "ecdsa signature does not match");
 		}
 
@@ -118,6 +125,8 @@ public:
 		memcpy(entry.enc_rpid, enc_rpid.data(), enc_rpid.size());
 		entry.timestamp = time(nullptr);
 		log.push_back(entry);
+
+        auth_ctr++;
 
 		write_state();
 		return Status::OK;

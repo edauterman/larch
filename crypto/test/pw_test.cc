@@ -1,6 +1,7 @@
 #include <iostream>
 #include <openssl/bn.h>
 #include <openssl/ec.h>
+#include <openssl/rand.h>
 #include <vector>
 
 #include "../src/or_groth.h"
@@ -20,9 +21,12 @@ bool CorrectAuth() {
     BIGNUM *r = BN_new();
     OrProof *or_proof_r;
     OrProof *or_proof_x;
-    
-    EC_POINT *X = c.StartEnroll();
-    EC_POINT *recover_pt = l.Enroll(X);
+    RAND_bytes(id, len);
+   
+    EC_POINT *X = EC_POINT_new(Params_group(params)); 
+    EC_POINT *sig_pk = EC_POINT_new(Params_group(params)); 
+    c.StartEnroll(X, sig_pk);
+    EC_POINT *recover_pt = l.Enroll(X,pk);
     c.FinishEnroll(recover_pt);
 
     c.StartRegister(id, len);

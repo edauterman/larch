@@ -26,15 +26,15 @@ void PwClient::Initialize() {
     PwInitRequest req;
     PwInitResponse resp;
     ClientContext client_ctx;
-    sk = BN_new();
-    pk = EC_POINT_new(Params_group(c->params));
-    Params_rand_point_exp(c->params, pk, sk);
-    EC_POINT *X = c->StartEnroll();
+    EC_POINT *X = EC_POINT_new(Params_group(params));
+    EC_POINT *sig_pk = EC_POINT_new(Params_group(params));
+    c->StartEnroll(X, sig_pk);
     uint8_t X_buf[33];
     EC_POINT_point2oct(Params_group(c->params), X, POINT_CONVERSION_COMPRESSED, X_buf, 33, Params_ctx(c->params));
     req.set_x(X_buf, 33);
-    EC_POINT_point2oct(Params_group(c->params), pk, POINT_CONVERSION_COMPRESSED, X_buf, 33, Params_ctx(c->params));
-    req.set_pk(X_buf, 33);
+    uint8_t pk_buf[33];
+    EC_POINT_point2oct(Params_group(c->params), sig_pk, POINT_CONVERSION_COMPRESSED, pk_buf, 33, Params_ctx(c->params));
+    req.set_pk(pk_buf, 33);
 
     stub->SendPwInit(&client_ctx, req, &resp);
     
@@ -70,8 +70,10 @@ EC_POINT *PwClient::Authenticate(string id) {
     BIGNUM *r = BN_new();
     OrProof *or_proof_x;
     OrProof *or_proof_r;
+    uint8_t *sig_buf;
+    unsigned int sig_len;
 
-    c->StartAuth(orderMap[id], (const uint8_t *)id.c_str(), id.size(), ct, &or_proof_x, &or_proof_r, r);
+    c->StartAuth(orderMap[id], (const uint8_t *)id.c_str(), id.size(), ct, &or_proof_x, &or_proof_r, r, &sig_buf, &sig_len);
     uint8_t ct_buf_r[33];
     uint8_t ct_buf_c[33];
     EC_POINT_point2oct(Params_group(c->params), ct->R, POINT_CONVERSION_COMPRESSED, ct_buf_r, 33, Params_ctx(c->params));
@@ -88,12 +90,6 @@ EC_POINT *PwClient::Authenticate(string id) {
     or_proof_r->Serialize(c->params, &or_proof_r_buf, &len_r);
     req.set_or_proof_r(or_proof_r_buf, len_r);
 
-    uint8_t *sig_buf;
-    unsigned int sig_len;
-    uint8_t msg_buf[66];
-    memcpy(msg_buf, ct_buf_r, 33);
-    memcpy(msg_buf + 33, ct_buf_c, 33);
-    Sign(msg_buf, 66, sk, &sig_buf, &sig_len, c->params);
     req.set_sig(sig_buf, sig_len);
     free(sig_buf);
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -110,6 +106,22 @@ EC_POINT *PwClient::Authenticate(string id) {
     clientMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() + std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
 
     return pw;
+}
+
+void PwClient::PrintAuditLog() {
+    PwAuditRequest req;
+    PwAuditResponse resp;
+    ClientContext client_ctx;
+    stub->SendPwAudit(&client_ctx, req, &resp);
+    ElGamalCt *ct = new ElGamalCt(c->params);
+    uint8_t sig_buf[66];
+    for (uint32_t i = 0; i < resp.tokens_size(); i++) {
+        EC_POINT_oct2point(Params_group(c->params), ct->R, (const unsigned char *)resp.tokens(i).ct_r().c_str(), 33, Params_ctx(params));
+        EC_POINT_oct2point(Params_group(c->params), ct->C, (const unsigned char *)resp.tokens(i).ct_c().c_str(), 33, Params_ctx(params));
+        memcpy(sig_buf, resp.tokens(i).sig_buf().c_str(), resp.tokens(i).sig().size());
+        PrintLogEntry(ct, sig_buf);
+    }
+
 }
 
 uint32_t PwClient::GetLogMs() {
