@@ -1011,8 +1011,8 @@ void Client::PrintAuditLog() {
         uint8_t auth_input[48];
         memcpy(auth_input, iv_raw, 16);
         memcpy(auth_input + 16, resp.tokens(i).ct().c_str(), 32);
-	uint8_t *sig_buf = (uint8_t *)malloc(resp.tokens(i).sig().size());
-	memcpy(sig_buf, resp.tokens(i).sig().c_str(), resp.tokens(i).sig().size());
+	    uint8_t *sig_buf = (uint8_t *)malloc(resp.tokens(i).sig().size());
+	    memcpy(sig_buf, resp.tokens(i).sig().c_str(), resp.tokens(i).sig().size());
         // check sig
         int ver = VerifySignature(auth_pk, auth_input, 48, sig_buf, params);
         free(sig_buf);
@@ -1025,9 +1025,8 @@ void Client::PrintAuditLog() {
             memcpy((uint8_t *)&enc_key_128, enc_key, 16);
             uint8_t app_id[SHA256_DIGEST_LENGTH];
             uint8_t ct[SHA256_DIGEST_LENGTH];
-	    memcpy(ct, resp.tokens(i).ct().c_str(), SHA256_DIGEST_LENGTH);
-            // TODO: decrypt like this https://github.com/emp-toolkit/emp-tool/blob/6e75f6d03e622ca6a2a23ba0c1c82fdd93f2c733/emp-tool/circuits/aes_128_ctr.h
-           aes_128_ctr_decrypt(enc_key_128, iv, ct, app_id, SHA256_DIGEST_LENGTH, 0); 
+	        memcpy(ct, resp.tokens(i).ct().c_str(), SHA256_DIGEST_LENGTH);
+            aes_128_ctr_decrypt(enc_key_128, iv, ct, app_id, SHA256_DIGEST_LENGTH, 0); 
            printf("App id = "); 
            for (int j = 0; j < SHA256_DIGEST_LENGTH; j++) {
                 printf("%02x",app_id[j]);

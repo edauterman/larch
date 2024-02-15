@@ -132,7 +132,7 @@ Output do_mpc_client(InputA& in_a, C2PC<NetIO> *twopc) {
     return do_mpc_common(CLIENT, input, twopc);
 }
 /*
-    // decrypt rpid
+    //decrypt rpid
     uint8_t chacha_block[64];
     chacha20_block((uint32_t*) chacha_block, (uint8_t*) in_a.client_rpid_key, 0, in_a.client_rpid_auth_nonce);
 	auto rpid = output->enc_rpid ^ chacha_block[0];

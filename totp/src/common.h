@@ -69,6 +69,7 @@ struct ClientState {
     uint8_t rpid_commit_nonce[COMMIT_NONCE_LEN];
 
     uint8_t rpid_sign_sk[32];
+    uint32_t auth_ctr;
 } __attribute__((packed));
 
 struct ServerState {

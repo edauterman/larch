@@ -93,6 +93,8 @@ public:
         if (!status.ok()) {
             throw runtime_error("init failed: " + status.error_message());
         }
+
+        state->auth_ctr = 0;
     }
 
     void register_totp_key(int rp_index, string secret_b32) {
@@ -166,7 +168,11 @@ public:
         SHA256(commit_buf.data(), 48, commitment.data());
         //print_hex("auth commitment", (char*)commitment.data(), commitment.size());
 
-        RAND_bytes((uint8_t*) input.client_rpid_auth_nonce, AUTH_NONCE_LEN);
+        memset((uint8_t *) input.client_rpid_auth_nonce, 0, AUTH_NONCE_LEN);
+        memcpy((uint8_t *) input.client_rpid_auth_nonce, (uint8_t *)(&state->auth_ctr), sizeof(state->auth_ctr));
+        state->auth_ctr++;
+
+        //RAND_bytes((uint8_t*) input.client_rpid_auth_nonce, AUTH_NONCE_LEN);
         auto out = do_mpc_client(input, twopc);
 
         // sign enc_rpid with ECDSA
@@ -195,6 +201,37 @@ public:
         ofstream file("data/client.bin", ios::out | ios::binary);
         file.write((char*)state, sizeof(*state));
         file.close();
+    }
+
+    void print_log() {
+        ClientContext ctx;
+        GetLogRequest req;
+        GetLogResponse resp;
+
+        auto status = stub->GetLog(&ctx, req, &resp);
+        if (!status.ok()) {
+            throw runtime_error("get log failed: " + status.error_message());
+        }
+        
+        auto pk = derive_ecdsa_pub(params, rpid_sign_sk);
+
+        for (uint32_t i = 0 ; i < resp.entries.size(); i++) {
+            // Verify signature
+            if (!verify_ecdsa(params, pk, resp.entries(i).enc_rpid(), resp.entries(i).rpid_sig())) {
+                printf("signature verification FAILED\n");
+            }
+            // Decrypt RPID
+            uint8_t chacha_block[64];
+            uint8_t auth_nonce[12];
+            memset((uint8_t *) auth_nonce, 0, AUTH_NONCE_LEN);
+            memcpy((uint8_t *) auth_nonce, (uint8_t *)(&i), sizeof(uint32_t));
+ 
+            memcpy(chacha_block, resp.entries(i).enc_rpid(), 64);
+            chacha20_block((uint32_t*) chacha_block, (uint8_t*) rpid_key, 0, auth_nonce);
+            auto rpid = resp.entries(i).enc_rpid() ^ chacha_block[0];
+            cout << "RPID = " << rpid << endl;
+        }
+
     }
 
     static Client* from_state(shared_ptr<Channel> channel, string server_ip) {
