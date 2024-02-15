@@ -9,6 +9,7 @@
 #include <string.h>
 #include <fstream>
 #include <grpcpp/grpcpp.h>
+#include <time.h>
 
 #include "../network/totp.grpc.pb.h"
 #include "common.h"
@@ -240,7 +241,8 @@ public:
             memcpy(chacha_block, resp.entries(i).enc_rpid(), 64);
             chacha20_block((uint32_t*) chacha_block, (uint8_t*) rpid_key, 0, auth_nonce);
             auto rpid = resp.entries(i).enc_rpid() ^ chacha_block[0];
-            cout << "RPID = " << rpid << endl;
+            cout << "RPID = " << rpid;
+            printf("(time = %s)\n", ctime(resp.entries(i).timestamp()));
         }
 
     }

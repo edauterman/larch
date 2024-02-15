@@ -18,6 +18,7 @@ class Token {
     public:
         uint8_t ct[SHA256_DIGEST_LENGTH];
         uint8_t sig[64];
+        uint64_t timestamp;
 
         Token(uint8_t *ct, uint8_t *sig, unsigned int sig_len);
 };

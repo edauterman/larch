@@ -37,6 +37,7 @@ Token::Token(uint8_t *ct_in, uint8_t *sig_in, unsigned int sig_len) {
     memcpy(ct, ct_in, SHA256_DIGEST_LENGTH);
     memset(sig, 0, 64);
     memcpy(sig, sig_in, sig_len);
+    timestamp = time(nullptr);
 }
 
 AuthState::AuthState(uint8_t *digest_in, BIGNUM *check_d_in, uint8_t *r_in, BIGNUM *out_in) {
@@ -392,6 +393,7 @@ class LogServiceImpl final : public Log::Service {
                 TokenMsg *t = resp->add_tokens();
                 t->set_ct(tokens[i]->ct, SHA256_DIGEST_LENGTH);
                 t->set_sig(tokens[i]->sig, 64);
+                t->set_time(tokens[i]->timestamp);
             }
             return Status::OK;
         }

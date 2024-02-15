@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <thread>
+#include <time.h>
 
 #include "params.h"
 #include "or_groth.h"
@@ -177,7 +178,7 @@ EC_POINT *PasswordClient::FinishAuth(int register_idx, EC_POINT *in, BIGNUM *r) 
     return out;
 }
 
-void PasswordClient::PrintLogEntry(ElGamalCt *ct, uint8_t *sig) {
+void PasswordClient::PrintLogEntry(ElGamalCt *ct, uint8_t *sig, uint64_t time) {
     // Verify signature
     uint8_t ct_buf[66];
     EC_POINT_point2oct(Params_group(params), ct->R, POINT_CONVERSION_COMPRESSED, ct_buf, 33, Params_ctx(params));
@@ -195,7 +196,7 @@ void PasswordClient::PrintLogEntry(ElGamalCt *ct, uint8_t *sig) {
     Params_mul(params, m, ct->C, s);
     for (int i = 0; i < id_hash_vals.size(); i++) {
         if (EC_POINT_cmp(Params_group(params), m, hash_ids[i]) == 0) {
-            printf("Index = %d\n", i);
+            printf("Index = %d (time = %s)\n", i, ctime(time));
         }
     }
 

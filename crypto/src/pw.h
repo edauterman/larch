@@ -28,7 +28,7 @@ class PasswordClient {
         void FinishRegister(EC_POINT *in, EC_POINT *pw);
         void StartAuth(int register_idx, const uint8_t *id, int len, ElGamalCt *ct, OrProof **or_proof_x, OrProof **or_proof_r, BIGNUM *r);
         EC_POINT *FinishAuth(int register_idx, EC_POINT *in, BIGNUM *r);
-        void PrintLogEntry(ElGamalCt *ct, uint8_t *sig);
+        void PrintLogEntry(ElGamalCt *ct, uint8_t *sig, uint64_t time);
 
     private:
         BIGNUM *x;

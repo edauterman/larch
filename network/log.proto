@@ -118,6 +118,7 @@ message AuditRequest {
 message TokenMsg {
     bytes ct = 1;
     bytes sig = 2;
+    uint64 time = 3;
 }
 
 message AuditResponse {
@@ -157,6 +158,7 @@ message PwTokenMsg {
     bytes ct_r = 1;
     bytes ct_c = 2;
     bytes sig = 3;
+    uint64 time = 4;
 }
 
 message PwAuditRequest {}

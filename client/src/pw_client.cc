@@ -119,7 +119,7 @@ void PwClient::PrintAuditLog() {
         EC_POINT_oct2point(Params_group(c->params), ct->R, (const unsigned char *)resp.tokens(i).ct_r().c_str(), 33, Params_ctx(params));
         EC_POINT_oct2point(Params_group(c->params), ct->C, (const unsigned char *)resp.tokens(i).ct_c().c_str(), 33, Params_ctx(params));
         memcpy(sig_buf, resp.tokens(i).sig_buf().c_str(), resp.tokens(i).sig().size());
-        PrintLogEntry(ct, sig_buf);
+        PrintLogEntry(ct, sig_buf, resp.tokens(i).time());
     }
 
 }

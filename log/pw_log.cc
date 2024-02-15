@@ -21,6 +21,7 @@ class LogServiceImpl final : public Log::Service {
         PasswordLog *l;
         list<ElGamalCt *>ctList;
         list<string>sigList;
+        list<uint64_t>timestampList;
         uint32_t time_ms = 0;
 
         LogServiceImpl() {}
@@ -69,7 +70,7 @@ class LogServiceImpl final : public Log::Service {
                 resp->set_out(out_buf, 33);
                 ctList.push_back(ct);
                 sigList.push_back(string(req->sig()));
-
+                timestampList.push_back(time(nullptr));
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             time_ms += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -93,6 +94,7 @@ class LogServiceImpl final : public Log::Service {
                 t->set_ct_r(ct_buf_r, 33);
                 t->set_ct_c(ct_buf_c, 33);
                 t->set_sig(sigList[i].c_str(), 64);
+                t->set_time(timestampList[i]);
             }
             return Status::OK;
         }
