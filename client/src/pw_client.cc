@@ -26,8 +26,8 @@ void PwClient::Initialize() {
     PwInitRequest req;
     PwInitResponse resp;
     ClientContext client_ctx;
-    EC_POINT *X = EC_POINT_new(Params_group(params));
-    EC_POINT *sig_pk = EC_POINT_new(Params_group(params));
+    EC_POINT *X = EC_POINT_new(Params_group(c->params));
+    EC_POINT *sig_pk = EC_POINT_new(Params_group(c->params));
     c->StartEnroll(X, sig_pk);
     uint8_t X_buf[33];
     EC_POINT_point2oct(Params_group(c->params), X, POINT_CONVERSION_COMPRESSED, X_buf, 33, Params_ctx(c->params));
@@ -116,10 +116,10 @@ void PwClient::PrintAuditLog() {
     ElGamalCt *ct = new ElGamalCt(c->params);
     uint8_t sig_buf[66];
     for (uint32_t i = 0; i < resp.tokens_size(); i++) {
-        EC_POINT_oct2point(Params_group(c->params), ct->R, (const unsigned char *)resp.tokens(i).ct_r().c_str(), 33, Params_ctx(params));
-        EC_POINT_oct2point(Params_group(c->params), ct->C, (const unsigned char *)resp.tokens(i).ct_c().c_str(), 33, Params_ctx(params));
-        memcpy(sig_buf, resp.tokens(i).sig_buf().c_str(), resp.tokens(i).sig().size());
-        PrintLogEntry(ct, sig_buf, resp.tokens(i).time());
+        EC_POINT_oct2point(Params_group(c->params), ct->R, (const unsigned char *)resp.tokens(i).ct_r().c_str(), 33, Params_ctx(c->params));
+        EC_POINT_oct2point(Params_group(c->params), ct->C, (const unsigned char *)resp.tokens(i).ct_c().c_str(), 33, Params_ctx(c->params));
+        memcpy(sig_buf, resp.tokens(i).sig().c_str(), resp.tokens(i).sig().size());
+        c->PrintLogEntry(ct, sig_buf, resp.tokens(i).time());
     }
 
 }

@@ -20,6 +20,7 @@ class PwClient {
         void Register(string id, EC_POINT *pw);
         EC_POINT *Authenticate(string id);
         uint32_t GetLogMs();
+	void PrintAuditLog();
         double clientMs;
 
     private:

@@ -8,6 +8,7 @@
 #include "params.h"
 #include "or_groth.h"
 #include "pw.h"
+#include "sigs.h"
 
 using namespace std;
 
@@ -45,7 +46,7 @@ PasswordLog::PasswordLog() {
     params2 = Params_new(P256);
 }
 
-void PasswordClient::StartEnroll(EC_POINT *x_out, EC_POINT *sig_pk_out) {
+void PasswordClient::StartEnroll(EC_POINT *X_out, EC_POINT *sig_pk_out) {
     x = BN_new();
     Params_rand_exponent(params, x);
     sig_sk = BN_new();
@@ -59,7 +60,7 @@ void PasswordClient::StartEnroll(EC_POINT *x_out, EC_POINT *sig_pk_out) {
 
 EC_POINT *PasswordLog::Enroll(EC_POINT *X_in, EC_POINT *sig_pk_in) {
     X = X_in;
-    sig_pk = pk_in;
+    sig_pk = sig_pk_in;
     sk = BN_new();
     Params_rand_exponent(params, sk);
     EC_POINT *recover_pt = EC_POINT_new(Params_group(params));
@@ -118,8 +119,8 @@ void PasswordClient::StartAuth(int register_idx, const uint8_t *id, int len, ElG
     workers[1].join();
 
     uint8_t ct_buf[66];
-    EC_POINT_point2oct(Params_group(c->params), ct->R, POINT_CONVERSION_COMPRESSED, ct_buf, 33, Params_ctx(c->params));
-    EC_POINT_point2oct(Params_group(c->params), ct->C, POINT_CONVERSION_COMPRESSED, ct_buf + 33, 33, Params_ctx(c->params));
+    EC_POINT_point2oct(Params_group(params), ct->R, POINT_CONVERSION_COMPRESSED, ct_buf, 33, Params_ctx(params));
+    EC_POINT_point2oct(Params_group(params), ct->C, POINT_CONVERSION_COMPRESSED, ct_buf + 33, 33, Params_ctx(params));
     Sign(ct_buf, 66, sig_sk, sig_buf, sig_len, params);
    
     for (int i = 0; i < (1 << log_len); i++) {
@@ -146,7 +147,7 @@ EC_POINT *PasswordLog::Auth(ElGamalCt *ct, OrProof *or_proof_x, OrProof *or_proo
     uint8_t ct_buf[66];
     EC_POINT_point2oct(Params_group(params), ct->R, POINT_CONVERSION_COMPRESSED, ct_buf, 33, Params_ctx(params));
     EC_POINT_point2oct(Params_group(params), ct->C, POINT_CONVERSION_COMPRESSED, ct_buf + 33, 33, Params_ctx(params));
-    if (VerifySignature(sig_pk, ct_buf, 66, req->sig(), params) != 0) {
+    if (VerifySignature(sig_pk, ct_buf, 66, sig, params) != 0) {
         printf("Signature failed to verify.\n");
         return NULL;
     }
@@ -183,7 +184,7 @@ void PasswordClient::PrintLogEntry(ElGamalCt *ct, uint8_t *sig, uint64_t time) {
     uint8_t ct_buf[66];
     EC_POINT_point2oct(Params_group(params), ct->R, POINT_CONVERSION_COMPRESSED, ct_buf, 33, Params_ctx(params));
     EC_POINT_point2oct(Params_group(params), ct->C, POINT_CONVERSION_COMPRESSED, ct_buf + 33, 33, Params_ctx(params));
-    if (VerifySignature(sig_pk, ct_buf, 66, req->sig(), params) != 0) {
+    if (VerifySignature(sig_pk, ct_buf, 66, sig, params) != 0) {
         printf("Signature failed to verify.\n");
         return;
     }
@@ -194,9 +195,9 @@ void PasswordClient::PrintLogEntry(ElGamalCt *ct, uint8_t *sig, uint64_t time) {
     Params_inv(params, s, s);
     EC_POINT *m = EC_POINT_new(Params_group(params));
     Params_mul(params, m, ct->C, s);
-    for (int i = 0; i < id_hash_vals.size(); i++) {
-        if (EC_POINT_cmp(Params_group(params), m, hash_ids[i]) == 0) {
-            printf("Index = %d (time = %s)\n", i, ctime(time));
+    for (int i = 0; i < hash_ids.size(); i++) {
+        if (EC_POINT_cmp(Params_group(params), m, hash_ids[i], Params_ctx(params)) == 0) {
+            printf("Index = %d (time = %s)\n", i, ctime((const time_t *)&time));
         }
     }
 

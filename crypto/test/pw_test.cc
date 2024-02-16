@@ -26,15 +26,17 @@ bool CorrectAuth() {
     EC_POINT *X = EC_POINT_new(Params_group(params)); 
     EC_POINT *sig_pk = EC_POINT_new(Params_group(params)); 
     c.StartEnroll(X, sig_pk);
-    EC_POINT *recover_pt = l.Enroll(X,pk);
+    EC_POINT *recover_pt = l.Enroll(X,sig_pk);
     c.FinishEnroll(recover_pt);
 
     c.StartRegister(id, len);
     EC_POINT *out = l.Register(id, len);
     c.FinishRegister(out, pw);
 
-    c.StartAuth(0, id, len, ct, &or_proof_x, &or_proof_r, r);
-    EC_POINT *out2 = l.Auth(ct, or_proof_x, or_proof_r);
+    uint8_t *sig;
+    unsigned int sig_len;
+    c.StartAuth(0, id, len, ct, &or_proof_x, &or_proof_r, r, &sig, &sig_len);
+    EC_POINT *out2 = l.Auth(ct, or_proof_x, or_proof_r, sig);
     EC_POINT *ret_pw = c.FinishAuth(0, out2, r);
 
     int res = EC_POINT_cmp(Params_group(params), pw, ret_pw, Params_ctx(params));

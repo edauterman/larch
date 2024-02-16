@@ -3,7 +3,7 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
-#include <list>
+#include <vector>
 
 #include "../crypto/src/params.h"
 #include "../crypto/src/pw.h"
@@ -19,9 +19,9 @@ class LogServiceImpl final : public Log::Service {
     public:
         Params params;
         PasswordLog *l;
-        list<ElGamalCt *>ctList;
-        list<string>sigList;
-        list<uint64_t>timestampList;
+        vector<ElGamalCt *>ctList;
+        vector<string>sigList;
+        vector<uint64_t>timestampList;
         uint32_t time_ms = 0;
 
         LogServiceImpl() {}

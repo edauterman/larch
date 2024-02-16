@@ -1032,7 +1032,8 @@ void Client::PrintAuditLog() {
            for (int j = 0; j < SHA256_DIGEST_LENGTH; j++) {
                 printf("%02x",app_id[j]);
             }
-            printf(" (time = %s)", ctime(resp.tokens(i).time()));
+            uint64_t timeval = resp.tokens(i).time();
+	    printf(" (time = %s)", ctime((const time_t *)&timeval));
             printf("\n");
         }
     }

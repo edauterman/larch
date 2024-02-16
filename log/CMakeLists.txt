@@ -54,7 +54,7 @@ target_link_libraries(log
 	${_GRPC_GRPCPP}
 	${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(pw_log pw_log.cc ../crypto/src/params.cc ../crypto/src/pw.cc ../crypto/src/or_groth.cc ${hw_proto_srcs} ${hw_grpc_srcs})
+add_executable(pw_log pw_log.cc ../crypto/src/params.cc ../crypto/src/pw.cc ../crypto/src/or_groth.cc ../crypto/src/sigs.cc ${hw_proto_srcs} ${hw_grpc_srcs})
 target_link_libraries(pw_log
     OpenSSL::SSL
 	${_REFLECTION}

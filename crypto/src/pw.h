@@ -26,11 +26,13 @@ class PasswordClient {
         void FinishEnroll(EC_POINT *recover_pt_in);
         void StartRegister(const uint8_t *id, int len);
         void FinishRegister(EC_POINT *in, EC_POINT *pw);
-        void StartAuth(int register_idx, const uint8_t *id, int len, ElGamalCt *ct, OrProof **or_proof_x, OrProof **or_proof_r, BIGNUM *r);
+        void StartAuth(int register_idx, const uint8_t *id, int len, ElGamalCt *ct, OrProof **or_proof_x, OrProof **or_proof_r, BIGNUM *r, uint8_t **sig_buf, unsigned int *sig_len);
         EC_POINT *FinishAuth(int register_idx, EC_POINT *in, BIGNUM *r);
         void PrintLogEntry(ElGamalCt *ct, uint8_t *sig, uint64_t time);
 
     private:
+	BIGNUM *sig_sk;
+	EC_POINT *sig_pk;
         BIGNUM *x;
         EC_POINT *X;
         EC_POINT *recover_pt;
@@ -51,7 +53,7 @@ class PasswordLog {
     private:
         BIGNUM *sk;
         EC_POINT *X;
-        EC_POINT *pk;
+        EC_POINT *sig_pk;
         vector<EC_POINT *>bases_inv;
         vector<ElGamalCt *>cts;
 };
