@@ -10,6 +10,7 @@
 #include <fstream>
 #include <grpcpp/grpcpp.h>
 #include <time.h>
+#include "../circuit-src/chacha20.c"
 
 #include "../network/totp.grpc.pb.h"
 #include "common.h"
@@ -171,18 +172,18 @@ public:
 
         memset((uint8_t *) input.client_rpid_auth_nonce, 0, AUTH_NONCE_LEN);
         memcpy((uint8_t *) input.client_rpid_auth_nonce, (uint8_t *)(&state->auth_ctr), sizeof(state->auth_ctr));
-        state->auth_ctr++;
 
         //RAND_bytes((uint8_t*) input.client_rpid_auth_nonce, AUTH_NONCE_LEN);
         auto out = do_mpc_client(input, twopc);
 
+
         // sign enc_rpid with ECDSA
         vector<uint8_t> enc_rpid(out.enc_rpid, out.enc_rpid + ENC_RPID_LEN);
         uint8_t verify_bytes[ENC_RPID_LEN + AUTH_NONCE_LEN];
-        memcpy(verify_bytes, enc_rpid, ENC_RPID_LEN);
+        memcpy(verify_bytes, out.enc_rpid, ENC_RPID_LEN);
         memset(verify_bytes + 2, 0, AUTH_NONCE_LEN);
-        memcpy(verify_bytes + 2, (uint8_t *)(&auth_ctr), sizeof(auth_ctr);
-        vector<uint8_t> verify_bytes_vec(verify_bytes.begin(), verify_bytes.end());
+        memcpy(verify_bytes + 2, (uint8_t *)(&state->auth_ctr), sizeof(state->auth_ctr));
+        vector<uint8_t> verify_bytes_vec(verify_bytes, verify_bytes + ENC_RPID_LEN + AUTH_NONCE_LEN);
         auto sig = sign_ecdsa(params, rpid_sign_sk, verify_bytes_vec);
 
         // send to server
@@ -195,6 +196,7 @@ public:
         if (!status2.ok()) {
             throw runtime_error("finish auth failed: " + status2.error_message());
         }
+        state->auth_ctr++;
 
         return out.otp;
     }
@@ -220,16 +222,18 @@ public:
         }
         
         auto pk = derive_ecdsa_pub(params, rpid_sign_sk);
+        EC_POINT *rpid_sign_pk = load_ecdsa_pk(params, pk);
 
-        for (uint32_t i = 0 ; i < resp.entries.size(); i++) {
+        for (uint32_t i = 0 ; i < resp.entries_size(); i++) {
             // Verify signature
             uint8_t verify_bytes[ENC_RPID_LEN + AUTH_NONCE_LEN];
-            memcpy(verify_bytes, resp.entries(i).enc_rpid(), ENC_RPID_LEN);
+            memcpy(verify_bytes, resp.entries(i).enc_rpid().c_str(), ENC_RPID_LEN);
             memset(verify_bytes + 2, 0, AUTH_NONCE_LEN);
-            memcpy(verify_bytes + 2, (uint8_t *)(&auth_ctr), sizeof(auth_ctr);
-            vector<uint8_t> verify_bytes_vec(verify_bytes.begin(), verify_bytes.end());
-            
-            if (!verify_ecdsa(params, pk, verify_bytes_vec, resp.entries(i).rpid_sig())) {
+            memcpy(verify_bytes + 2, (uint8_t *)(&i), sizeof(i));
+            vector<uint8_t> verify_bytes_vec(verify_bytes, verify_bytes + ENC_RPID_LEN + AUTH_NONCE_LEN);
+            vector<uint8_t> sig_bytes_vec(resp.entries(i).rpid_sig().c_str(), resp.entries(i).rpid_sig().c_str() + resp.entries(i).rpid_sig().size());
+
+            if (!verify_ecdsa(params, rpid_sign_pk, verify_bytes_vec, sig_bytes_vec)) {
                 printf("signature verification FAILED\n");
             }
             // Decrypt RPID
@@ -238,11 +242,12 @@ public:
             memset((uint8_t *) auth_nonce, 0, AUTH_NONCE_LEN);
             memcpy((uint8_t *) auth_nonce, (uint8_t *)(&i), sizeof(uint32_t));
  
-            memcpy(chacha_block, resp.entries(i).enc_rpid(), 64);
-            chacha20_block((uint32_t*) chacha_block, (uint8_t*) rpid_key, 0, auth_nonce);
-            auto rpid = resp.entries(i).enc_rpid() ^ chacha_block[0];
+            memcpy(chacha_block, resp.entries(i).enc_rpid().c_str(), 64);
+            chacha20_block((uint32_t*) chacha_block, (uint8_t*) state->rpid_key, 0, (char *)auth_nonce);
+            auto rpid = resp.entries(i).enc_rpid().c_str()[0] ^ chacha_block[0];
             cout << "RPID = " << rpid;
-            printf("(time = %s)\n", ctime(resp.entries(i).timestamp()));
+            uint64_t timeval = resp.entries(i).timestamp();
+            printf("(time = %s)\n", ctime((time_t *)&timeval));
         }
 
     }

@@ -112,10 +112,10 @@ public:
 		vector<uint8_t> sig(request->signature().begin(), request->signature().end());
 		vector<uint8_t> enc_rpid(request->enc_rpid().begin(), request->enc_rpid().end());
         uint8_t verify_bytes[ENC_RPID_LEN + AUTH_NONCE_LEN];
-        memcpy(verify_bytes, enc_rpid, ENC_RPID_LEN);
+        memcpy(verify_bytes, request->enc_rpid().c_str(), ENC_RPID_LEN);
         memset(verify_bytes + 2, 0, AUTH_NONCE_LEN);
         memcpy(verify_bytes + 2, (uint8_t *)(&auth_ctr), sizeof(auth_ctr));
-        vector<uint8_t> verify_bytes_vec(verify_bytes.begin(), verify_bytes.end());
+        vector<uint8_t> verify_bytes_vec(verify_bytes, verify_bytes + ENC_RPID_LEN + AUTH_NONCE_LEN);
 		if (!verify_ecdsa(params, rpid_sign_pk, verify_bytes_vec, sig)) {
 			return Status(grpc::StatusCode::INVALID_ARGUMENT, "ecdsa signature does not match");
 		}
@@ -123,6 +123,7 @@ public:
 		// add to log
 		SerializedLogEntry entry;
 		memcpy(entry.enc_rpid, enc_rpid.data(), enc_rpid.size());
+        memcpy(entry.rpid_sig, sig.data(), sig.size());
 		entry.timestamp = time(nullptr);
 		log.push_back(entry);
 

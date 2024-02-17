@@ -66,6 +66,7 @@ void runBench(string server_ip, int rpid, double *offlineMB, double *onlineMB, d
         cout << "Offline ms = " << *offlineMS << endl;
         cout << "Online ms = " << *onlineMS << endl;
         cout << "otp = " << otp << "\n";
+        client.print_log();
 
 }
 
@@ -106,6 +107,7 @@ int main(int argc, char** argv) {
         f << getAverage(offlinetimes) << endl;
         f << getAverage(onlinetimes) << endl;
         f.close();
+
         return 0;
 }
 
