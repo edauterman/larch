@@ -52,6 +52,7 @@ void PasswordClient::StartEnroll(EC_POINT *X_out, EC_POINT *sig_pk_out) {
     sig_sk = BN_new();
     Params_rand_exponent(params, sig_sk);
     X = EC_POINT_new(Params_group(params));
+    sig_pk = EC_POINT_new(Params_group(params));
     Params_exp(params, X, x);
     Params_exp(params, sig_pk, sig_sk);
     EC_POINT_copy(sig_pk_out, sig_pk);

@@ -26,4 +26,5 @@ int main(int argc, char *argv[]) {
     } else {
         cout << "ERROR: returned incorrect pw" << endl;
     }
+    c->PrintAuditLog();
 }

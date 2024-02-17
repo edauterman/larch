@@ -6,7 +6,7 @@ This implementation accompanies our paper "Accountable authentication with priva
 
 **WARNING:** This is an academic proof-of-concept prototype and has not received careful code review. This implementation is NOT ready for production use.
 
-This prototype is released under the Apache v2 license (see [License](https://github.com/edauterman/larch/LICENSE)).
+This prototype (with the exception of `chrome_extension/`) is released under the Apache v2 license (see [License](https://github.com/edauterman/larch/LICENSE)).
 
 ## Setup
 
