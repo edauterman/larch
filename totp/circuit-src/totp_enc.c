@@ -85,6 +85,7 @@ struct InputB {
     uint8_t server_rpid_key_commitment[32];
     uint8_t server_key_shares[KEY_LEN * MAX_KEYS];
     uint8_t server_time_counter[MSG_LEN];
+    uint8_t server_rpid_auth_nonce[12];
 };
 
 struct Output {
@@ -99,6 +100,8 @@ struct Output mpc_main() {
     struct InputB INPUT_B;
     struct Output out;
 
+    unsigned int commit_ok = memcmp(INPUT_A.client_rpid_auth_nonce, INPUT_B.server_rpid_auth_nonce, 12);
+
     // Generate and check commitment to verify rpid key
     uint8_t commitment[32];
     uint8_t commit_buf[32 + 16] = { 0, };
@@ -110,7 +113,7 @@ struct Output mpc_main() {
     sha256_init(&ctx);
     sha256_update(&ctx, commit_buf, 32 + 16);
     sha256_final(&ctx, commitment);
-    unsigned int commit_ok = memcmp(commitment, INPUT_B.server_rpid_key_commitment, 32) == 0;
+    commit_ok = commit_ok & (memcmp(commitment, INPUT_B.server_rpid_key_commitment, 32) == 0);
 
     // decrypt otp key from keybag
     uint8_t otp_key[KEY_LEN];

@@ -91,6 +91,8 @@ public:
 			// server_key_shares
 			memcpy(input.server_key_shares, state->server_key_shares, KEY_LEN * MAX_KEYS);
 			// do_mpc_server fills in counter
+            memset((uint8_t *) input.server_rpid_auth_nonce, 0, AUTH_NONCE_LEN);
+            memcpy((uint8_t *) input.server_rpid_auth_nonce, (uint8_t *)(&auth_ctr), sizeof(auth_ctr));
 
 			//cout << "mpc start\n";
 			auto out = do_mpc_server(input, twopc);

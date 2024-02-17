@@ -56,6 +56,7 @@ struct InputB {
     char server_rpid_key_commitment[COMMIT_LEN];
     char server_key_shares[KEY_LEN * MAX_KEYS];
     char server_time_counter[MSG_LEN];
+    char server_rpid_auth_nonce[AUTH_NONCE_LEN];
 } __attribute__((packed));
 
 struct Output {
