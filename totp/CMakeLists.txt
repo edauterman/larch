@@ -43,7 +43,7 @@ include_directories(generated)
 #add_link_options(-g -fsanitize=address -fsanitize=undefined)
 
 
-#add_executable(preparse circuit-src/preparse.cpp ../../emp-tool-host/emp-tool/emp-tool.cpp)
+add_executable(preparse circuit-src/preparse.cpp ../../emp-tool/emp-tool/emp-tool.cpp)
 
 
 add_executable(client20-init src/client-init.cpp src/common.cpp network/totp.grpc.pb.cc network/totp.pb.cc src/base32.c ../crypto/src/sigs.cc ../crypto/src/params.cc ../../emp-tool/emp-tool/emp-tool.cpp)
