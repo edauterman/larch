@@ -286,3 +286,5 @@ Our TOTP circuit includes the following implementations of crypto primitives:
 
 - SHA-1: GPL v2. Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
 - SHA-256 primitive: Brad Conte (brad AT bradconte.com)
+
+The FIDO2 SHA-256 circuit is from the collection of [n-for-1 auth circuits](https://github.com/n-for-1-auth/circuits).
